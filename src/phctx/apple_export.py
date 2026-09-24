@@ -10,7 +10,8 @@ import stat
 import uuid
 import zipfile
 import pyexpat
-from datetime import datetime
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from typing import Iterator
 
@@ -22,7 +23,7 @@ PAGE = 5000
 SOURCE = 'apple_health_export'
 # Bump when the mapping changes: page request keys include it, so a re-import with a new mapping writes new
 # receipts (rows upsert by native id) instead of colliding with receipts from the old mapping.
-PARSER_VERSION = 2
+PARSER_VERSION = 3
 
 
 def _apple_time(s: str) -> str:
@@ -149,13 +150,18 @@ def iterate(zip_path: Path, xml_name: str) -> Iterator[dict]:
                                            'idempotent.') from e
 
 
-def _summary(item: dict) -> list[dict]:
-    """ActivitySummary → one observation per ring metric for that local day (goal kept in metadata)."""
+def _summary(item: dict, tz: str) -> list[dict]:
+    """ActivitySummary → one observation per ring metric for that local calendar day (goal kept in metadata).
+
+    Apple gives only a date, no zone: the day is anchored to the user's timezone, [00:00, next 00:00) local.
+    """
     a = item['attrs']
     day = a.get('dateComponents')
     if not day:
         return []
-    start, end = f'{day}T00:00:00-00:00', f'{day}T23:59:59-00:00'
+    zone = ZoneInfo(tz)
+    d0 = datetime.strptime(day, '%Y-%m-%d').replace(tzinfo=zone)
+    start, end = d0.isoformat(), (d0 + timedelta(days=1)).isoformat()
     out = []
     for key, unit_key, goal_key in [('activeEnergyBurned', 'activeEnergyBurnedUnit', 'activeEnergyBurnedGoal'),
                                     ('appleMoveTime', None, 'appleMoveTimeGoal'),
@@ -167,7 +173,7 @@ def _summary(item: dict) -> list[dict]:
         metric = f'ActivitySummary.{key}'
         v = float(a[key])
         out.append({'metric': metric, 'start_at': start, 'end_at': end, 'value_num': v, 'value_text': None,
-                    'unit': unit, 'timezone': 'UTC', 'source_name': 'Apple Health activity summary',
+                    'unit': unit, 'timezone': tz, 'source_name': 'Apple Health activity summary',
                     'source_bundle_id': 'com.apple.health', 'device': {},
                     'metadata': {'local_date': day, 'goal': a.get(goal_key), 'date_semantics': 'local calendar day'},
                     'origin_key': origin_key(metric, start, end, v, None, 'ActivitySummary'),
@@ -175,7 +181,9 @@ def _summary(item: dict) -> list[dict]:
     return out
 
 
-def import_export(store: Store, zip_path: Path, dry_run: bool = False, since: str | None = None) -> dict:
+def import_export(store: Store, zip_path: Path, dry_run: bool = False, since: str | None = None,
+                  tz: str | None = None) -> dict:
+    tz = tz or store.preferences().get('timezone', 'America/Chicago')
     zip_path = Path(zip_path).expanduser().resolve()
     info = preflight(zip_path)
     digest = hashlib.sha256()
@@ -215,7 +223,7 @@ def import_export(store: Store, zip_path: Path, dry_run: bool = False, since: st
                                                                      'source': 'apple_health_export'})
                 continue
             if item['tag'] == 'ActivitySummary':
-                rows = _summary(item)
+                rows = _summary(item, tz)
                 counts['activity_summary_days'] = counts.get('activity_summary_days', 0) + 1
                 counts['imported'] += len(rows)
                 page.extend(rows)
