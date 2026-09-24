@@ -37,6 +37,7 @@ from phctx.store import Store  # noqa: E402
 
 # Synthetic-only harness: uses the developer's file login (symlinked, never copied); production uses the keyring.
 EVAL_AUTH = Path(os.environ.get('PHCTX_CODEX_AUTH', '~/.codex/auth.json')).expanduser()
+INFRA_ERRORS = {'model_timeout', 'model_call_failed'}  # the backend never produced a turn
 CASES = [json.loads(x) for f in ('cases.jsonl', 'cases_scale.jsonl') if (ROOT / 'evals' / f).exists()
          for x in (ROOT / 'evals' / f).read_text().splitlines() if x.strip()]
 FOREGROUND = (ROOT / 'prompts' / 'foreground.md').read_text()
@@ -374,11 +375,13 @@ def run_case(case: dict, out_dir: Path, model_id: str, judge_model: str, run_no:
                            'detail': json.dumps(run['pending_after'])[:200], 'hard': True})
         diff = diff_of(before, after)
         verdict = judge(case, run, diff, checks, judge_model, work)
-        hard_auto = [c for c in checks if c['hard'] and not c['ok']]
+        # A model call that failed (quota, timeout) produced no turn to judge: its only failing check is the turn
+        # itself, and the run is NOT_RUN, never a model failure. Any other failing hard check still counts.
+        unrun = run.get('error') in INFRA_ERRORS
+        hard_auto = [c for c in checks if c['hard'] and not c['ok']
+                     and not (unrun and c['check'] == 'model_turn_completed')]
         status = 'PASS' if verdict.get('verdict') == 'PASS' and not hard_auto else (
-            'NOT_RUN' if verdict.get('verdict') == 'ERROR' and not hard_auto and run.get('error') else 'FAIL')
-        if run.get('error') and run['mode'] == 'foreground':
-            status = 'NOT_RUN' if run['error'] in {'model_timeout', 'model_call_failed'} and not hard_auto else status
+            'NOT_RUN' if (verdict.get('verdict') == 'ERROR' or unrun) and not hard_auto and run.get('error') else 'FAIL')
         rec = {'case_id': case['id'], 'run': run_no, 'category': case['category'], 'split': case['split'],
                'severity': case['severity'], 'status': status,
                'hard_failure': bool(hard_auto) or bool(verdict.get('hard_failure')),

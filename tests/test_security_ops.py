@@ -659,6 +659,19 @@ class SummarizeTests(Tmp):
         self.assertEqual((rc, s['status']), (1, 'FAIL'))
         self.assertEqual(s['mixed_campaign_cases'], [crit['id']])
 
+    def test_a_quota_outage_is_not_run_not_a_model_failure(self):
+        self.write()
+        f = self.base / 'holdout' / 'results_all_runs.jsonl'
+        rows = [json.loads(x) for x in f.read_text().splitlines()]
+        for r in rows:  # the backend refused every holdout call (usage limit): no turn, no verdict
+            r.update(status='FAIL', hard_failure=True, error='model_call_failed', reason='judge_failed:model_call_failed')
+        f.write_text(''.join(json.dumps(r) + '\n' for r in rows))
+        rc, s = self.run_summary()
+        self.assertEqual((rc, s['status'], s['hard_failure_cases']), (2, 'NOT_RUN', []))
+        rows[0].update(error=None, reason='SYNTHETIC judged failure', hard_failure=False)
+        f.write_text(''.join(json.dumps(r) + '\n' for r in rows))
+        self.assertEqual(self.run_summary()[1]['status'], 'FAIL')  # one judged failure is still FAIL
+
     def test_hash_mismatch_fails(self):
         self.write(hold_hashes=dict(PROMPTS, src='b' * 64))
         self.assertEqual(self.run_summary()[0], 1)
