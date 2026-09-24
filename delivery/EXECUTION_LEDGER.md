@@ -110,3 +110,17 @@ See `security-review.md` (5 findings fixed: NAT64 SSRF, capture_file replay conf
 | Post-import snapshot | `backups/snapshot-20260924T010719Z` (1,867,442 observations) |
 | Scale fixes | model queries hit the 2 s cap and bootstrap took 21.7 s on 1.87M rows → schema v3: `obs_metric_time` index + `observation_catalog` maintained in O(page) (property test: catalog exactly equals ground truth after random upserts/deletes/metric changes); SQL budget 8 s |
 | Coverage gaps closed | parser v2 adds ActivitySummary (1,091 days), Workout statistics/events/route refs, instantaneous-BPM counts, Me characteristics (profile note), GPX routes + ECG CSV stored as originals. export_cda.xml is a CDA projection of the same vitals (heart rate, respiratory rate, SpO2, height, weight) → intentionally not double-imported |
+
+## Round 2 — live ChatGPT, verifier fixes, v6 (2026-09-24)
+| Step | Command / action | Result | Evidence |
+|---|---|---|---|
+| Tunnel + ChatGPT app | tunnel `phctx-mac` (runtime key reused from WebCodex config at the user's direction); developer-mode app via chatgpt.com/plugins | connected; tools listed | `live-evidence/chatgpt_live_probe.md` |
+| Live probes | write → fresh-chat read → PNG/PDF originals → real-data investigation | all PASS; download hosts observed and allowlisted by anchored pattern | same, `chatgpt_db_verification_2026-09-24.json`, `chatgpt_mcp_server_log_2026-09-24.txt` |
+| Consult round 1 | chatgpt-consult on commit 574fcc2 | findings folded into a 4-slice fix workflow + adversarial verifiers (54 problems) | `acceptance/consult_round1_574fcc2.txt`, `acceptance/slices/` |
+| Verifier-confirmed fixes | origin_key formula change without re-key → migration v6; `_retire` over-broad → attribution; `--since` duplicates; tz idempotency conflict; replay claiming a missing original; legacy shadow rows; nullable cost; worker fence bypass (request_id + owner); run-manifest laundering; mixed eval campaigns; snapshot publish-before-fsync; rollback order; streamed hashes; corrupt ZIP member leaves run `running`; iOS filter blind to HealthKit metadata | each with a regression test that fails when the fix is reverted (mutation-checked) | commit e1f1e3b |
+| Evidence read-binding (F11 residual) | worker passes its start instant; the outbox gate rejects any cited record/observation written after it, whether or not the model echoed versions | test fails with the binding removed | — |
+| Found on real data | new CDA sampler refused the real export (Apple appends `<entry>` after `</ClinicalDocument>`) → CDA is a cross-check only, `malformed` counted | fixed + test | commit e1f1e3b |
+| Found in tests | a test backup wrote synthetic snapshots into the real backups dir (Config default) → `backup_dir` follows the root; the two synthetic snapshots (manifest profile=synthetic) removed | fixed + guard test; full suite leaves the real dir untouched | — |
+| Suites | `python -m unittest discover -s tests`; `swift test` | 238 OK; 27 OK | — |
+| Production safety | worker launchd job booted out (it runs current src every 15 min and would have applied v6 unrehearsed); production confirmed still schema v5 afterwards | v6 rehearsed on an online `.backup` copy first | below |
+| v6 rehearsal (copy of production) | open with e1f1e3b code | 6 m 04 s, 498 MB RSS; schema 6; 1,871,806 active (unchanged); 0 null keys; canonical steps unchanged; quick_check ok | scratchpad (not shipped: real data) |

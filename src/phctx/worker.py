@@ -230,7 +230,7 @@ def execute(store: Store, cfg: Config, job: dict, owner: str, config_path: str,
                 # attempts advances in the same transaction, so a re-run of a re-queued job is a new request; the
                 # owner makes a stale owner's replay miss the receipt and hit the fence instead.
                 gate, done = queue(request_id=f'worker:{job["id"]}:{job["attempts"]}:{owner}', candidate=cand,
-                                   fence=finish), True
+                                   fence=finish, read_at=started), True
             except StoreError as e:
                 if e.code == 'lease_lost':
                     raise

@@ -215,6 +215,25 @@ class WorkerBackupTests(unittest.TestCase):
             a, b = bk.backup(self.cfg), bk.backup(self.cfg)
         self.assertNotEqual(a['snapshot']['path'], b['snapshot']['path'])
 
+    def test_evidence_written_during_the_investigation_is_rejected_without_model_echo(self):
+        self.cfg.model_enabled = True
+        self.cfg.model_backend = 'scripted'
+        self.cfg.worker_mode = 'active'
+        question_id = self.question()
+        self.record(text='SYNTHETIC posture assessment added')
+        worker.plan(self.store, self.cfg)
+        with self.store.transaction() as c:
+            job = dict(c.execute("SELECT * FROM jobs WHERE type='revisit'").fetchone())
+            c.execute("UPDATE jobs SET state='running', lease_owner='SYNTHETIC-w', lease_expires_at=? WHERE id=?",
+                      (self._at(10 ** 6), job['id']))
+
+        def model_reads_then_cites_a_newer_record(task):  # the cited record appears while the model runs
+            fresh = self.record(text='SYNTHETIC posture reassessment written mid-run')['record_id']
+            return self.candidate(question_id, fresh)  # evidence_versions {}: the model echoed nothing
+        out = worker.execute(self.store, self.cfg, job, 'SYNTHETIC-w', '', model_reads_then_cites_a_newer_record)
+        self.assertEqual(out['gate'], {'queued': False, 'reason': 'gate_rejected:stale_evidence'})
+        self.assertEqual(self.count('SELECT count(*) FROM insights'), 0)
+
     def test_stale_owner_replay_cannot_reuse_new_owner_receipt(self):
         self.cfg.model_enabled = True
         self.cfg.model_backend = 'scripted'

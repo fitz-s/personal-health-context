@@ -300,6 +300,18 @@ class Store:
             versions[ref] = v
         return versions
 
+    def _written_after(self, c: sqlite3.Connection, ref: str, at: str) -> bool:
+        """True when the ref was created or changed after `at` (a store-clock instant): a reader that started at `at`
+        cannot be shown to have seen that version."""
+        kind = ref_kind(ref)
+        if kind == 'record':
+            row = c.execute('SELECT created_at FROM records WHERE id=?', (ref,)).fetchone()
+        elif kind == 'observation':
+            row = c.execute('SELECT updated_at FROM observations WHERE id=?', (ref,)).fetchone()
+        else:
+            return False  # originals are immutable
+        return bool(row) and row[0] > at
+
     def _stale_refs(self, c: sqlite3.Connection, versions: dict[str, str]) -> list[str]:
         return [ref for ref, v in versions.items() if self._ref_version(c, ref) != v]
 
@@ -835,10 +847,11 @@ class Store:
         return bool(row) and json.loads(row[0]).get('state', 'open') not in self.CLOSED_QUESTION
 
     def queue_insight(self, *, request_id: str, candidate: dict, ttl_days: int | None = None,
-                      fence: Callable[[sqlite3.Connection], None] | None = None) -> dict:
+                      fence: Callable[[sqlite3.Connection], None] | None = None, read_at: str | None = None) -> dict:
         """Local background writer only. Silence is an output, not a persisted health conclusion.
 
-        `fence` runs first inside the same transaction; raising there (e.g. lease lost) drops the whole write."""
+        `fence` runs first inside the same transaction; raising there (e.g. lease lost) drops the whole write.
+        `read_at` (store clock, taken before the investigation began) rejects evidence written during it."""
         if candidate.get('decision') == 'silence':
             return {'status': 'silent', 'queued': False}
         qid, evidence = self._candidate(candidate)
@@ -847,7 +860,7 @@ class Store:
         def write(c: sqlite3.Connection) -> dict:
             if fence:
                 fence(c)
-            versions, fingerprint, verdict = self._gate(c, candidate, qid, evidence)
+            versions, fingerprint, verdict = self._gate(c, candidate, qid, evidence, read_at)
             if verdict:
                 return verdict
             iid = 'ins_' + uuid.uuid4().hex
@@ -870,14 +883,15 @@ class Store:
             raise StoreError('missing_evidence', 'A proactive proposal needs actual stored evidence.')
         return candidate.get('question_id'), evidence
 
-    def _gate(self, c: sqlite3.Connection, candidate: dict, qid: str | None,
-              evidence: list[str]) -> tuple[dict[str, str], str, dict | None]:
+    def _gate(self, c: sqlite3.Connection, candidate: dict, qid: str | None, evidence: list[str],
+              read_at: str | None = None) -> tuple[dict[str, str], str, dict | None]:
         """(current evidence versions, fingerprint, why a real insight would not be queued now or None to queue)."""
         if qid and not self._question_open(c, qid):
             raise StoreError('missing_question', 'Question reference is not an active open stored question.')
         versions = self._evidence_versions(c, evidence)
         read = candidate.get('evidence_versions') or {}
-        if any((versions[r] if r in versions else self._ref_version(c, r)) != v for r, v in read.items()):
+        if any((versions[r] if r in versions else self._ref_version(c, r)) != v for r, v in read.items()) or (
+                read_at and any(self._written_after(c, r, read_at) for r in evidence)):
             raise StoreError('stale_evidence', 'Evidence changed after it was read; re-read and re-investigate.')
         fingerprint = hashlib.sha256(dump({'question_id': qid, 'evidence': versions,
                                            'topic': candidate.get('topic', 'unspecified')}).encode()).hexdigest()
@@ -897,7 +911,7 @@ class Store:
         return versions, fingerprint, None
 
     def queue_shadow(self, *, request_id: str, candidate: dict,
-                     fence: Callable[[sqlite3.Connection], None] | None = None) -> dict:
+                     fence: Callable[[sqlite3.Connection], None] | None = None, read_at: str | None = None) -> dict:
         """Shadow mode: record what the gate would have done, in shadow_insights only. Never reaches the outbox,
         pending_insights, bootstrap, real-insight dedup or the attention budget."""
         if candidate.get('decision') == 'silence':
@@ -907,7 +921,7 @@ class Store:
         def write(c: sqlite3.Connection) -> dict:
             if fence:
                 fence(c)
-            versions, _, verdict = self._gate(c, candidate, qid, evidence)
+            versions, _, verdict = self._gate(c, candidate, qid, evidence, read_at)
             sid = 'shd_' + uuid.uuid4().hex
             c.execute('INSERT INTO shadow_insights VALUES(?,?,?,?,?,?,?)',
                       (sid, qid, dump(candidate), dump(versions), int(verdict is None),
