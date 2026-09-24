@@ -82,6 +82,9 @@ def main(argv: list[str] | None = None) -> int:
     ia.add_argument('--since')
     oa = sub.add_parser('sync-oura', help="pull the owner's Oura data (backfill on first run, then a trailing window)")
     oa.add_argument('--full', action='store_true', help='re-read every collection from the first day')
+    sub.add_parser('whoop-login', help='one-time WHOOP consent in the browser (keeps the refresh token in the Keychain)')
+    wa = sub.add_parser('sync-whoop', help="pull the owner's WHOOP data (backfill on first run, then a trailing window)")
+    wa.add_argument('--full', action='store_true')
     ig = sub.add_parser('ingest-server')
     ig.add_argument('--host')
     ig.add_argument('--port', type=int)
@@ -143,6 +146,14 @@ def dispatch(cfg, args) -> int:
         try:
             out(oura.sync(store_of(cfg), tz=cfg.timezone, full=args.full))
         except oura.OuraError as e:
+            out({'error': e.code})
+            return 1
+        return 0
+    if c in {'whoop-login', 'sync-whoop'}:
+        from . import whoop
+        try:
+            out(whoop.login() if c == 'whoop-login' else whoop.sync(store_of(cfg), tz=cfg.timezone, full=args.full))
+        except whoop.WhoopError as e:
             out({'error': e.code})
             return 1
         return 0

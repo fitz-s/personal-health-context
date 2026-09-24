@@ -93,6 +93,7 @@ if [ "$WITH_WORKER" = 1 ]; then FILES+=("$(INTERVAL=900 plist com.personalhealth
 if [ "$WITH_INGEST" = 1 ]; then FILES+=("$(KEEP=1 plist com.personalhealthcontext.ingest ingest-server)"); fi
 FILES+=("$(INTERVAL=86400 plist com.personalhealthcontext.backup backup)")
 FILES+=("$(INTERVAL=3600 plist com.personalhealthcontext.oura sync-oura)")
+FILES+=("$(INTERVAL=3600 plist com.personalhealthcontext.whoop sync-whoop)")
 if [ "$LOAD" = 1 ]; then
   for f in "${FILES[@]}"; do
     label="$(basename "$f" .plist)"

@@ -54,3 +54,10 @@ The stored key is only meaningful under one formula. Any change to this section 
 (daily scores, sleep `total_sleep_duration` s, workout `calories` kcal, heart rate `bpm`), the whole document in `raw`.
 Daily documents span the local day. Oura entries mirrored into Apple Health keep their Apple provenance
 (`source_name` Oura) and are stored like any other sample (owner decision 2026-09-24).
+
+## WHOOP
+`source_id` = `whoop` (API v2, `phctx.whoop`): one observation per record; `native_id` = `<collection>:<id>` (recovery:
+its `sleep_id`), `metric` = `whoop.<collection>`, `value_num` = cycle/workout `strain`, recovery `recovery_score` %, sleep
+`sleep_performance_percentage` %; `value_text` = workout `sport_name`, `nap`, else `score_state`; the whole record in `raw`
+(resting HR, HRV, SpO2, skin temperature, stage durations, zone durations live there). An open cycle has no end:
+`end_at` = `start_at` until WHOOP closes it.
