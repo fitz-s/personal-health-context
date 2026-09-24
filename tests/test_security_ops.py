@@ -203,6 +203,25 @@ class IngestLimitsTests(Tmp):
                 time.sleep(0.1)
 
 
+    def test_one_peer_cannot_take_every_slot(self):
+        port = self.server(MAX_CONN=4, PER_PEER=2, HANDSHAKE_S=5)
+        stalled = [socket.create_connection(('127.0.0.1', port), 3) for _ in range(2)]
+        self.addCleanup(lambda: [s.close() for s in stalled])
+        time.sleep(0.2)
+        with socket.create_connection(('127.0.0.1', port), 3) as extra:  # same peer, over its share
+            self.assertTrue(self.closed_within(extra, 1))
+        for s in stalled:
+            s.close()
+        deadline = time.monotonic() + 3
+        while True:  # the peer's share comes back once its connections end
+            try:
+                self.assertEqual(self.status(port), 401)
+                break
+            except (OSError, IndexError, ValueError):
+                if time.monotonic() > deadline:
+                    raise
+                time.sleep(0.1)
+
 # ---- F19: one monotonic deadline across DNS, connect, headers and body ------------------------------
 class SlowTLS:
     def __init__(self, base: Path, script):

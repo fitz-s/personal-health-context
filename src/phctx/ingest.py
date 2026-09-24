@@ -5,6 +5,7 @@ Keychain, never in a persistent file. Device tokens are stored hashed. Batches c
 """
 from __future__ import annotations
 
+import collections
 import datetime as dt
 import hashlib
 import ipaddress
@@ -249,6 +250,7 @@ def lan_addresses() -> list[str]:
 
 # ---- HTTP server ----------------------------------------------------------------------------
 MAX_CONN = 16      # concurrent connections; excess ones are closed at accept
+PER_PEER = 4       # per source address, so one stalling device cannot hold every slot
 HANDSHAKE_S = 10   # TLS handshake bound
 REQUEST_S = 60     # absolute bound from handshake completion to the full request body being read
 IDLE_S = 20        # per-read socket timeout
@@ -279,22 +281,38 @@ class _Server(ThreadingHTTPServer):
     def __init__(self, addr, handler, ctx: ssl.SSLContext):
         super().__init__(addr, handler)
         self.ctx, self.slots = ctx, threading.BoundedSemaphore(MAX_CONN)
+        self.peers: collections.Counter[str] = collections.Counter()
+        self.peer_lock = threading.Lock()
+
+    def _take(self, peer: str) -> bool:
+        with self.peer_lock:
+            if self.peers[peer] >= PER_PEER or not self.slots.acquire(blocking=False):
+                return False
+            self.peers[peer] += 1
+            return True
+
+    def _give(self, peer: str) -> None:
+        with self.peer_lock:
+            self.peers[peer] -= 1
+            if not self.peers[peer]:
+                del self.peers[peer]
+            self.slots.release()
 
     def process_request(self, request, client_address):
-        if not self.slots.acquire(blocking=False):
+        if not self._take(client_address[0]):
             self.shutdown_request(request)
             return
         try:
             super().process_request(request, client_address)
         except BaseException:
-            self.slots.release()
+            self._give(client_address[0])
             raise
 
     def process_request_thread(self, request, client_address):
         try:
             super().process_request_thread(request, client_address)
         finally:
-            self.slots.release()
+            self._give(client_address[0])
 
     def finish_request(self, request, client_address):
         request.settimeout(HANDSHAKE_S)
