@@ -318,20 +318,16 @@ class AttachmentTests(Base):
         body = self.workout('SYNTHETIC Watch', 'route_ok.gpx', '09:05:00') + self.workout('Oura', 'route_bad.gpx')
         out = self.run_import(body, members)
         got = {Path(p['export_path']).name: (p, at) for p, at in self.attachments()}
-        self.assertEqual(sorted(got), ['ecg_notime.csv', 'ecg_ok.csv', 'route_ok.gpx'])
+        self.assertEqual(sorted(got), ['ecg_bad.csv', 'ecg_notime.csv', 'ecg_ok.csv', 'route_bad.gpx', 'route_ok.gpx'])
         self.assertEqual(got['route_ok.gpx'][1], instant('2026-09-20T09:05:00-05:00'))
         self.assertEqual(got['ecg_ok.csv'][1], instant('2026-09-19T07:15:00-05:00'))
         self.assertNotIn('event_time_unknown', got['ecg_ok.csv'][0])
         self.assertTrue(got['ecg_notime.csv'][0]['event_time_unknown'])
         self.assertEqual(got['ecg_notime.csv'][1], instant('2026-09-21T10:00:00-05:00'))
         blobs = b''.join(p.read_bytes() for p in (self.store.root / 'objects').rglob('*') if p.is_file())
-        self.assertNotIn(b'SYNTHETIC bad', blobs)
-        self.assertNotIn(b'Oura Ring', blobs)
-        self.assertNotIn(b'SYNTHETIC orphan', blobs)
-        self.assertEqual(self.rows("source_name='Oura'", 'observations'), [])
+        self.assertNotIn(b'SYNTHETIC orphan', blobs)  # a route no workout references is still skipped
         c = out['counts']
-        self.assertEqual((c['attachments'], c['attachments_filtered_restricted'], c['attachments_unreferenced']),
-                         (3, 2, 1))
+        self.assertEqual((c['attachments'], c['attachments_unreferenced']), (5, 1))
 
     def test_oversized_member_is_refused_before_reading(self):
         reads = []

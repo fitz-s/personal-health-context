@@ -69,17 +69,6 @@ def positive_limit(n: int, maximum: int = 1000) -> int:
     return n
 
 
-RESTRICTED_VENDORS = re.compile(r'oura', re.IGNORECASE)
-
-
-def restricted_origin(*labels: Any) -> bool:
-    """True when a sample's provenance names a vendor whose data may not be persisted (Oura).
-
-    A mirrored sample keeps its origin: an Oura value written into Apple Health is still Oura data.
-    """
-    return any(isinstance(x, str) and RESTRICTED_VENDORS.search(x) for x in labels)
-
-
 MAGIC = [(b'%PDF-', 'application/pdf'), (b'\x89PNG\r\n\x1a\n', 'image/png'), (b'\xff\xd8\xff', 'image/jpeg'),
          (b'GIF87a', 'image/gif'), (b'GIF89a', 'image/gif'), (b'PK\x03\x04', 'application/zip')]
 
@@ -191,7 +180,7 @@ class Store:
             c.execute('INSERT OR IGNORE INTO sources(id,label,policy,state) VALUES(?,?,?,?)',
                       ('user', 'User-provided context', 'durable', 'ready'))
             c.execute('INSERT OR IGNORE INTO sources(id,label,policy,state) VALUES(?,?,?,?)',
-                      ('oura', 'Oura official MCP (external, no local mirror)', 'ephemeral', 'not_connected'))
+                      ('oura', 'Oura API v2', 'durable', 'not_connected'))
             c.execute('INSERT OR IGNORE INTO sources(id,label,policy,state) VALUES(?,?,?,?)',
                       ('apple_health_export', 'Apple Health XML export (backfill only)', 'durable', 'not_connected'))
         os.chmod(self.db, 0o600)
@@ -254,8 +243,6 @@ class Store:
             raise StoreError('invalid_policy', 'Unknown source policy.')
         if source_id.startswith('synthetic:') and self.profile != 'synthetic':
             raise StoreError('source_restricted', 'Synthetic sources exist only in the synthetic profile.')
-        if restricted_origin(source_id, label) and not source_id.startswith('synthetic:') and policy == 'durable':
-            raise StoreError('source_restricted', 'Real Oura mirroring is not enabled in this implementation.')
         with self.connect() as c:
             c.execute('INSERT INTO sources(id,label,policy) VALUES(?,?,?) ON CONFLICT(id) DO NOTHING',
                       (source_id, nonempty(label, 'label', 200), policy))
@@ -809,13 +796,10 @@ class Store:
     def ingest_batch(self, *, request_id: str, source_id: str, samples: list[dict],
                      deleted_ids: list[str], cursor: str, coverage: dict | None = None,
                      _extra: Callable[[sqlite3.Connection], dict] | None = None) -> dict:
-        """Trusted importer-only. Upserts, deletes, source cursor and change log commit together.
-
-        Samples whose provenance names a restricted vendor are dropped before persistence and counted.
-        """
+        """Trusted importer-only. Upserts, deletes, source cursor and change log commit together."""
         if not isinstance(samples, list) or len(samples) > 5000 or len(deleted_ids) > 5000:
             raise StoreError('batch_size', 'Use pages of at most 5000 samples/deletions.')
-        checked, seen, filtered = [], set(), 0
+        checked, seen = [], set()
         for sample in samples:
             s = dict(sample)
             sid = nonempty(s.get('native_id'), 'native_id', 200)
@@ -831,10 +815,6 @@ class Store:
             val = s.get('value_num')
             if val is not None and (isinstance(val, bool) or not isinstance(val, (int, float)) or not math.isfinite(val)):
                 raise StoreError('invalid_value', 'Numeric measurement must be finite and cannot be bool.')
-            if restricted_origin(s.get('source_name'), s.get('source_bundle_id'),
-                                 dump(s.get('device') or {}), dump(s.get('metadata') or {})):
-                filtered += 1
-                continue
             checked.append((s, start, end, tz))
         if seen.intersection(deleted_ids):
             raise StoreError('ambiguous_batch', 'A sample cannot be upserted and deleted in the same page.')
@@ -933,7 +913,7 @@ class Store:
                 c.execute("INSERT INTO changes(entity, entity_id, detail, at) VALUES('observations', ?, ?, ?)",
                           (source_id, dump({'metrics': sorted(metrics), 'start': lo, 'end': hi,
                                             'upserted': len(checked), 'deleted': len(deleted_ids)}), now))
-            out = {'upserted': len(checked), 'deleted': len(deleted_ids), 'filtered_restricted': filtered,
+            out = {'upserted': len(checked), 'deleted': len(deleted_ids),
                    'cursor': cursor, 'source_id': source_id}
             if _extra:
                 out.update(_extra(c))
@@ -1303,7 +1283,6 @@ class Store:
                                 'evidence; this index is a map, not the boundary of investigation.',
                 'boundaries': ['No record without a committed receipt.',
                                'No original attachment without its bytes and verified checksum.',
-                               'Oura external MCP content is not authorized for local persistence.',
                                'Silence, missing data or no sync is not a normal measurement.']}
 
     def status(self) -> dict:

@@ -1,8 +1,7 @@
 """Apple Health export.zip → observations (backfill only; never claims continuous sync).
 
 ZIP preflight rejects traversal, symlinks and compression bombs. XML is parsed as a stream; any ENTITY
-declaration or external reference aborts. Restricted-vendor samples (Oura) are dropped before persistence and only
-counted. Mapping follows contracts/normalization.md (source identity `native_id` vs equivalence key `origin_key`).
+declaration or external reference aborts. Mapping follows contracts/normalization.md (source identity `native_id` vs equivalence key `origin_key`).
 """
 from __future__ import annotations
 
@@ -19,7 +18,7 @@ from zoneinfo import ZoneInfo
 from pathlib import Path
 from typing import Iterator
 
-from .store import Store, StoreError, check_tz, dump, instant, restricted_origin, utcnow
+from .store import Store, StoreError, check_tz, dump, instant, utcnow
 
 MAX_UNCOMPRESSED = 20 * 1024 ** 3
 MAX_RATIO = 200
@@ -377,8 +376,8 @@ def _retire(store: Store, sha16: str, rid: str, cursor: str, since_at: str | Non
     return len(ids), len(rows) - len(ids)
 
 
-def _ecg_header(data: bytes) -> tuple[str, str | None]:
-    """Header lines (up to the first blank line) and the 'Recorded Date' instant, if present and parseable."""
+def _ecg_recorded_at(data: bytes) -> str | None:
+    """The 'Recorded Date' instant of the header (lines up to the first blank line), if present and parseable."""
     lines = []
     for ln in data[:65536].decode('utf-8', 'replace').splitlines():
         if not ln.strip():
@@ -392,7 +391,7 @@ def _ecg_header(data: bytes) -> tuple[str, str | None]:
                 at = _apple_time(v.strip().strip('"'))
             except ValueError:
                 pass
-    return '\n'.join(lines), at
+    return at
 
 
 def import_export(store: Store, zip_path: Path, dry_run: bool = False, since: str | None = None,
@@ -430,7 +429,7 @@ def _import(store: Store, zip_path: Path, dry_run: bool, since: str | None, tz: 
         zi = zf.getinfo(info['xml'])
     export_at = datetime(*zi.date_time).astimezone().isoformat()
     elements, unsupported = Counter(), Counter()
-    counts = {'records_seen': 0, 'filtered_restricted': 0, 'skipped_before_since': 0, 'unparseable': 0,
+    counts = {'records_seen': 0, 'skipped_before_since': 0, 'unparseable': 0,
               'imported': 0, 'retired': 0, 'by_source': {}}
     run_id = 'imp_' + uuid.uuid4().hex
     if not dry_run:
@@ -450,8 +449,7 @@ def _import(store: Store, zip_path: Path, dry_run: bool, since: str | None, tz: 
     page: list[dict] = []
     seen: set[str] = set()
     page_no = 0
-    routes: dict[str, str] = {}  # permitted workout FileReference → workout start
-    refused: set[str] = set()  # FileReferences of restricted workouts
+    routes: dict[str, str] = {}  # workout FileReference → workout start
     cda, cda_bad, cda_malformed = [], 0, False
     found: set[tuple] = set()
 
@@ -514,10 +512,6 @@ def _import(store: Store, zip_path: Path, dry_run: bool, since: str | None, tz: 
                         found.add(k)
                 except (KeyError, ValueError, StoreError):
                     pass
-            if restricted_origin(dump(item)):
-                counts['filtered_restricted'] += 1
-                refused.update(p.lstrip('/') for p in _files(item))
-                continue
             try:
                 s = _sample(item, tz, imp)
             except (KeyError, ValueError):
@@ -544,7 +538,7 @@ def _import(store: Store, zip_path: Path, dry_run: bool, since: str | None, tz: 
         if not dry_run:  # also after a partial (since) import: its rows replace older-parser rows of this export
             counts['retired'], counts['unreplaced_older_rows'] = _retire(
                 store, sha[:16], rid, f'export:{tag}:{max(page_no - 1, 0)}', since_at)
-        _attachments(store, zip_path, counts, routes, refused, export_at, tag, tz, dry_run)
+        _attachments(store, zip_path, counts, routes, export_at, tag, tz, dry_run)
     except BaseException as e:  # any failure (a corrupt member, an interrupt) closes the run: never left 'running'
         if not dry_run:
             with store.transaction() as c:
@@ -562,12 +556,11 @@ def _import(store: Store, zip_path: Path, dry_run: bool, since: str | None, tz: 
             'note': 'Backfill only. Continuous sync requires the iPhone helper.'}
 
 
-def _attachments(store: Store, zip_path: Path, counts: dict, routes: dict, refused: set, export_at: str, tag: str,
+def _attachments(store: Store, zip_path: Path, counts: dict, routes: dict, export_at: str, tag: str,
                  tz: str, dry_run: bool) -> None:
-    """GPX routes only when a permitted workout references them (occurred_at = workout start); ECG CSVs only when
-    their header names no restricted origin (occurred_at = Recorded Date, else export date + event_time_unknown)."""
-    n = Counter(attachments=0, attachments_filtered_restricted=0, attachments_unreferenced=0,
-                attachments_refused_oversize=0)
+    """GPX routes only when a workout references them (occurred_at = workout start); ECG CSVs (occurred_at = Recorded
+    Date, else export date + event_time_unknown)."""
+    n = Counter(attachments=0, attachments_unreferenced=0, attachments_refused_oversize=0)
     with zipfile.ZipFile(zip_path) as zf:
         for zinfo in zf.infolist():
             name, parts = zinfo.filename, Path(zinfo.filename).parts
@@ -576,9 +569,6 @@ def _attachments(store: Store, zip_path: Path, counts: dict, routes: dict, refus
             if not (gpx or folder == 'electrocardiograms' and name.endswith('.csv')):
                 continue
             key = 'workout-routes/' + parts[-1]
-            if gpx and key in refused:
-                n['attachments_filtered_restricted'] += 1
-                continue
             if gpx and key not in routes:
                 n['attachments_unreferenced'] += 1
                 continue
@@ -594,10 +584,7 @@ def _attachments(store: Store, zip_path: Path, counts: dict, routes: dict, refus
             if gpx:
                 at = routes[key]
             else:
-                head, at = _ecg_header(data)
-                if restricted_origin(head):
-                    n['attachments_filtered_restricted'] += 1
-                    continue
+                at = _ecg_recorded_at(data)
                 if at is None:
                     at, payload['event_time_unknown'] = export_at, True
             n['attachments'] += 1

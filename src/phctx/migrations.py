@@ -5,7 +5,7 @@ import hashlib
 import json
 import sqlite3
 
-TARGET = 11
+TARGET = 12
 
 
 def statements(sql: str):
@@ -323,7 +323,13 @@ DELETE FROM record_dependencies WHERE record_id IN (SELECT record_id FROM eviden
 """)
 
 
-STEPS = {2: _v2, 3: _v3, 4: _v4, 5: _v5, 6: _v6, 7: _v7, 8: _v8, 9: _v9, 10: _v10, 11: _v11}
+def _v12(c: sqlite3.Connection) -> None:
+    # Oura, once a placeholder for an external never-persisted connector, is a durable source (owner decision
+    # 2026-09-24): its data is the owner's own and is synced by phctx.oura.
+    c.execute("UPDATE sources SET label='Oura API v2', policy='durable' WHERE id='oura'")
+
+
+STEPS = {2: _v2, 3: _v3, 4: _v4, 5: _v5, 6: _v6, 7: _v7, 8: _v8, 9: _v9, 10: _v10, 11: _v11, 12: _v12}
 
 
 def apply(c: sqlite3.Connection, current: int, now: str) -> int:

@@ -51,29 +51,28 @@ class AppleExportTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def test_export_import_filters_restricted_origin_and_is_idempotent(self):
+    def test_export_import_keeps_every_origin_and_is_idempotent(self):
         first = apple_export.import_export(self.store, self.export)
         self.assertEqual(first['counts']['records_seen'], 3)
-        self.assertEqual(first['counts']['filtered_restricted'], 1)
-        self.assertEqual(first['counts']['imported'], 2)
+        self.assertEqual(first['counts']['imported'], 3)
         with self.store.connect() as c:
             rows = c.execute('SELECT metric, source_name, timezone FROM active_observations ORDER BY metric').fetchall()
-            self.assertEqual(len(rows), 2)
-            self.assertTrue(all('Oura' not in row['source_name'] for row in rows))
+            self.assertEqual(len(rows), 3)
+            self.assertIn('Oura', {row['source_name'] for row in rows})  # provenance kept, nothing dropped
             self.assertEqual(c.execute("SELECT cursor FROM sources WHERE id='apple_health_export'").fetchone()[0],
                              f"export:v{apple_export.PARSER_VERSION}:{first['export_sha256'][:16]}:0")
-            self.assertEqual(c.execute('SELECT count(*) FROM observations').fetchone()[0], 2)
+            self.assertEqual(c.execute('SELECT count(*) FROM observations').fetchone()[0], 3)
             self.assertEqual(c.execute("SELECT timezone FROM observations WHERE metric='HKWorkoutTypeIdentifier'")
                              .fetchone()[0], 'America/Denver')
         second = apple_export.import_export(self.store, self.export)
         self.assertEqual(second['counts'], first['counts'])
         with self.store.connect() as c:
-            self.assertEqual(c.execute('SELECT count(*) FROM observations').fetchone()[0], 2)
+            self.assertEqual(c.execute('SELECT count(*) FROM observations').fetchone()[0], 3)
 
     def test_dry_run_does_not_persist_observations_or_source_cursor(self):
         result = apple_export.import_export(self.store, self.export, dry_run=True)
         self.assertTrue(result['dry_run'])
-        self.assertEqual(result['counts']['imported'], 2)
+        self.assertEqual(result['counts']['imported'], 3)
         with self.store.connect() as c:
             self.assertEqual(c.execute('SELECT count(*) FROM observations').fetchone()[0], 0)
             self.assertEqual(c.execute("SELECT cursor FROM sources WHERE id='apple_health_export'").fetchone()[0], None)
@@ -116,8 +115,10 @@ class AppleExportTests(unittest.TestCase):
         self.store.ingest_batch(request_id='SYNTHETIC-live-sample', source_id='apple_health:synthetic-install',
                                 samples=[sample], deleted_ids=[], cursor='SYNTHETIC live cursor')
         with self.store.connect() as c:
-            self.assertEqual(c.execute('SELECT count(*) FROM active_observations').fetchone()[0], 2)
-            self.assertEqual(c.execute('SELECT count(*) FROM canonical_observations').fetchone()[0], 1)
+            self.assertEqual(c.execute('SELECT count(*) FROM active_observations').fetchone()[0], 3)
+            # the live copy supersedes the export's Apple Watch copy; the Oura-origin row is a different sample
+            self.assertEqual([r[0] for r in c.execute('SELECT source_name FROM canonical_observations '
+                                                      'ORDER BY source_name')], ['Apple Watch', 'Oura'])
 
 
 class IngestTLSTests(unittest.TestCase):
@@ -220,12 +221,12 @@ class IngestTLSTests(unittest.TestCase):
         del invalid['samples']
         self.assertEqual(self.post_batch(invalid)[0], 422)
 
-    def test_restricted_vendor_sample_is_filtered_and_not_stored(self):
+    def test_oura_origin_sample_is_stored_with_its_provenance(self):
         status, ack = self.post_batch(self.batch(0, 'SYNTHETIC-oura', samples=[self.sample(source_name='Oura')]))
-        self.assertEqual(status, 200)
-        self.assertEqual(ack['filtered_restricted'], 1)
+        self.assertEqual((status, ack['upserted']), (200, 1))
+        self.assertNotIn('filtered_restricted', ack)
         with self.store.connect() as c:
-            self.assertEqual(c.execute('SELECT count(*) FROM observations').fetchone()[0], 0)
+            self.assertEqual(c.execute('SELECT source_name FROM observations').fetchall()[0][0], 'Oura')
 
     def test_deleted_ids_create_tombstones_and_revoked_device_loses_access(self):
         first = self.batch(0, 'SYNTHETIC-store', samples=[self.sample()])

@@ -80,6 +80,8 @@ def main(argv: list[str] | None = None) -> int:
     ia.add_argument('zip', type=Path)
     ia.add_argument('--dry-run', action='store_true')
     ia.add_argument('--since')
+    oa = sub.add_parser('sync-oura', help="pull the owner's Oura data (backfill on first run, then a trailing window)")
+    oa.add_argument('--full', action='store_true', help='re-read every collection from the first day')
     ig = sub.add_parser('ingest-server')
     ig.add_argument('--host')
     ig.add_argument('--port', type=int)
@@ -135,6 +137,14 @@ def dispatch(cfg, args) -> int:
     if c == 'import-apple':
         from .apple_export import import_export
         out(import_export(store_of(cfg), args.zip, dry_run=args.dry_run, since=args.since))
+        return 0
+    if c == 'sync-oura':
+        from . import oura
+        try:
+            out(oura.sync(store_of(cfg), tz=cfg.timezone, full=args.full))
+        except oura.OuraError as e:
+            out({'error': e.code})
+            return 1
         return 0
     if c == 'pair-device':
         from . import ingest

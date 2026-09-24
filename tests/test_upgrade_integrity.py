@@ -273,6 +273,17 @@ class UpgradeTests(unittest.TestCase):
         self.assertEqual({n: got[r] for n, r in kept.items()},
                          {'obs': False, 'original': False, 'page': True, 'aggregate': True})
 
+    def test_v12_makes_the_oura_placeholder_a_durable_source(self):
+        s = Store(self.base / 'live', 'synthetic')
+        with s.transaction() as c:
+            c.execute("UPDATE sources SET policy='ephemeral', label='Oura official MCP' WHERE id='oura'")
+            c.execute("UPDATE meta SET value='11' WHERE key='schema_version'")
+            c.execute('DELETE FROM migrations WHERE version>11')
+        s = Store(self.base / 'live', 'synthetic')
+        with s.connect() as c:
+            self.assertEqual(tuple(c.execute("SELECT policy, label FROM sources WHERE id='oura'").fetchone()),
+                             ('durable', 'Oura API v2'))
+
     def test_legacy_shadow_insights_leave_the_outbox_on_upgrade(self):
         s = Store(self.base / 'live', 'synthetic')
         q = s.put_record(request_id='q', kind='question', text='SYNTHETIC q', occurred_at='2026-01-01T00:00:00Z')

@@ -168,12 +168,8 @@ class FoundationTests(unittest.TestCase):
         self.expect_error('object_corrupt', self.s.read_object, r['object_sha256'])
     def test_opaque_file_id_not_original(self):
         self.expect_error('invalid_object_id', self.s.read_object, 'file_claim_only')
-    def test_oura_write_blocked(self):
-        self.expect_error('source_restricted', self.record, source_id='oura')
-    def test_oura_registration_blocked(self):
-        self.expect_error('source_restricted', self.s.register_source, 'oura-api', 'Oura API')
-    def test_oura_batch_blocked(self):
-        self.expect_error('source_restricted', self.ingest, source_id='oura')
+    def test_oura_is_a_durable_source(self):
+        self.assertEqual(self.ingest(source_id='oura')['status'], 'committed')
     def test_batch_replay_idempotent(self):
         r = self.ingest(request_id='batch')
         self.assertEqual(r, self.ingest(request_id='batch'))
