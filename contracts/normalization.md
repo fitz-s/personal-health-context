@@ -86,3 +86,12 @@ copies simply aren't merged into one canonical row, not a wrong value. Two recor
 identifier at all and are stored as `companion.<type>` (raw fields, no invented identifier): `total_calories` (the
 app merges active + basal energy into one array with no field saying which type a given record is) and
 `menstruation_period` (client-derived from consecutive flow days; HealthKit has no period sample type).
+
+Known limits of the companion mapping (review 2026-09-24):
+- Units are the app's (m, L, mmol/L, degC, g); the owner's export uses locale units (e.g. mi, ft, mL) and values are
+  not converted, so a companion sample and its export copy of distance, height or water do not share an origin_key
+  and both stay. The historical export ends 2026-06-05 and the companion only sends new samples, so they do not
+  overlap unless a new full export is imported; if one is, deduplicate those metrics before summing.
+- Blood pressure and nutrition arrive merged into one record (the app pairs samples within one second); the split
+  children take the record's time and source, so they are not guaranteed to match their export copies.
+- The app's workout type 'other' covers every activity it does not name, so it is stored without an activity name.

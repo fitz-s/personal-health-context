@@ -136,6 +136,18 @@ class CompanionTests(unittest.TestCase):
         with self.store.connect() as c:
             self.assertEqual(c.execute('SELECT count(*) FROM observations').fetchone()[0], 0)
 
+    def test_malformed_signature_header_is_refused_not_a_crash(self):
+        from phctx import companion
+        self.assertFalse(companion._verify(b'{}', 'sha256=\u00e9' * 3, SECRET))
+        self.assertFalse(companion._verify(b'{}', 'sha1=00', SECRET))
+        self.assertTrue(companion._verify(b'{}', sign(b'{}'), SECRET))
+
+    def test_the_apps_catch_all_other_is_not_named_as_healthkit_other(self):
+        from phctx import companion
+        [row] = companion._exercise({'uuid': 'SYNTHETIC-w', 'type': 'other', 'start_time': '2026-09-20T10:00:00Z',
+                                     'end_time': '2026-09-20T11:00:00Z', 'duration_seconds': 3600}, 'America/Chicago')
+        self.assertIsNone(row['value_text'])
+
     def test_identical_replay_is_idempotent(self):
         payload = self.payload()
         first = self.post_json(payload)

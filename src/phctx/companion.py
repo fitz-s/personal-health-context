@@ -77,7 +77,7 @@ MENSTRUAL_FLOW = {
 # else lines up after PascalCasing. 'other' is the app's catch-all for any activity its switch does
 # not name (including real HK activities Normalization.swift itself does not enumerate): it cannot be
 # told apart from a true HKWorkoutActivityTypeOther workout, so this one entry is best-effort, not
-# a faithful reconstruction of the original activity.
+# a faithful reconstruction of the original activity, so it is left unnamed (value_text None).
 WORKOUT_ACTIVITY = {
     'american_football': 'AmericanFootball', 'archery': 'Archery', 'australian_football': 'AustralianFootball',
     'badminton': 'Badminton', 'baseball': 'Baseball', 'basketball': 'Basketball', 'bowling': 'Bowling',
@@ -97,7 +97,7 @@ WORKOUT_ACTIVITY = {
     'walking': 'Walking', 'water_fitness': 'WaterFitness', 'water_polo': 'WaterPolo',
     'water_sports': 'WaterSports', 'wrestling': 'Wrestling', 'yoga': 'Yoga', 'pilates': 'Pilates',
     'hiit': 'HighIntensityIntervalTraining', 'core_training': 'CoreTraining', 'flexibility': 'Flexibility',
-    'cooldown': 'Cooldown', 'other': 'Other',
+    'cooldown': 'Cooldown',
 }
 
 TRANSPORT = 'life_dashboard_companion'
@@ -189,6 +189,7 @@ def _sleep(record: dict, tz: str) -> list[dict]:
 
 
 def _exercise(record: dict, tz: str) -> list[dict]:
+    # The app's 'other' is its catch-all for every activity it does not name, not HealthKit's Other: kept unnamed.
     suffix = WORKOUT_ACTIVITY.get(record.get('type'))
     text = 'HKWorkoutActivityType' + suffix if suffix else None
     return [_sample(record.get('uuid') or '', 'HKWorkoutTypeIdentifier', record.get('start_time'),
@@ -272,10 +273,9 @@ def translate(payload: dict[str, Any], tz: str) -> tuple[list[dict], set[str]]:
 
 def _verify(raw: bytes, header: str, secret: str) -> bool:
     """`header` must be `sha256=<hex hmac-sha256(secret, raw)>`, matching WebhookSigner.swift."""
-    if not header.startswith('sha256='):
-        return False
     expected = 'sha256=' + hmac.new(secret.encode(), raw, hashlib.sha256).hexdigest()
-    return hmac.compare_digest(header, expected)
+    # bytes: a header with non-ASCII characters is a mismatch, not a TypeError
+    return hmac.compare_digest(header.encode('utf-8', 'replace'), expected.encode())
 
 
 def setup_secret(keychain) -> dict:
