@@ -22,7 +22,7 @@ from . import download, extract
 from .store import Store, StoreError, dump, ref_kind
 
 log = logging.getLogger('phctx.tools')
-EVIDENCE_ID = re.compile(r'(rec|obs)_[0-9a-f]{32,64}|obj:[0-9a-f]{64}(#p[1-9][0-9]{0,4})?')
+EVIDENCE_ID = re.compile(r'\b((rec|obs)_[0-9a-f]{32,64}|obj:[0-9a-f]{64}(#p[1-9][0-9]{0,4})?)\b')
 CONTRACT = Path(__file__).resolve().parents[2] / 'contracts' / 'tools.json'
 FILE_RETURN_CAP = 4 * 1024 * 1024
 
@@ -58,8 +58,10 @@ def delivered(name: str, data: dict) -> set[str]:
         read = set(data['tables_read'])
         kinds = {'observation': bool(read & Store.OBSERVATION_TABLES), 'record': bool(read & RECORD_TABLES),
                  'object': bool(read & PAGE_TABLES)}
-        return {v for row in data['rows'] for v in row
-                if isinstance(v, str) and EVIDENCE_ID.fullmatch(v) and kinds[ref_kind(v)]}
+        # An id counts only if the query read that kind of item. A cell may list several observation ids
+        # (GROUP_CONCAT(id, ',')); record/page ids must fill the cell, so a record's text naming one does not count.
+        return {m.group() for row in data['rows'] for v in row if isinstance(v, str) for m in EVIDENCE_ID.finditer(v)
+                if kinds[k := ref_kind(m.group())] and (k == 'observation' or m.group() == v)}
     if name == 'context_read_original':
         if 'pages' in data:
             return set(data['evidence_ids'])

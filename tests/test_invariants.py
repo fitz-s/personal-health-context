@@ -327,6 +327,19 @@ class ReadReceiptTests(Base):
             read = self.t.call('context_query', {'sql': sql, 'parameters': [a]}).data
             self.assertEqual(self.analysis([read['read_receipt']], [a]).data['error'], 'evidence_unbound', sql)
 
+    def test_ids_concatenated_in_one_cell_bind(self):
+        self.obs('a', 9, 10.0)
+        self.obs('b', 11, 30.0)
+        read = self.query("SELECT avg(value_num), group_concat(id, ',') FROM canonical_observations")
+        ids = sorted(oid('synthetic:watch', n) for n in 'ab')
+        self.assertEqual(self.ev(self.analysis([read['read_receipt']], ids)), (True, True))
+
+    def test_a_record_id_inside_record_text_does_not_bind(self):
+        other = self.s.put_record(request_id=self.rid(), kind='note', text='SYNTHETIC other', occurred_at=AT)['record_id']
+        self.s.put_record(request_id=self.rid(), kind='note', text=f'SYNTHETIC see {other}', occurred_at=AT)
+        read = self.query("SELECT text FROM records WHERE text LIKE 'SYNTHETIC see%'")
+        self.assertEqual(self.analysis([read['read_receipt']], [other], kind='note').data['error'], 'evidence_unbound')
+
     def ev(self, out):
         self.assertFalse(out.is_error, out.data)
         ev = self.s.get_records([out.data['record_id']])['records'][0]['evidence']
