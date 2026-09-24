@@ -81,12 +81,36 @@ class OuraSyncTests(unittest.TestCase):
         starts = {p.get('start_date') or p['start_datetime'][:10] for _, p in self.fake.calls}
         self.assertEqual(min(starts), str(date(2026, 9, 10)))  # today - REREAD_DAYS, not the first day
 
-    def test_a_revised_document_updates_and_a_vanished_one_is_deleted(self):
+    def test_a_revised_document_updates_and_absence_deletes_nothing(self):
+        """R6-03: a re-read window cannot be matched to stored rows exactly, so absence is never a deletion."""
         self.sync()
-        self.fake.docs['daily_sleep'] = [day(21, 79)]  # 20th removed by Oura, 21st rescored
+        self.fake.docs['daily_sleep'] = [day(21, 79)]  # the 20th missing from this response, the 21st rescored
         self.sync()
-        got = self.rows("SELECT native_id, value_num FROM active_observations WHERE metric='oura.daily_sleep'")
-        self.assertEqual(got, [('daily_sleep:SYNTHETIC-ds-21', 79.0)])
+        got = dict(self.rows("SELECT native_id, value_num FROM active_observations WHERE metric='oura.daily_sleep'"))
+        self.assertEqual(got, {'daily_sleep:SYNTHETIC-ds-20': 81.0, 'daily_sleep:SYNTHETIC-ds-21': 79.0})
+
+    def test_a_200_without_a_collection_is_an_error_not_emptiness(self):
+        """R6-05"""
+        with patch.object(oura, '_get', lambda *a: {}):
+            out = oura.sync(self.s, token='SYNTHETIC-token', today=TODAY)
+        self.assertEqual(set(out['refused'].values()), {'oura_bad_response'})
+
+    def test_overlapping_syncs_are_refused(self):
+        """R6-04: one sync per provider at a time."""
+        import fcntl
+        with open(self.s.root / 'oura.lock', 'a') as held:
+            fcntl.flock(held, fcntl.LOCK_EX)
+            with self.assertRaises(oauth.OAuthError) as e:
+                self.sync()
+        self.assertEqual(e.exception.code, 'oura_sync_running')
+
+    def test_a_failed_oauth_refresh_still_uses_the_personal_token(self):
+        """R6-07"""
+        def refused(p):
+            raise oauth.OAuthError('oura_auth')
+        with patch.object(oura, '_get', self.fake), patch.object(oauth, 'connected', lambda p: True), \
+                patch.object(oauth, 'access_token', refused), patch.object(oura, 'keychain_get', lambda *a: 'SYNTHETIC-p'):
+            self.assertEqual(oura.sync(self.s, today=TODAY)['status'], 'synced')
 
     def test_an_expired_token_marks_the_source_and_saves_nothing(self):
         def refused(*a):

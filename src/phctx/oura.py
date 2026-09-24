@@ -3,7 +3,7 @@
 One Oura document (a day's sleep score, a sleep period, a workout, a heart-rate sample) is one observation: `native_id`
 is the Oura document id (time series: the timestamp), `metric` names the collection, `value_num` carries the
 collection's headline number and `raw` keeps the whole document. Each collection is re-read over a trailing window
-because Oura revises recent days as the ring syncs; a document gone from a re-read window is a deletion.
+because Oura revises recent days as the ring syncs (upsert only: see _commit).
 """
 from __future__ import annotations
 
@@ -73,7 +73,9 @@ def _pages(token: str, collection: str, params: dict):
     params = dict(params)
     while True:
         body = _get(token, collection, params)
-        yield from body.get('data', [])
+        if not isinstance(body, dict) or not isinstance(body.get('data'), list):  # an HTTP 200 without a collection
+            raise oauth.OAuthError('oura_bad_response')
+        yield from body['data']
         if not body.get('next_token'):
             return
         params['next_token'] = body['next_token']
@@ -124,11 +126,22 @@ def sync(store: Store, tz: str = 'America/Chicago', full: bool = False, token: s
 
     Tokens are tried in order per collection: OAuth (once consented), then the owner's personal token, because the
     OAuth app's scopes do not reach every collection (resilience, battery, ring configuration refuse it)."""
-    if token is not None:
-        tokens = [token]
-    else:
-        tokens = [t for t in ((oauth.access_token(PROVIDER) if oauth.connected(PROVIDER) else None),
-                              keychain_get(*LEGACY_TOKEN)) if t]
+    with oauth.exclusive(store.root, SOURCE):
+        return _sync(store, tz, full, [token] if token else _tokens(), today)
+
+
+def _tokens() -> list[str]:
+    """OAuth first (once consented), then the owner's personal token; a failed OAuth refresh still leaves the latter."""
+    out = []
+    if oauth.connected(PROVIDER):
+        try:
+            out.append(oauth.access_token(PROVIDER))
+        except oauth.OAuthError:
+            pass
+    return out + [t for t in [keychain_get(*LEGACY_TOKEN)] if t]
+
+
+def _sync(store: Store, tz: str, full: bool, tokens: list[str], today: date | None) -> dict:
     if not tokens:
         raise oauth.OAuthError('oura_token_missing')
     today = today or datetime.now(timezone.utc).date()
@@ -174,20 +187,14 @@ def _read(tokens: list[str], collection: str, params: dict) -> list[dict]:
 
 
 def _commit(store: Store, collection: str, lo: date, hi: date, docs: list[dict], tz: str, done: dict) -> None:
-    """Upsert this window's documents; any stored document of the window Oura no longer returns is deleted."""
+    """Upsert this window's documents. Nothing is deleted on absence: which stored documents a re-read covers is not
+    established for every collection (day field vs interval start vs instant bounds), and a wrong guess would hide
+    valid data. Oura-side deletions therefore stay visible until an exact reconciliation exists."""
     samples = [sample(collection, d, tz) for d in docs]
-    ids = {s['native_id'] for s in samples}
-    a, b = _day_bounds(lo.isoformat(), tz)[0], _day_bounds(hi.isoformat(), tz)[1]
-    with store.connect() as c:
-        gone = [r[0] for r in c.execute(
-            "SELECT native_id FROM observations WHERE source_id='oura' AND metric=? AND deleted=0 AND start_at>=? "
-            'AND start_at<?', (f'oura.{collection}', a, b)) if r[0] not in ids]
-    for i in range(0, max(len(samples), len(gone), 1), 5000):
-        page, dels = samples[i:i + 5000], gone[i:i + 5000]
-        if not page and not dels and i:
-            break
-        store.ingest_batch(request_id=f'oura:{collection}:{lo}:{hi}:{i}:{utcnow()}', source_id=SOURCE, samples=page,
-                           deleted_ids=dels, cursor=dump(done), coverage={'collection': collection})
+    for i in range(0, len(samples), 5000):
+        store.ingest_batch(request_id=f'oura:{collection}:{lo}:{hi}:{i}:{utcnow()}', source_id=SOURCE,
+                           samples=samples[i:i + 5000], deleted_ids=[], cursor=dump(done),
+                           coverage={'collection': collection})
 
 
 def _commit_cursor(store: Store, done: dict) -> None:

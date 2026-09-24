@@ -1,7 +1,8 @@
 """WHOOP API v2 → observations (source `whoop`). The owner's own data, kept like any other durable source.
 
 `phctx connect whoop` gives consent once (phctx.oauth). `phctx sync-whoop` refreshes the access token, then pulls cycles, recoveries, sleeps and workouts: one observation per WHOOP record, the whole record kept,
-backfilled once and then re-read over a trailing window (scores settle after the record opens).
+backfilled once and then re-read over a trailing window (scores settle after the record opens). Upsert only: absence
+from a re-read is not treated as deletion (an older response or a mismatched window would hide valid records).
 """
 from __future__ import annotations
 
@@ -13,7 +14,7 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 
 from . import oauth
-from .store import Store, dump, instant, utcnow
+from .store import Store, dump, utcnow
 
 API = 'https://api.prod.whoop.com/developer'
 SOURCE = 'whoop'
@@ -57,7 +58,9 @@ def _records(token: str, path: str, start: str):
     params = {'limit': 25, 'start': start}
     while True:
         body = _get(token, path, params)
-        yield from body.get('records', [])
+        if not isinstance(body, dict) or not isinstance(body.get('records'), list):  # an HTTP 200 without a collection
+            raise oauth.OAuthError('whoop_bad_response')
+        yield from body['records']
         if not body.get('next_token'):
             return
         params['nextToken'] = body['next_token']
@@ -69,7 +72,7 @@ def sample(collection: str, rec: dict, tz: str) -> dict:
     score = rec.get('score') or {}
     v = score.get(field)
     num = float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
-    rid = rec.get('id') or rec.get('sleep_id') or rec['cycle_id']  # a recovery is keyed by its sleep
+    rid = rec['cycle_id'] if collection == 'recovery' else rec['id']  # one recovery per cycle; sleep_id is a relation
     start = rec.get('start') or rec['created_at']
     end = rec.get('end') or start  # an open cycle has no end yet
     text = rec.get('sport_name') or ('nap' if rec.get('nap') else None) or rec.get('score_state')
@@ -78,19 +81,13 @@ def sample(collection: str, rec: dict, tz: str) -> dict:
             'timezone': tz, 'raw': rec}
 
 
-def _gone(store: Store, collection: str, start: str, samples: list[dict]) -> list[str]:
-    """Stored records that began inside the re-read window but WHOOP no longer returns (deleted there). Recoveries are
-    exempt: WHOOP filters them by their sleep's time, which a stored recovery does not carry."""
-    ids = {s['native_id'] for s in samples}
-    with store.connect() as c:
-        return [r[0] for r in c.execute("SELECT native_id FROM observations WHERE source_id='whoop' AND metric=? "
-                                        'AND deleted=0 AND start_at>=?', (COLLECTIONS[collection][1], instant(start)))
-                if r[0] not in ids]
-
-
 def sync(store: Store, tz: str = 'America/Chicago', full: bool = False, token: str | None = None) -> dict:
     store.register_source(SOURCE, 'WHOOP API v2')
-    token = token or oauth.access_token(PROVIDER)
+    with oauth.exclusive(store.root, SOURCE):  # the refresh and every page that uses its token, together
+        return _sync(store, tz, full, token or oauth.access_token(PROVIDER))
+
+
+def _sync(store: Store, tz: str, full: bool, token: str) -> dict:
     with store.connect() as c:
         row = c.execute("SELECT cursor FROM sources WHERE id='whoop'").fetchone()
     done = json.loads(row[0]) if row and row[0] else {}
@@ -101,10 +98,9 @@ def sync(store: Store, tz: str = 'America/Chicago', full: bool = False, token: s
             start = FIRST_DAY if full or collection not in done else (
                 datetime.fromisoformat(done[collection]) - timedelta(days=REREAD_DAYS)).isoformat()
             samples = [sample(collection, r, tz) for r in _records(token, path, start)]
-            gone = [] if collection == 'recovery' else _gone(store, collection, start, samples)
-            for i in range(0, max(len(samples), len(gone), 1), 5000):
+            for i in range(0, len(samples), 5000):  # upsert only; see the module docstring
                 store.ingest_batch(request_id=f'whoop:{collection}:{start}:{i}:{utcnow()}', source_id=SOURCE,
-                                   samples=samples[i:i + 5000], deleted_ids=gone[i:i + 5000], cursor=dump(done),
+                                   samples=samples[i:i + 5000], deleted_ids=[], cursor=dump(done),
                                    coverage={'collection': collection})
             counts[collection] = len(samples)
             done[collection] = now.isoformat()

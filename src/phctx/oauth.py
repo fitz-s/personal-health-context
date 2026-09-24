@@ -6,6 +6,7 @@ stores the replacement first, because these vendors rotate refresh tokens on eve
 """
 from __future__ import annotations
 
+import fcntl
 import http.server
 import json
 import secrets
@@ -14,7 +15,10 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import webbrowser
+from contextlib import contextmanager
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Iterator
 
 from .config import keychain_get, keychain_set
 
@@ -138,6 +142,18 @@ def login(providers: list[Provider], open_browser=webbrowser.open, timeout: floa
     return {name: out.get(name, 'consent_timeout') for name in clients}
 
 
+@contextmanager
+def exclusive(root: Path, name: str) -> Iterator[None]:
+    """One sync per provider at a time (kernel lock, released on death): WHOOP invalidates the previous tokens on every
+    refresh, and two overlapping syncs would also race each other's writes."""
+    with open(root / f'{name}.lock', 'a') as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as e:
+            raise OAuthError(f'{name}_sync_running') from e
+        yield
+
+
 def access_token(p: Provider) -> str:
     cid, secret = client(p)
     refresh = keychain_get(p.key('refresh-token'))
@@ -147,5 +163,8 @@ def access_token(p: Provider) -> str:
     if p.refresh_scope:
         form['scope'] = p.refresh_scope
     tokens = _post(p, form)
-    keychain_set(p.key('refresh-token'), tokens['refresh_token'])
+    try:
+        keychain_set(p.key('refresh-token'), tokens['refresh_token'])
+    except (RuntimeError, ValueError) as e:  # the vendor already retired the old token: only a new consent recovers
+        raise OAuthError(f'{p.name}_reconnect_needed') from e
     return tokens['access_token']

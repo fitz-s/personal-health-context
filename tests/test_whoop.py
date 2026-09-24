@@ -59,24 +59,54 @@ class WhoopSyncTests(unittest.TestCase):
     def test_backfill_keeps_every_record_with_its_headline_and_raw_body(self):
         self.assertEqual(self.sync()['records'], {'cycle': 2, 'recovery': 1, 'sleep': 1, 'workout': 1})
         got = dict(self.rows("SELECT native_id, value_num FROM active_observations WHERE source_id='whoop'"))
-        self.assertEqual(got, {'cycle:1020': 12.5, 'cycle:1021': 8.1, 'recovery:SYNTHETIC-sleep-a': 66.0,
+        self.assertEqual(got, {'cycle:1020': 12.5, 'cycle:1021': 8.1, 'recovery:1020': 66.0,
                                'sleep:SYNTHETIC-sleep-a': 88.0, 'workout:SYNTHETIC-w-1': 10.2})
         open_cycle = self.rows("SELECT start_at, end_at FROM observations WHERE native_id='cycle:1021'")[0]
         self.assertEqual(open_cycle[0], open_cycle[1])  # not closed yet: a point, never an invented end
-        raw = json.loads(self.rows("SELECT raw_json FROM observations WHERE native_id='recovery:SYNTHETIC-sleep-a'")[0][0])
+        raw = json.loads(self.rows("SELECT raw_json FROM observations WHERE native_id='recovery:1020'")[0][0])
         self.assertEqual(raw['raw']['score']['hrv_rmssd_milli'], 61.2)
         self.assertEqual(self.rows("SELECT value_text FROM observations WHERE native_id='workout:SYNTHETIC-w-1'"),
                          [('running',)])
 
-    def test_rerun_reads_the_trailing_window_updates_and_deletes(self):
+    def test_rerun_reads_the_trailing_window_updates_and_deletes_nothing(self):
+        """R6-04: an older or narrower response must not hide records another sync stored."""
         self.sync()
         self.fake.calls.clear()
-        self.fake.data['/v2/cycle'] = [cycle(21, 9.4)]  # the 20th deleted on WHOOP, the 21st closed and rescored
-        with patch.object(whoop, 'REREAD_DAYS', 10000):  # the synthetic records predate the real trailing window
+        self.fake.data['/v2/cycle'] = [cycle(21, 9.4)]  # the 20th missing from this response, the 21st rescored
+        with patch.object(whoop, 'REREAD_DAYS', 10000):
             self.sync()
         self.assertTrue(all(p['start'] != whoop.FIRST_DAY for _, p in self.fake.calls))  # incremental, not a backfill
-        self.assertEqual(self.rows("SELECT native_id, value_num FROM active_observations WHERE metric='whoop.cycle'"),
-                         [('cycle:1021', 9.4)])
+        self.assertEqual(dict(self.rows("SELECT native_id, value_num FROM active_observations WHERE metric='whoop.cycle'")),
+                         {'cycle:1020': 12.5, 'cycle:1021': 9.4})
+
+    def test_a_recovery_is_one_row_per_cycle_when_its_sleep_changes(self):
+        """R6-06"""
+        self.sync()
+        rec = dict(self.fake.data['/v2/recovery'][0], sleep_id='SYNTHETIC-sleep-b', score={'recovery_score': 70.0})
+        self.fake.data['/v2/recovery'] = [rec]
+        with patch.object(whoop, 'REREAD_DAYS', 10000):
+            self.sync()
+        self.assertEqual(self.rows("SELECT native_id, value_num FROM active_observations WHERE metric='whoop.recovery'"),
+                         [('recovery:1020', 70.0)])
+
+    def test_a_200_without_records_is_an_error(self):
+        """R6-05"""
+        with patch.object(whoop, '_get', lambda *a: {}), self.assertRaises(oauth.OAuthError) as e:
+            whoop.sync(self.s, token='SYNTHETIC-token')
+        self.assertEqual(e.exception.code, 'whoop_bad_response')
+
+    def test_a_failed_keychain_write_after_rotation_asks_for_reconnection(self):
+        """R6-07: the vendor already retired the old token."""
+        stored = {'phctx-whoop-client-id': 'SYNTHETIC-id', 'phctx-whoop-client-secret': 'SYNTHETIC-secret',
+                  'phctx-whoop-refresh-token': 'SYNTHETIC-r1'}
+
+        def fail(k, v):
+            raise RuntimeError('keychain_write_failed')
+        with patch.object(oauth, 'keychain_get', stored.get), patch.object(oauth, 'keychain_set', fail), \
+                patch.object(oauth, '_post', lambda p, f: {'access_token': 'a', 'refresh_token': 'SYNTHETIC-r2'}), \
+                self.assertRaises(oauth.OAuthError) as e:
+            oauth.access_token(whoop.PROVIDER)
+        self.assertEqual(e.exception.code, 'whoop_reconnect_needed')
 
     def test_refresh_stores_the_rotated_token_before_use(self):
         stored = {'phctx-whoop-client-id': 'SYNTHETIC-id', 'phctx-whoop-client-secret': 'SYNTHETIC-secret',

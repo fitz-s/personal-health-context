@@ -320,6 +320,16 @@ class ReadReceiptTests(Base):
         self.assertEqual(self.analysis([read['read_receipt']], [a]).data['error'], 'evidence_unbound')
         self.assertFalse(self.analysis([read['read_receipt']], [note], kind='note').is_error)
 
+    def test_a_query_that_also_reads_records_cannot_certify(self):
+        """R6-02: a record revision changes the result without an observation batch, so it stays unverified."""
+        self.obs('a', 9, 10.0)
+        rec = self.s.put_record(request_id=self.rid(), kind='note', text='SYNTHETIC v1', occurred_at=AT)['record_id']
+        read = self.t.call('context_query', {'sql': 'SELECT r.text, count(o.id) FROM active_records r, observations o '
+                                                    'WHERE r.id = ?', 'parameters': [rec]}).data
+        self.assertEqual(self.ev(self.analysis([read['read_receipt']], [])), (False, False))
+        pure = self.query('SELECT avg(value_num) FROM canonical_observations')  # observation-only: still certifies
+        self.assertEqual(self.ev(self.analysis([pure['read_receipt']], [])), (True, True))
+
     def test_a_query_cell_never_delivers_an_id(self):
         """R5-01: table access says nothing about where a cell came from."""
         self.obs('a', 9, 10.0)

@@ -111,8 +111,10 @@ class Tools:
                 # The receipt names what this read delivered; a derived write cites evidence through it. Bootstrap's
                 # catalog and source status are observation data even though they name no observation.
                 shown = dict(data, image=True) if isinstance(out, Result) and out.image else data
+                untracked = set(data.get('tables_read', [])) - self.s.OBSERVATION_TABLES  # records, pages: see _bind
                 data['read_receipt'] = self.s.issue_receipt(
-                    delivered(name, shown), name == 'context_bootstrap' or bool(data.get('reads_observations')), seq)
+                    delivered(name, shown), name == 'context_bootstrap' or bool(data.get('reads_observations')), seq,
+                    complete=not untracked)
             return out if isinstance(out, Result) else Result(out)
         except StoreError as e:
             return Result({'error': e.code, 'message': str(e)}, True)

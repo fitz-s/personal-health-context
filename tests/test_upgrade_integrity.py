@@ -270,8 +270,10 @@ class UpgradeTests(unittest.TestCase):
             c.execute('DELETE FROM migrations WHERE version>10')
         s = Store(self.base / 'live', 'synthetic')
         got = {r['id']: r['evidence']['bound'] for r in s.get_records(list(kept.values()))['records']}
+        # v11 unverifies the observation/original citations; v13 then unverifies every certification made before v11
+        # (none can show which read delivered it), so all four read unverified after the full upgrade.
         self.assertEqual({n: got[r] for n, r in kept.items()},
-                         {'obs': False, 'original': False, 'page': True, 'aggregate': True})
+                         {'obs': False, 'original': False, 'page': False, 'aggregate': False})
 
     def test_v12_makes_the_oura_placeholder_a_durable_source(self):
         s = Store(self.base / 'live', 'synthetic')
@@ -304,6 +306,46 @@ class UpgradeTests(unittest.TestCase):
                  for _ in range(4)]
         self.assertEqual([p.wait(60) for p in procs], [0] * 4)
         self.assertEqual(len(list((self.base / 'live' / 'migrations').glob('pre-v12-*.sqlite3'))), 1)
+
+    def test_v13_voids_old_receipts_and_keeps_post_v11_certifications(self):
+        """R6-01: a receipt issued under the old rules cannot bind after the upgrade."""
+        s = Store(self.base / 'live', 'synthetic')
+        old = s.issue_receipt({'obs_' + 'a' * 64}, True, 0)
+        with s.transaction() as c:
+            c.execute("UPDATE meta SET value='12' WHERE key='schema_version'")
+            c.execute('DELETE FROM migrations WHERE version>12')
+        s = Store(self.base / 'live', 'synthetic')
+        with s.connect() as c:
+            self.assertIsNone(c.execute('SELECT 1 FROM read_receipts WHERE id=?', (old,)).fetchone())
+
+    def test_an_older_program_waiting_on_the_lock_refuses_a_newer_schema(self):
+        """R6-08: the schema is re-read after the lock; one migrated past this program's target is refused."""
+        import fcntl
+        import threading
+        import time
+        s = Store(self.base / 'live', 'synthetic')
+        with s.transaction() as c:  # this program sees an older schema and will wait to migrate it
+            c.execute("UPDATE meta SET value=? WHERE key='schema_version'", (str(migrations.TARGET - 1),))
+        lock = open(s.root / 'migrate.lock', 'a')
+        fcntl.flock(lock, fcntl.LOCK_EX)  # a newer program holds the lock, then leaves a newer schema
+        errors = []
+        t = threading.Thread(target=lambda: errors.append(self._open(s.root)))
+        t.start()
+        time.sleep(0.5)
+        with sqlite3.connect(s.root / 'context.sqlite3') as c:
+            c.execute("UPDATE meta SET value=? WHERE key='schema_version'", (str(migrations.TARGET + 1),))
+        fcntl.flock(lock, fcntl.LOCK_UN)
+        lock.close()
+        t.join(10)
+        self.assertEqual(errors, ['schema_mismatch'])
+
+    @staticmethod
+    def _open(root):
+        try:
+            Store(root, 'synthetic')
+            return 'opened'
+        except StoreError as e:
+            return e.code
 
     def test_legacy_shadow_insights_leave_the_outbox_on_upgrade(self):
         s = Store(self.base / 'live', 'synthetic')

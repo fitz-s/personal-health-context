@@ -1,0 +1,262 @@
+NO-GO at 8e64809 for the combined foreground-plus-vendor-sync release, even if the three R5 live replays pass. Confidence: high. The four named R5 failures are repaired on newly issued receipts, but the upgrade leaves reusable legacy authority behind. The new vendor reconciliation also contains concrete paths that incorrectly tombstone valid observations.
+
+The better release decision is to separate foreground acceptance from vendor-sync activation. Keep the local archive and ChatGPT interface; do not require another architecture or a Codex campaign. Repair the remaining foreground authority issues, replay them in ChatGPT, and assess Oura/WHOOP independently. Their destructive reconciliation should not become a prerequisite for releasing an otherwise sound foreground product.
+
+model_eval=NOT_RUN remains an acceptable disclosed gap for this scope. It is not the reason for this verdict.
+
+R5-01–R5-04: what is cleared
+
+FindingRound 6 disposition
+
+R5-01: SQL cells certifying unread IDsCleared for newly issued query receipts. Not cleared across upgrade. delivered() no longer grants IDs from arbitrary SQL, but v11 preserves older receipts that did.
+
+R5-02: evidence-free parent verifying its childCleared. _freshness distinguishes an evidence-free analysis from a primary fact and propagates unverified status.
+
+R5-03: page text promoted to immutable-original evidenceCleared for new reads. Binding is exact; the page dependency survives re-extraction. The general legacy-receipt problem still applies to the migration’s trust boundary.
+
+R5-04: quota refusal counted as failure to saveCleared for the identified failure. Completion postconditions carry needs_turn; observed hard invariants retain precedence.
+
+Revising R5-01–03: the new tests exercise the actual earlier counterexamples: same-kind SQL literals, concatenated observation IDs, a record’s text equal to another record ID, evidence-free parent→child→grandchild, and page-versus-original binding. These are discriminating regressions, not merely successful-path assertions.
+
+Revising R5-04: the classifier now excludes unfinished-turn postconditions when appropriate, while retaining an observed prohibited write as FAIL. The tests include both missing saved-object completion and observed-failure precedence. I do not require spending Codex quota to demonstrate this deterministic correction.
+
+I executed isolated synthetic reproductions of the relevant predicates and SQL, including positive controls for those four repairs. I did not rerun your 338-test suite, the production migration, or a vendor account. The distinction matters below.
+
+Remaining foreground blockers
+
+1. V11 removes some certificates but leaves the receipts capable of recreating them
+
+[BLOCKER] R6-01 legacy authority migration — file:src/phctx/migrations.py:320–322; src/phctx/store.py:347–375 — Blocks upgraded foreground acceptance because old receipts remain usable and record-only certificates issued through the former SQL-provenance bug remain trusted — Version the binding rules, invalidate pre-version receipts, and downgrade legacy certifications whose delivery provenance cannot be established — verify locally: add test_old_query_receipt_cannot_rebind_after_upgrade and test_legacy_record_pointer_certificate_is_unverified.
+
+V11 deletes record_dependencies for records citing observations or whole originals. It does not delete or version read_receipts. _bind continues accepting any existing receipt whose stored reference set contains the requested ID. The special observation rejection applies only when the observation is absent from that set.
+
+A failing sequence is:
+
+Before upgrade, issue one of the old query receipts that incorrectly certified observation B while reading something else.
+
+Upgrade through v11. An existing analysis using B is correctly downgraded.
+
+Before another observation change, submit a new analysis using B and the retained old receipt.
+
+The new analysis is accepted as bound=true, current=true.
+
+The isolated reproduction produced exactly this distinction:
+
+CertificationAfter v11
+
+Existing observation-citing analysisbound=false, current=false
+
+New analysis using its surviving old receiptbound=true, current=true
+
+There is a second migration omission. R5-01 included an unread record certified through a SQL pointer cell. A pre-upgrade analysis citing that record alone is not selected by v11’s observation/original predicate. It can remain current indefinitely, even after old receipts are eventually purged. A legitimate record read and the old falsely certified record pointer are indistinguishable in the persisted dependency format.
+
+The smallest safe correction is a forward migration that invalidates old read receipts and conservatively marks ambiguous legacy bindings unverified. Preserve records, references, revisions, and originals. Given the stored format, selectively preserving all old record-only certifications is not justified merely because their cited records still exist.
+
+This is not a request to distrust new context_read receipts. It is a missing transition between two different meanings of the existing receipt format.
+
+2. A whole-query certificate tracks observations but can omit the query’s record dependencies
+
+[BLOCKER] R6-02 mixed-query freshness — file:src/phctx/tools.py:108–115; src/phctx/store.py:347–419 — Blocks foreground freshness because an observation-dependent SQL result can also depend on records or derived pages that the stored certificate never tracks — Persist all relevant dependency classes, or leave mixed-result certification unverified until explicit record/page reads and references supply those dependencies — verify locally: add test_mixed_query_record_revision_invalidates_analysis.
+
+Removing SQL-derived IDs fixes the earlier provenance bug. It does not make every SQL result an observation-only result.
+
+For example:
+
+SQL
+
+SELECT r.text, COUNT(o.id)
+FROM active_records AS r
+CROSS JOIN observations AS o
+WHERE r.id = ?;
+
+The query returns a primary record’s text and an observation count. Its receipt has no delivered IDs and observations=true. A new analysis using that receipt and no evidence_ids is therefore bound only to the observation generation. Revise the primary record without committing an observation batch: the query result changes, but the saved analysis remains current. A child citing that analysis inherits the same incomplete dependency.
+
+My isolated result changed from a returned record plus count to the post-revision result, while the analysis remained bound=true, current=true. This is a dependency omission, not a claim that the backend should prove the model’s reasoning.
+
+Do not restore arbitrary ID extraction. A small safe policy is: observation-only aggregate results can bind through their query receipt; queries that also consume records or extracted pages require those dependencies explicitly, otherwise the analysis is stored unverified. Investigation can remain unrestricted—only the strength of certification needs to be constrained.
+
+The normal direct parent→child path remains repaired. These findings do not reopen R5-02.
+
+Vendor reconciliation: what can corrupt the active context
+
+3. Oura’s deletion interval is not the interval it requested
+
+[BLOCKER] R6-03 Oura deletion eligibility — file:src/phctx/oura.py:176–190 — Blocks Oura reconciliation because local-offset text bounds and observation start times do not reliably identify the documents covered by the API reread — Define collection-specific eligibility matching the request predicate, normalize instant bounds, and suspend absence-based tombstones where that equivalence is unproved — verify locally: add positive-offset boundary, sleep-day/bedtime, and fractional-second endpoint regressions.
+
+There are two independent problems.
+
+First, _commit compares canonical UTC start_at strings against _day_bounds strings containing a local offset. Lexicographic ordering is not chronological ordering across those representations.
+
+For a one-day reread of September 21 in Asia/Tokyo, a stored September 22 daily document starts at:
+
+Plain text
+
+2026-09-21T15:00:00.000000+00:00
+
+That value falls inside the deletion predicate’s textual bounds for September 21, even though the document belongs to September 22 and was not requested. My isolated execution selected that next-day record for tombstoning.
+
+This is also reachable through the public full-sync chunking, not just a hand-picked call to a private function. The first 3,650-day chunk is January 1, 2015 through December 28, 2024. A previously stored December 29 daily document in Tokyo normalizes to December 28 at 15:00 UTC and can be tombstoned by the first chunk. If the next chunk fails, that false tombstone remains. The raw row is retained, but it disappears from active/canonical results.
+
+Second, fixing UTC normalization alone is insufficient. The repository’s Oura fake filters interval documents by day/start_day; _commit selects deletion candidates by normalized interval start, such as bedtime_start. Those are different predicates. Under that tested day-filter contract, a sleep attributed to the following day can begin during the preceding day’s deletion window and be falsely considered missing.
+
+For this second issue, I am explicitly distinguishing the supplied fake’s contract from an independently verified endpoint specification. Oura’s interactive v2 documentation did not yield a usable endpoint reference in this review. That uncertainty argues against destructive inference, not in favor of assuming the predicates coincide.
+
+The time-series request also stops at 23:59:59, while deletion eligibility extends to the next day. Subsecond observations after that last whole second can fall outside the request but inside deletion eligibility. The fake truncates both request and observation timestamps to dates, so it cannot detect that boundary defect.
+
+For daily documents, retain and reconcile the provider’s calendar-day field. For instant-filtered collections, use exactly matched normalized instant bounds. For interval collections, use their documented selection semantics rather than assuming start_at is interchangeable with the API’s date filter.
+
+4. Both vendors can apply an older response over a newer local state
+
+[BLOCKER] R6-04 reconciliation ownership and publication — file:src/phctx/whoop.py:81–112; src/phctx/oura.py:126–157,176–190 — Blocks unattended vendor activation because unowned rereads can tombstone newer data and multi-page application can expose an incomplete collection as ordinary readable state — Serialize each provider/account’s refresh-fetch-reconcile operation, fix its request horizon, and publish a complete collection/window or expose a durable pending state — verify locally: add barrier-controlled overlapping-sync and crash-after-first-commit tests.
+
+Neither vendor sync uses the Apple importer’s exclusive execution lock or durable maintenance marker.
+
+A concrete WHOOP sequence is:
+
+Sync A obtains a response containing record X and pauses.
+
+Sync B obtains a newer response containing X and Y and commits both.
+
+A resumes. _gone compares its older response with the current database and identifies Y as absent.
+
+A tombstones Y and writes its older completion cursor.
+
+I reproduced the candidate-selection step: the newer valid row is returned by _gone. The same stale-response problem applies to Oura’s absence comparison.
+
+WHOOP adds an upper-bound problem: requests provide start but omit end, while _gone has only start_at >= start. WHOOP documents a default end=now. Use one explicit request horizon for every page and the corresponding local eligibility boundary; otherwise the fetched set and the deletion candidate set need not represent the same interval. WHOOP for Developers
+
+A narrow lower bound alone is not a demonstrated WHOOP deletion bug under a coherent response. The caller deliberately exempts recoveries from absence-based deletion, which avoids treating their creation timestamp as the sleep-window selector. The defects are the missing common horizon and ownership, not simply the existence of a trailing window.
+
+There is also a publication gap. Collections are materialized before application, which is good, but application is committed in batches of 5,000. A crash after the first batch leaves a partial update readable without a vendor collection/window pending marker. ingest_batch can mark the source ready before the entire collection has been reconciled. An analysis produced from that partial state can remain “current” if no later batch ever arrives.
+
+The smallest safe interim operating mode is upsert-only vendor sync with explicit incomplete/reconciliation status, while absence-based tombstones are disabled. The stronger implementation stages and publishes a complete collection/window. It need not make all vendors one giant transaction.
+
+5. A malformed successful HTTP response is treated as authoritative emptiness
+
+[HIGH] R6-05 response completeness — file:src/phctx/oura.py:166–184; src/phctx/whoop.py:56–63,103–104 — Blocks destructive reconciliation because missing collection fields default to an empty result and can trigger tombstones — Validate response shape and pagination completion before deriving absence — verify locally: an HTTP-200 {} or missing collection array must produce a bounded protocol error and no deletions.
+
+body.get('data', []) and body.get('records', []) collapse two different states: a valid empty collection and an invalid response that did not provide a collection. A missing/false pagination token is likewise treated as completion.
+
+A transient malformed response therefore need not cause a cleanly reported fetch failure; it can become a successfully committed deletion set. Require a valid collection array, valid document identities, valid pagination shape, and a completed traversal before using nonappearance as evidence.
+
+Credit where due: if a later HTTP page raises the expected OAuthError, the list construction prevents that partially fetched collection window from being committed. Earlier completed windows/collections remain committed. That is useful partial-progress behavior; it should be represented by per-collection coverage rather than confused with all-or-nothing rollback.
+
+6. WHOOP recovery identity follows a relationship instead of the cycle resource
+
+[HIGH] R6-06 recovery identity — file:src/phctx/whoop.py:66–78,104 — Blocks reliable recovery reconciliation when the associated sleep changes because one cycle becomes two permanently active recovery rows — Key recoveries by their stable cycle identity, retain sleep_id as a relationship, and reconcile or explicitly flag removed recoveries — verify locally: changing sleep_id for the same cycle_id updates one logical recovery rather than inserting another.
+
+The current preference order is id, then sleep_id, then cycle_id. Recovery documents therefore normally use the sleep ID. WHOOP exposes recovery retrieval by cycle and includes both identifiers in the recovery document.  WHOOP for Developers
+
+For the valid input transition “same cycle, associated sleep A replaced by sleep B,” the implementation creates recovery:A and recovery:B. Recoveries are exempt from _gone, so the old one remains active. The isolated identity check produced two native IDs for the same cycle.
+
+Do not fix this by enabling the existing creation-time deletion rule for recoveries. Preserve the relationship and establish a correct reconciliation method. Existing stored recovery identities need a migration or a controlled rebuild of that vendor projection, not silent duplication.
+
+Authentication, migration, and backup boundaries
+
+7. Refresh ordering is correct on success, but failure recovery is incomplete
+
+[MEDIUM] R6-07 rotating credential recovery — file:src/phctx/oauth.py:141–151; src/phctx/config.py:105–111 — Does not independently block the existing foreground archive, but a failed Keychain write after refresh can strand vendor access and concurrent refresh can invalidate an in-flight sync — Serialize provider/account refresh use, report credential-persistence failure explicitly, and require reconnection after an uncertain rotation rather than retrying the obsolete token — verify locally: inject failure after token exchange and overlapping refresh attempts without making network calls.
+
+The successful ordering is correct: the replacement refresh token is stored before returning the new access token. The existing test checks that ordering.
+
+It is not atomic with the provider. WHOOP documents that refresh invalidates the previous refresh token and existing access tokens; simultaneous refresh requests can therefore invalidate each other. WHOOP for Developers
+
+If the server consumes R1 and returns R2, but keychain_set fails, Keychain still contains invalid R1. The next attempt cannot recover by redeeming R1 again. The helper can raise RuntimeError for a failed write or ValueError for its 128-character limit, whereas the OAuth paths catch only OAuthError.
+
+Do not promise impossible crash-atomicity across an external token server and local Keychain. Detect the uncertain state, retain the new token in memory while retrying a recoverable local write, and surface a bounded reconnection requirement when recovery is no longer possible. No plaintext fallback is needed.
+
+The provider/account lock should cover the sync’s use of the access token, not merely the refresh HTTP request: a second WHOOP refresh can invalidate the first sync’s access token while it is paging.
+
+Oura’s fallback also operates only after a collection request returns oura_auth. If oauth.access_token() fails while building the token list, the personal-token fallback is never attempted. That is a mismatch between the described fallback and its actual scope, not a reason to weaken authentication checks.
+
+8. The migration lock solves duplicate snapshots, but the version check must be repeated inside it
+
+[MEDIUM] R6-08 migration version race — file:src/phctx/store.py:189–216 — Does not independently block a stopped-services, single-version deployment, but an older process waiting on the lock can continue against a schema upgraded beyond its target — Repeat the newer-than-target refusal after acquiring the lock and rereading the schema — verify locally: an older-target opener waiting behind a newer-target migrator raises schema_mismatch.
+
+The new lock correctly serializes same-version migration attempts and prevents each waiting opener from taking another full snapshot. That is a real improvement.
+
+The first current > TARGET check occurs before the lock. After acquiring the lock, the code rechecks equality but not greater-than. A newer binary can migrate the database while an older binary is waiting; the older process then sees a version above its target and proceeds instead of refusing.
+
+The normal deployment procedure should still stop obsolete writers before migration. The in-lock check is a small additional enforcement point, not a replacement for that procedure.
+
+The comment that only the newest premigration snapshot is retained is not implemented by the shown block. Keep retention claims separate from the demonstrated “one snapshot per simultaneous migration” improvement.
+
+9. The backup guard measures the wrong size in a WAL-backed state
+
+[MEDIUM] R6-09 backup capacity accounting — file:src/phctx/store.py:1133–1143 — Blocks the claim that the guard prevents disk exhaustion because physical main-file size can understate the logical snapshot and a missing destination parent can select the wrong filesystem — Estimate logical database pages, measure the actual destination filesystem, and apply a corresponding guard to premigration snapshots — verify locally: test WAL-backed growth, nested destinations on another volume, and concurrent backup admission.
+
+The estimate uses self.db.stat().st_size * 1.2. Committed pages can still reside in WAL, while an online backup must reproduce the logical database. In my isolated SQLite test:
+
+QuantityBytes
+
+Physical main database8,192
+
+Guard’s database estimate9,830.4
+
+Logical database size929,792
+
+This demonstrates underestimation, not an actual full-disk incident. At larger scale the same difference can exceed the fixed reserve. Use the logical page count and page size, plus required originals and operating reserve, as the starting estimate; retain safe failure handling because concurrent disk consumption cannot be eliminated by a preflight check.  SQLite
+
+If the destination’s immediate parent does not exist, the implementation measures free space at the live root instead of finding the destination’s existing ancestor. That can check the wrong volume. Premigration snapshots also use a separate c.backup path that does not pass through this guard.
+
+These are capacity and availability issues. I did not find a new path in this change that intentionally returns a successful backup receipt after an exception from the copy.
+
+Scope authorization and security
+
+I am treating your new owner decision as replacing the earlier user-imposed prohibition on Oura persistence. I am not holding you to the old scope.
+
+There is nevertheless a separate contractual issue: Oura’s currently published agreement, effective June 8, 2026, says in §4(d) that LLM access must use its MCP route and expressly restricts supplying Oura API data to AI models/platforms. Changing the local source row to durable does not establish authorization for this API→local archive→ChatGPT route. Keep that as an unresolved activation condition unless you have applicable separate authorization; this is a contract-compliance concern, not an assertion that the data is not yours. Oura
+
+The new OAuth callback binds to loopback, and successful credentials remain on the Keychain path. I did not identify a new public-listener exposure in these additions. The more immediate security/integrity concern is that generic successful responses and concurrent operations are allowed to authorize destructive reconciliation.
+
+Partial vendor failures should remain visible per collection. Oura can continue other collections and report partial; WHOOP stops on its caught OAuth failure after preserving earlier commits. Neither behavior is inherently wrong. What is missing is enough durable coverage state for foreground readers to distinguish a complete collection from one left partway through application.
+
+Validation and release decision
+
+The new vendor tests demonstrate useful basics: pagination, raw-document retention, rescoring, simple disappearance, and successful token rotation. They do not establish the destructive-reconciliation boundary.
+
+The Oura fake drops subsecond/timezone distinctions in series filtering. The WHOOP fake filters on start/creation time without the actual default upper horizon or interval-overlap behavior. The happy token test does not exercise a failed Keychain write after server-side rotation. These gaps explain why the reported green suite can coexist with the counterexamples; they do not make the whole suite trivial.
+
+The isolated checks I executed produced:
+
+CheckResult
+
+Fresh R5 SQL-ID, empty-parent, page-binding, and quota controlsRepaired behavior
+
+Old receipt reused after v11New analysis incorrectly current
+
+Legacy record-pointer certification after v11Still trusted
+
+Mixed record/observation query followed by record revisionResult changed; analysis stayed current
+
+Oura day-window boundaryValid next-day document selected for tombstone
+
+Older WHOOP response applied after a newer commitNewer valid row selected for tombstone
+
+Same recovery cycle with changed sleep associationTwo native identities
+
+Refresh succeeds, then Keychain write failsOld local token becomes unusable
+
+WAL-backed backup size estimatePhysical-file estimate understated logical size
+
+A live replay passing only the three R5 negatives is therefore necessary but insufficient. It would confirm the repaired new-read protocol, not the upgrade or new vendor reconciliation.
+
+The smallest defensible release sequence is:
+
+Repair foreground authority: invalidate/version legacy receipts and ambiguous old certifications; prevent mixed-query results from losing record/page dependencies.
+
+Replay those cases in ChatGPT, alongside the repaired R5 cases and normal re-derivation.
+
+Keep vendor absence-based deletion disabled until the request/eligibility predicates, response completeness, ownership, and interrupted-publication tests pass. Any vendor data already affected should be reconciled before being treated as authoritative.
+
+Enable vendors independently, with recovery identity corrected, credential failure states explicit, and Oura route authorization resolved.
+
+That supports foreground GO-WITH-GAPS without a Codex campaign once the foreground repairs and live replay pass. It does not support activating the current Oura/WHOOP deletion paths merely because the foreground receipt probes succeed.
+
+The wrong tombstones discussed here generally preserve the underlying stored rows; they corrupt the active/canonical projection. Preserve the archive and originals, repair from a verified copy, and do not erase health data to make counts agree.
+
+Sources and limits. I used the pinned source and tests cited above, WHOOP’s official API/OAuth documentation, Oura’s current agreement, and SQLite’s documentation. The detailed Oura endpoint-date contract remained insufficiently accessible; I have distinguished the repository fake’s assumptions from verified provider behavior. The production counts, 338-test result, migration rehearsal, credential state, and vendor responses remain your reported measurements.
+
+The executable work was isolated and synthetic—not a full repository suite, production replay, provider request, or model call. It is available as the   reproduction script and   results. No Codex quota was spent.
+
+Bottom line: the specific R5 new-read fixes have landed. The remaining foreground blockers are legacy authority and incomplete mixed-query dependencies; the new vendor blockers are unsafe absence reconciliation and incomplete publication/ownership. A passing live replay alone does not clear those paths.

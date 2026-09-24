@@ -197,10 +197,12 @@ class Store:
         with open(self.root / 'migrate.lock', 'a') as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
             current = int(c.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0])
+            if current > migrations.TARGET:  # a newer program migrated while this one waited
+                raise StoreError('schema_mismatch', 'Database is newer than this program; never downgrade.')
             if current == migrations.TARGET:
                 return
             # Snapshot before taking the write lock: the backup API cannot run inside this connection's own write
-            # transaction (it hangs waiting on itself). Only the newest pre-migration snapshot is kept.
+            # transaction (it hangs waiting on itself).
             if c.execute('SELECT EXISTS(SELECT 1 FROM records) OR EXISTS(SELECT 1 FROM observations)').fetchone()[0]:
                 snap = self.root / 'migrations'
                 snap.mkdir(exist_ok=True, mode=0o700)
@@ -334,13 +336,14 @@ class Store:
         with self.connect() as c:
             return c.execute('SELECT coalesce(max(seq),0) FROM changes').fetchone()[0]
 
-    def issue_receipt(self, refs: set[str], observations: bool, seq: int) -> str:
-        """Store what one read returned: `seq` (taken before the read ran), the evidence ids it returned, and whether it
-        read observation data. A derived write cites evidence through receipts, never through a bare sequence."""
+    def issue_receipt(self, refs: set[str], observations: bool, seq: int, complete: bool = True) -> str:
+        """Store what one read returned: `seq` (taken before the read ran), the evidence ids it returned, whether it
+        read observation data, and whether every dependency of its result is tracked (`complete`: false for a query
+        that also read records or extracted pages). A derived write cites evidence through receipts."""
         rid = 'rr_' + uuid.uuid4().hex
         with self.transaction() as c:
-            c.execute('INSERT INTO read_receipts VALUES(?,?,?,?,?)',
-                      (rid, seq, int(observations), dump(sorted(refs)[:5000]), utcnow()))
+            c.execute('INSERT INTO read_receipts(id,seq,observations,refs_json,created_at,complete) VALUES(?,?,?,?,?,?)',
+                      (rid, seq, int(observations), dump(sorted(refs)[:5000]), utcnow(), int(complete)))
             c.execute('DELETE FROM read_receipts WHERE created_at<?', (utc_in(-7 * 86400),))
         return rid
 
@@ -350,7 +353,7 @@ class Store:
         `SELECT 1`, or a record read the write does not cite); such a write is stored with freshness unverified.
         Refuses a receipt the store did not issue, evidence none of the receipts delivered, and a cited derived
         record that is already stale (a cited unverified one leaves this write unverified: see _freshness)."""
-        rows = c.execute(f'SELECT seq, observations, refs_json FROM read_receipts WHERE id IN '
+        rows = c.execute(f'SELECT seq, observations, refs_json, complete FROM read_receipts WHERE id IN '
                          f'({",".join("?" * len(receipts))})', receipts).fetchall()
         if len(rows) != len(set(receipts)):
             raise StoreError('evidence_unbound', 'Unknown or expired read_receipt; read the evidence again.')
@@ -370,8 +373,8 @@ class Store:
                 raise StoreError('stale_evidence', f'Cited record {ref} is stale ({", ".join(f[1][:5])}); '
                                  're-derive it from current data instead of citing it.')
         observations = any(r['observations'] for r in rows) or any(ref_kind(e) == 'observation' for e in evidence)
-        if not (evidence or observations):
-            return None
+        if not (evidence or observations) or not all(r['complete'] for r in rows):
+            return None  # nothing certified, or a cited read depends on data no receipt tracks: unverified
         return min(r['seq'] for r in rows), observations
 
     def _freshness(self, c: sqlite3.Connection, rid: str) -> tuple[bool, list[str]] | None:
@@ -1135,8 +1138,11 @@ class Store:
         dest = Path(destination).expanduser().resolve()
         if dest.exists() or dest == self.root or self.root in dest.parents:
             raise StoreError('invalid_backup_path', 'Use a new directory outside the live data root.')
-        need = self.db.stat().st_size * 1.2 + sum(p.stat().st_size for p in self.blobs.iterdir())
-        free = shutil.disk_usage(dest.parent if dest.parent.exists() else self.root).free
+        with self.connect() as c:  # logical size: committed pages still in the WAL count too
+            logical = c.execute('PRAGMA page_count').fetchone()[0] * c.execute('PRAGMA page_size').fetchone()[0]
+        need = logical * 1.1 + sum(p.stat().st_size for p in self.blobs.iterdir())
+        existing = next(a for a in [dest, *dest.parents] if a.exists())  # the filesystem the copy will land on
+        free = shutil.disk_usage(existing).free
         if free < need + 5 * 2**30:  # never fill the disk the live database needs to keep working
             raise StoreError('backup_no_space', f'Backup needs ~{need / 2**30:.1f} GB plus 5 GB headroom; '
                                                 f'{free / 2**30:.1f} GB free.')
