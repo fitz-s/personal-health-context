@@ -142,8 +142,11 @@ class Store:
     KINDS = {'event', 'routine', 'question', 'analysis', 'note', 'attachment', 'preference'}
     CLOSED_QUESTION = {'closed', 'superseded', 'answered_final'}
     # Tables whose content an unfinished import changes (sources carries latest_sample_at / coverage).
+    # Tables whose every change advances the observation generation (an observation batch). `sources` is gated during
+    # imports like them, but its state/attempt fields change without a batch, so reading it leaves a result incomplete.
     OBSERVATION_TABLES = {'observations', 'active_observations', 'canonical_observations', 'canonical_observations_raw',
-                          'observation_catalog', 'supersessions', 'sources'}
+                          'observation_catalog', 'supersessions'}
+    IMPORT_GATED_TABLES = OBSERVATION_TABLES | {'sources'}
     PUBLIC_TABLES = {'records', 'active_records', 'observations', 'active_observations', 'canonical_observations',
                      'canonical_observations_raw',
                      'sources', 'objects', 'evidence_links', 'evidence_refs', 'object_pages', 'extractions',
@@ -721,13 +724,21 @@ class Store:
         pages, used, truncated = [], 0, False
         for page, text in rows:
             if used + len(text) > max_chars:
-                pages.append({'page': page, 'text': text[:max(0, max_chars - used)], 'truncated': True})
                 truncated = True
+                if max_chars > used:  # a page with no returned text is not delivered: continue from it instead
+                    pages.append({'page': page, 'text': text[:max_chars - used], 'truncated': True})
                 break
             pages.append({'page': page, 'text': text})
             used += len(text)
-        return {'object_sha256': sha, 'extraction': dict(ex) if ex else None, 'pages': pages,
-                'truncated': truncated, 'evidence_ids': [f'obj:{sha}#p{p["page"]}' for p in pages]}
+        # A partly returned page is delivered only for the text shown; its evidence id certifies that page, so the
+        # reader is told where to continue rather than handed authority for text it did not get.
+        full = [p for p in pages if not p.get('truncated')]
+        out = {'object_sha256': sha, 'extraction': dict(ex) if ex else None, 'pages': pages, 'truncated': truncated,
+               'evidence_ids': [f'obj:{sha}#p{p["page"]}' for p in full]}
+        if truncated:
+            out['continue_from_page'] = pages[-1]['page'] if pages and pages[-1].get('truncated') else (
+                rows[len(pages)][0] if len(pages) < len(rows) else None)
+        return out
 
     # ---- read-only SQL -------------------------------------------------------------------
     def query_readonly(self, sql: str, parameters: list | None = None, limit: int = 500) -> dict:
@@ -768,7 +779,7 @@ class Store:
         c.set_authorizer(authorize)
         try:
             cur = c.execute(sql, parameters or [])
-            if gated and touched & self.OBSERVATION_TABLES:
+            if gated and touched & self.IMPORT_GATED_TABLES:
                 raise StoreError('import_in_progress', 'An Apple import is replacing observation rows; old and new '
                                  'rows overlap until it finishes, so observation totals would be wrong. Records, '
                                  'originals and search still work. Say so to the user and retry later.')

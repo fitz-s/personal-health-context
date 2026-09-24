@@ -1,0 +1,219 @@
+NO-GO for the current authoritative foreground claim at 596439d. Confidence: high. The principal R6 fixes have landed, and upsert-only vendor sync is a defensible restricted operating mode. However, three foreground evidence-authority counterexamples remain. The new companion receiver also has a concrete identity collision that can remove a valid measurement from the canonical view.
+
+The better release decision is still capability-scoped: finish foreground evidence acceptance independently, and keep the companion receiver out of the authoritative observation stream until its identity and producer-equivalence defects are repaired. A third-party iPhone application is a reasonable way to avoid maintaining another app, but its webhook is a separate, potentially lossy data format—not automatically a faithful HealthKit transport.
+
+model_eval=NOT_RUN is not a blocker. Your current ChatGPT replay is useful acceptance evidence, and no Codex expenditure is necessary. It verifies the tested paths, not the remaining counterexamples.
+
+R6-01–R6-09: disposition
+
+FindingDisposition at this pin
+
+R6-01 — legacy authorityPartially cleared. Old receipts are voided, and pre-v11 certifications are downgraded. Incorrect mixed-query certifications created after v11 but before v13 survive.
+
+R6-02 — mixed-query dependenciesThe demonstrated records-plus-observations path is repaired. The broader completeness claim still fails for mutable source metadata.
+
+R6-03 — Oura deletion eligibilityCleared in the selected upsert-only mode. Absence no longer produces tombstones.
+
+R6-04 — reconciliation ownership/publicationSame-root overlap and absence-based deletion are repaired. Multi-page publication is still incremental, not an atomic collection snapshot; completeness must remain a gap.
+
+R6-05 — malformed response treated as emptinessCleared for the identified missing-array response. Both collectors reject it instead of treating it as an empty collection.
+
+R6-06 — WHOOP recovery identityCleared for new ingestion. Recovery uses cycle_id. Your reported absence of existing WHOOP rows removes the immediate legacy-identity migration concern.
+
+R6-07 — rotating credentialsThe identified same-root refresh race and refresh-write error handling are repaired. Lock scope and consent-flow limitations remain operational qualifications, not foreground blockers.
+
+R6-08 — migration version raceCleared. The newer-than-target check is repeated after acquiring the migration lock.
+
+R6-09 — backup capacity estimateThe two identified estimator defects are repaired in the ordinary backup path. This is not a disk-space reservation, and the premigration copy still uses a separate unguarded path.
+
+Revising R6-03–R6-07: the collectors now pass deleted_ids=[]; their tests require missing records to remain and require malformed collection responses to fail. The shared lock encloses refresh and collection use, WHOOP’s identity test checks a changed sleep relationship within one cycle, and the Keychain failure test expects a bounded reconnection error. These are meaningful regressions.
+
+Revising R6-08/R6-09: the in-lock version check is present and has a corresponding waiting-opener test. Backup sizing now uses logical SQLite pages and finds the destination’s nearest existing ancestor. I did not independently reproduce your nine-mutation campaign; the inspected code supports these repairs, with the capacity qualifications below.
+
+The strongest counterargument to NO-GO is that the live replay passed the exact R5 negatives and the original R6 mixed-query case. I accept those results. In particular, new mixed queries are correctly unverified, and observation-only aggregates still bind successfully. The remaining cases concern a different migration interval, a mutable table incorrectly classified as completely tracked, and a page-return boundary.
+
+Foreground findings
+
+1. V13 preserves incorrect certifications created between v11 and v13
+
+[BLOCKER] R7-01 migration trust cutoff — file:src/phctx/migrations.py:332–343 — Blocks upgraded foreground authority because v13 preserves post-v11 mixed-query certifications whose record/page dependencies were never stored — Downgrade ambiguous pre-v13 certifications in a new forward migration and version the binding rules independently of creation timestamps — verify locally: Round7Acceptance.test_post_v11_mixed_certificate_is_unverified_on_upgrade.
+
+V13 correctly deletes all old read_receipts. That clears the old-receipt reuse path. It separately removes record_dependencies only where the record predates v11. But R6-02’s mixed-query defect was still present in the v11/v12 implementation. The cutoff therefore preserves precisely the class of certificate that the new complete field was introduced to distinguish.
+
+Concrete failing sequence:
+
+On v12, query a primary record together with observations and save an analysis using the query receipt without explicit row IDs.
+
+The stored dependency tracks observations only.
+
+Upgrade to v13. The old receipt is deleted, but the analysis was created after v11, so its dependency survives.
+
+Revise the primary record without changing observations.
+
+The analysis remains bound=true, current=true, although the result it summarized changed.
+
+My isolated execution confirmed both sides: pre-v11 certification became unverified, while the post-v11 mixed certificate remained current after the record revision.
+
+The existing migration test checks that an old receipt disappears. It does not construct and invalidate a post-v11 mixed-query certificate. Its title mentions keeping post-v11 certifications, but that preservation is not universally safe.
+
+The smallest repair is conservative unverification of certificates created under rules that lacked completeness information. Preserve their records, references, revisions, and originals. Because production is already v13, changing _v13 alone will not repair it; use a forward migration. A binding-rule version will make later transitions less dependent on timestamps and inference.
+
+2. sources is considered fully tracked, but source-state changes do not invalidate its analyses
+
+[BLOCKER] R7-02 source-metadata dependency — file:src/phctx/store.py:260–265 — Blocks complete-result freshness because source metadata can change without advancing the observation generation used to certify queries and bootstrap results — Track source-metadata changes explicitly, or mark results consuming that metadata incomplete until the dependency exists — verify locally: Round7Acceptance.test_source_state_change_invalidates_source_query.
+
+Store.OBSERVATION_TABLES includes sources. Therefore a query of that table receives reads_observations=true, and tools.call considers its dependency complete. But mark_source_attempt changes the source’s state directly without an observation change-log entry. Source registration and cursor-only updates likewise do not establish the claimed observation-generation dependency.
+
+A simple counterexample is:
+
+SQL
+
+SELECT state FROM sources WHERE id = ?;
+
+Save the result as an analysis through its query receipt. Then call mark_source_attempt with an authentication failure. The source changes from ready to error, but the analysis remains verified-current. My isolated execution reproduced that result.
+
+This is not a demand that every conclusion track every field visible anywhere. The query’s entire result is the source state, and its receipt claims that result’s dependencies are covered.
+
+Bootstrap has the related classification problem: it is always observation-dependent and complete, while it returns source status, preferences, and record-index information as well. The existing test proves that an analysis of its observation counts invalidates after an observation batch. It does not prove complete dependency tracking for all bootstrap content.
+
+Keep the conservative observation-generation rule for actual observation data. Add separate dependency tracking for source metadata, or withhold verified certification of source-status results until that exists. For bootstrap, distinguish the tracked observation component from other components rather than treating the compound result as one completely tracked observation read.
+
+3. read_pages can certify a page from which it returned zero characters
+
+[BLOCKER] R7-03 empty page delivery — file:src/phctx/store.py:722–730 — Blocks document-evidence authority at the output boundary because a page omitted by the character budget is still included in delivered evidence — Stop before appending a zero-character continuation page and return its position only as continuation metadata — verify locally: Round7Acceptance.test_zero_character_page_is_not_delivered_evidence.
+
+The page-text loop appends the next page with a truncated string before stopping. When previous pages have used exactly the 60,000-character budget, that string is empty. Nevertheless, the page is included in evidence_ids, and delivered() certifies those IDs.
+
+Concrete sequence:
+
+Page 1 consumes the entire text-return budget.
+
+Page 2 contains a measurement.
+
+Request both pages.
+
+The response includes page 2 with text="", truncated=true, and its page evidence ID.
+
+Cite page 2 using that receipt.
+
+The analysis is accepted as bound/current even though no page-2 text or image was delivered.
+
+My isolated execution returned zero page-2 characters and a verified-current analysis citing page 2.
+
+The response’s truncation warning is useful, but it does not justify issuing delivered-content authority for the empty page. This is a small boundary repair: omit that page from delivered evidence and tell the reader to continue with it. A receipt from a separate page-2 read should still bind normally.
+
+What remains repaired: page references do not automatically promote to immutable-original references; stale derived parents propagate staleness; evidence-free analyses remain unverified through inheritance; and arbitrary SQL cells no longer certify IDs. The new findings do not reverse those earlier closures.
+
+Companion receiver findings
+
+4. One upstream sample can occupy two payload types but only one database identity
+
+[HIGH] R7-04 companion identity collision — file:src/phctx/companion.py:117–135 — Blocks companion activation as authoritative input because active_calories and total_calories can reuse one UUID for different metrics, rejecting a combined payload or overwriting a canonical measurement across separate payloads — Namespace ambiguous transport projections separately and reconcile duplicate aliases without changing the underlying measurement’s identity — verify locally: Round7Acceptance.test_active_and_total_calories_do_not_collide_within_payload and test_total_projection_cannot_remove_canonical_active_energy.
+
+This is a real producer behavior, not a fabricated malformed request. The upstream iOS code reads active-energy samples for active_calories, then reads active plus basal samples for total_calories. Both retain the original HealthKit sample UUID. The receiver uses that UUID unchanged in both the faithful quantity mapping and the companion.total_calories fallback.
+
+Two failure modes follow.
+
+In one payload: enable both types and include their shared active-energy sample. Translation emits duplicate native_id values. ingest_batch refuses the entire batch with duplicate_in_batch, including otherwise valid unrelated samples. This is a truthful rejection, but the advertised combination cannot ingest.
+
+Across separate payloads: first ingest the sample as active energy, then receive it through total_calories. The second write overwrites the same (source_id, native_id) row with metric companion.total_calories. If the active-energy row had already superseded its export copy, that historical supersession remains. The canonical active-energy measurement disappears: the export row is hidden, while the companion row now has another metric.
+
+My reduced canonical model changed from one canonical active-energy row to zero, while retaining both raw database rows.
+
+The repair must keep an ambiguous transport projection distinct from a faithful HealthKit measurement. Merely splitting a large payload into smaller requests would turn the safe batch rejection into the overwrite case. Add a migration or reconciliation step for any already-collided rows; do not indiscriminately erase historical supersessions, because those also encode legitimate deletion authority.
+
+5. The producer loses information needed for export equivalence
+
+[HIGH] R7-05 lossy producer equivalence — file:src/phctx/companion.py:127–135 — Blocks the broad canonical-equivalence claim for affected types because the upstream payload omits interval endpoints and truncates some numeric values before the receiver computes an exact key — Pin the producer version and preserve the necessary fields upstream, or classify affected projections as approximate and keep them out of automatic canonical equivalence — verify locally: add producer-derived fixtures covering fractional resting heart rate and nonzero sample intervals.
+
+The inspected upstream code converts heart rate and resting heart rate to Int and transmits only startDate as time. The receiver makes end_at=start_at when the wire format lacks an end. The shared equivalence key includes both endpoints and the numeric value.
+
+For example, a resting-heart-rate sample with value 59.6 over a five-minute interval becomes 59 at one instant. Its export and companion keys cannot match. When both histories are present, both can remain canonical despite describing the same source sample. This is separate from the already documented locale-unit mismatch.
+
+The one existing cross-producer test uses body mass with matching value, unit, source, and zero-duration interval. It is a useful positive control, but it cannot support equivalence for the heart-rate family or interval-bearing samples.
+
+The receiver cannot reconstruct precision or endpoints that never cross the wire. The superior adapter contract carries UUID, original type, complete start/end instants, unrounded value, unit, and provenance. Until then, affected data can be retained as a clearly described companion projection; it should not silently share the same canonical measurement contract.
+
+I inspected upstream source tree b5e48de…. That is not proof of which app build is installed on the user’s phone. Pin and test the actual producer version rather than making the integration depend on an unversioned upstream checkout.
+
+6. Anonymous-record identity changes with array position
+
+[MEDIUM] R7-06 fallback identity — file:src/phctx/companion.py:117–124,254–267 — Blocks trustworthy counting of affected companion-derived records because an unchanged record receives another native ID when its array position changes — Derive identity from canonical content or a documented logical key, excluding array position and dictionary formatting — verify locally: Round7Acceptance.test_synthetic_period_identity_does_not_depend_on_array_position.
+
+For records without UUIDs, the fallback hashes a seed containing kind, array index, and Python’s dictionary representation. The same period at index 1 in one reread and index 0 in another becomes a new database row. Because these are live-source rows, export supersession does not deduplicate them.
+
+The existing period test sends one record once. My isolated check confirmed different IDs for the same content at different positions. This does not block the core foreground recorder, but it is a real receiver idempotency limitation beyond byte-identical HTTP retries.
+
+7. The byte cap is not the ingest batch cap
+
+[MEDIUM] R7-07 payload admission — file:src/phctx/companion.py:425–441 — Blocks some otherwise valid companion deliveries because a signed payload below 8 MiB can translate to more than 5,000 samples and be permanently rejected — Negotiate a sender-side sample limit or implement durable chunked application with a complete-request acknowledgement — verify locally: a 5,001-sample signed payload receives a supported bounded outcome without a false success or partial-success ambiguity.
+
+The receiver translates the entire payload and submits one ingest_batch. The store limits that batch to 5,000 samples, independently of bytes. Some records also expand into several observations. The receiver must account for that separate limit.
+
+A correct 422 is preferable to a false acknowledgement, so this is an availability/coverage defect rather than a committed-data corruption path. Do not solve it by acknowledging the HTTP request after only its first chunk.
+
+Authentication and transport: what I did and did not find
+
+I did not find a signature bypass in the inspected receiver. It verifies HMAC over the exact raw body before JSON parsing, uses constant-time comparison, rejects absent signatures and empty secrets, and bounds the body and concurrent connections. The existing wrong-secret, missing-signature, malformed-header, and identical-replay tests are meaningful. My isolated primitive checks also rejected a modified body and a missing signature.
+
+Byte-identical retries have a stable request ID and cursor. That property holds for an unchanged mapping/configuration; it does not establish identity across reordered payloads, different transport projections, or mapping upgrades.
+
+[MEDIUM] R7-08 transport confidentiality and acknowledgement — file:src/phctx/companion.py:296–302 — Does not independently block a deliberately trusted-network trial, but HTTP exposes health payloads and HMAC does not authenticate the server’s success response — Use HTTPS or an authenticated encrypted private channel for sensitive production delivery, or explicitly retain the trusted-network limitation — verify locally: an unauthenticated network peer cannot read the body or impersonate an accepted delivery.
+
+The upstream sender accepts HTTP 2xx as success and does not authenticate the response body. Request HMAC protects against unauthorized payload modification; it does not encrypt the data or stop an on-path party from forging an HTTP success response. The current setup document does warn that the receiver listens on every interface and should run only on a trusted network.
+
+“Inability to pin a changing LAN IP” is not a general reason HTTPS is impossible. Keep the privacy and server-authentication limitation distinct from the sender-authentication control.
+
+Vendor, migration, and operational qualifications
+
+The upsert-only vendor choice is acceptable as a declared scope restriction. It avoids the destructive inference that absence means deletion. It does not establish a complete current mirror of each provider. A provider-side deletion can remain locally visible, and a crash during multi-page application can leave partial progress. The runtime should describe these as available imported observations, not an atomically synchronized provider snapshot. The current collectors still publish page by page.
+
+The OAuth lock correctly covers refresh and subsequent use within one data root. Keychain credentials are provider-global, while lock files are root-local; simultaneous syncs from two roots using the same credentials remain outside that protection. The refresh-write failure is now detected, but consent-time token persistence still follows its separate path. Neither limitation requires a plaintext fallback or blocks use of the existing archive; both should be explicit before operating multiple roots or automating reconnection.
+
+The backup guard now fixes the logical-size and destination-filesystem errors. It still cannot reserve disk space against concurrent consumption, and _migrate performs its premigration snapshot directly rather than through that guard. Do not describe the new check as making disk exhaustion impossible. The migration lock and in-lock version refusal should be retained.
+
+One documentation correction is warranted: the WHOOP normalization section still identifies recovery by sleep_id, while the code and regression now correctly use cycle_id. The companion section also simultaneously claims exact split-child equivalence and acknowledges that merged blood-pressure/nutrition fields may not preserve the original time and source. Narrow the stronger claims to what the producer fixtures actually prove.
+
+Validation and decision
+
+The reported 357 passing tests and nine mutation checks remain reported results, not my rerun. I inspected the relevant tests and executed reduced synthetic counterexamples plus positive controls.
+
+Isolated checkResult
+
+Newly issued mixed records/observations queryCorrectly unverified
+
+Observation-only aggregateCorrectly bound/current
+
+V13 receipt invalidationOld receipts removed
+
+Post-v11 legacy mixed certificate after record revisionStill current
+
+Source state changes without observation batchAnalysis still current
+
+Page listed with zero returned charactersPage citation accepted as current
+
+Active/total calorie UUID collisionCombined payload conflicts; separate payloads can remove canonical active energy
+
+Anonymous record moved within arrayAnother native ID
+
+HMAC valid/modified/missing controlsExpected acceptance/refusals
+
+The source tests explain why these can coexist with a green suite. The migration test checks receipt deletion but not the unsafe post-v11 certificate. The bootstrap test checks an observation batch, not source-state mutation. The page test checks re-extraction, not a zero-character continuation. The companion replay test repeats identical bytes, and the equivalence test covers one uncomplicated body-mass sample. None is a substitute for its missing adjacent case.
+
+The smallest foreground clearing work is threefold: downgrade the remaining ambiguous pre-v13 certificates, correctly account for source-metadata dependencies, and stop certifying zero-character page delivery. Preserve the passing direct-query and inheritance paths. Replay these cases in ChatGPT after deterministic regressions pass.
+
+Keep the companion receiver separately gated. Repair the active/total identity collision before treating it as canonical input. Then pin the producer and validate each supported type’s precision, interval, units, and identity. The receiver may be exercised in an isolated synthetic root in the meantime; a successful signature test is not sufficient canonicalization acceptance.
+
+Once those foreground fixes pass, GO-WITH-GAPS without a Codex campaign is defensible, with upsert-only vendors and the companion capability explicitly bounded or disabled. The current live replay establishes substantial progress, but does not clear the remaining cases.
+
+I supplied   repo-ready regression tests. They were syntax-checked here, not run against a complete checkout. From the repository root:
+
+Bash
+
+PYTHONPATH=src .venv/bin/python test_round7_acceptance.py
+
+The independently executed material is the   isolated reproduction script and its   results. These use synthetic data and no model, vendor account, or real device.
+
+Sources and limits. I reviewed the pinned 8e64809...596439d comparison and the cited source, migrations, tests, contracts, setup instructions, and live-replay narrative. I also followed the companion’s real upstream repository and inspected its mapping and webhook sender at the retrieved source tree; the shorter repository name in the receiver’s opening comment did not resolve. Container access to GitHub failed DNS resolution, so I did not run a full checkout, inspect production records, verify the installed iPhone build, or rerun the Mac recovery/mutation campaigns.
+
+The operating assumptions are one active data root per provider credential, background reasoning still disabled, vendor data interpreted as an upsert-only imported archive rather than a complete mirror, and no public receiver exposure. Vendor usage authorization remains a separate assumption, not something this code review establishes. The missing Codex evaluation is a gap; the remaining false-certification and companion identity paths are the reasons for NO-GO.

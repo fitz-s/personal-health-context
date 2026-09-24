@@ -318,6 +318,20 @@ class UpgradeTests(unittest.TestCase):
         with s.connect() as c:
             self.assertIsNone(c.execute('SELECT 1 FROM read_receipts WHERE id=?', (old,)).fetchone())
 
+    def test_v14_unverifies_certifications_made_before_v13(self):
+        """R7-01: a certification bound under rules without receipt completeness reads unverified after upgrade."""
+        s = Store(self.base / 'live', 'synthetic')
+        rid = s.put_record(request_id='SYNTHETIC-a', kind='analysis', text='SYNTHETIC mixed', evidence_ids=[],
+                           occurred_at='2026-09-20T12:00:00-05:00')['record_id']
+        with s.transaction() as c:  # a dependency stored by v11/v12 (its mixed query tracked observations only)
+            c.execute('INSERT INTO record_dependencies VALUES(?, 0, 1)', (rid,))
+            c.execute("UPDATE meta SET value='13' WHERE key='schema_version'")
+            c.execute('DELETE FROM migrations WHERE version>=13')
+            c.execute("INSERT INTO migrations VALUES(13, '9999-01-01T00:00:00+00:00')")  # v13 applied after it
+            c.execute("UPDATE meta SET value='13' WHERE key='schema_version'")
+        s = Store(self.base / 'live', 'synthetic')
+        self.assertFalse(s.get_records([rid])['records'][0]['evidence']['bound'])
+
     def test_an_older_program_waiting_on_the_lock_refuses_a_newer_schema(self):
         """R6-08: the schema is re-read after the lock; one migrated past this program's target is refused."""
         import fcntl

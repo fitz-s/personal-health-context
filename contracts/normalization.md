@@ -57,7 +57,7 @@ Daily documents span the local day. Oura entries mirrored into Apple Health keep
 
 ## WHOOP
 `source_id` = `whoop` (API v2, `phctx.whoop`): one observation per record; `native_id` = `<collection>:<id>` (recovery:
-its `sleep_id`), `metric` = `whoop.<collection>`, `value_num` = cycle/workout `strain`, recovery `recovery_score` %, sleep
+its `cycle_id`; `sleep_id` stays in the raw record), `metric` = `whoop.<collection>`, `value_num` = cycle/workout `strain`, recovery `recovery_score` %, sleep
 `sleep_performance_percentage` %; `value_text` = workout `sport_name`, `nap`, else `score_state`; the whole record in `raw`
 (resting HR, HRV, SpO2, skin temperature, stage durations, zone durations live there). An open cycle has no end:
 `end_at` = `start_at` until WHOOP closes it.
@@ -75,8 +75,8 @@ HealthKit sample is translated to that sample's real HK identifier, using `origi
 the live helper do, so the three producers can share one canonical observation. Two structural exceptions split a
 single wire record into two observations with one synthesized `native_id` (documented at the call site in
 `companion.py`, not silent): `blood_pressure` (systolic/diastolic) and `nutrition` (energy/protein/carbs/fat) — the
-app attaches only one uuid to the combined record; the identifier, window, and value of each half are still exact,
-only the second half's `native_id` is not a device UUID.
+app attaches only one uuid, time and source to the combined record (it pairs samples within one second), so the
+split children take those and are not guaranteed to equal their own HealthKit samples' time or source.
 
 Units for the app's own quantity types beyond the ones `ios/HealthSyncCore/Sources/HealthSyncCore/Normalization.swift`
 already verifies (steps, active calories, the heart-rate family, oxygen saturation, body mass/fat/lean mass, sleep)
@@ -95,3 +95,9 @@ Known limits of the companion mapping (review 2026-09-24):
 - Blood pressure and nutrition arrive merged into one record (the app pairs samples within one second); the split
   children take the record's time and source, so they are not guaranteed to match their export copies.
 - The app's workout type 'other' covers every activity it does not name, so it is stored without an activity name.
+- The app truncates heart rate and resting heart rate to integers and sends most samples as an instant (`time`, no end):
+  heart rate and resting heart rate get no equivalence key (never supersede or are superseded); other instant types
+  match their export copy only when HealthKit stored them as instants too. Pinned upstream source: b5e48de.
+- A sample the app sends under two types (an active-energy sample is also in total_calories) is stored once per
+  projection: the faithful row keeps the HealthKit uuid, the projection is `companion:<type>:<uuid>`. A record without
+  a uuid is identified by its content, not its position.

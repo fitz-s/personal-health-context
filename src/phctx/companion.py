@@ -114,9 +114,12 @@ def _sample(native_id: str, metric: str, start_at: str, end_at: str, tz: str, va
             'origin_key': origin_key(metric, start_at, end_at, value_num, value_text, unit, source_name)}
 
 
-def _unfaithful(kind: str, record: dict, tz: str, native_id_seed: str, *, value_num: float | None = None,
-                unit: str | None = None) -> dict:
-    native_id = record.get('uuid') or 'companion:' + hashlib.sha256(native_id_seed.encode()).hexdigest()[:40]
+def _unfaithful(kind: str, record: dict, tz: str, *, value_num: float | None = None, unit: str | None = None) -> dict:
+    # A projection keeps its own identity: the app sends one HealthKit sample under several types (an active-energy
+    # sample is also in total_calories), and the faithful row must not be overwritten by the projection. A record
+    # without a uuid is identified by its canonical content, not its position in the array.
+    key = record.get('uuid') or hashlib.sha256(json.dumps(record, sort_keys=True).encode()).hexdigest()[:40]
+    native_id = f'companion:{kind}:{key}'
     start = record.get('start_time') or record.get('time')
     end = record.get('end_time') or start
     metric = f'companion.{kind}'
@@ -124,15 +127,22 @@ def _unfaithful(kind: str, record: dict, tz: str, native_id_seed: str, *, value_
                   {'raw': record})
 
 
-def _quantity(hk_type: str, unit: str, field: str, *, scale: float = 1.0) -> Callable[[dict, str], list[dict]]:
+def _quantity(hk_type: str, unit: str, field: str, *, scale: float = 1.0,
+              approximate: bool = False) -> Callable[[dict, str], list[dict]]:
     """A record with one measured field and either an instant (`time`) or an interval
-    (`start_time`/`end_time`), mapped 1:1 to a HealthKit quantity type."""
+    (`start_time`/`end_time`), mapped 1:1 to a HealthKit quantity type. `approximate`: the app sends the value
+    truncated to an integer (heart rate, resting heart rate), so the sample cannot be proven equal to its export
+    copy; it gets no equivalence key and never supersedes or is superseded."""
     def handler(record: dict, tz: str) -> list[dict]:
         start = record.get('start_time') or record.get('time')
         end = record.get('end_time') or start
         value = record.get(field)
         num = None if value is None else value * scale
-        return [_sample(record.get('uuid') or '', hk_type, start, end, tz, num, None, unit, record.get('source'))]
+        row = _sample(record.get('uuid') or '', hk_type, start, end, tz, num, None, unit, record.get('source'),
+                      {'approximate': 'value truncated to an integer by the sender'} if approximate else None)
+        if approximate:
+            row['origin_key'] = None
+        return [row]
     return handler
 
 
@@ -221,8 +231,8 @@ HANDLERS: dict[str, Callable[[dict, str], list[dict]]] = {
     'active_calories': _quantity('HKQuantityTypeIdentifierActiveEnergyBurned', 'kcal', 'calories'),
     'weight': _quantity('HKQuantityTypeIdentifierBodyMass', 'kg', 'kilograms'),
     'height': _quantity('HKQuantityTypeIdentifierHeight', 'm', 'meters'),
-    'heart_rate': _quantity('HKQuantityTypeIdentifierHeartRate', 'count/min', 'bpm'),
-    'resting_heart_rate': _quantity('HKQuantityTypeIdentifierRestingHeartRate', 'count/min', 'bpm'),
+    'heart_rate': _quantity('HKQuantityTypeIdentifierHeartRate', 'count/min', 'bpm', approximate=True),
+    'resting_heart_rate': _quantity('HKQuantityTypeIdentifierRestingHeartRate', 'count/min', 'bpm', approximate=True),
     'heart_rate_variability': _quantity('HKQuantityTypeIdentifierHeartRateVariabilitySDNN', 'ms',
                                         'heart_rate_variability_millis'),
     'blood_pressure': _blood_pressure,
@@ -256,15 +266,15 @@ def translate(payload: dict[str, Any], tz: str) -> tuple[list[dict], set[str]]:
             unmapped.add(key)
             value_field = 'calories' if key == 'total_calories' else None
             unit = 'kcal' if key == 'total_calories' else None
-            for i, record in enumerate(records):
-                samples.append(_unfaithful(key, record, tz, f'{key}:{i}:{record}',
+            for record in records:
+                samples.append(_unfaithful(key, record, tz,
                                           value_num=record.get(value_field) if value_field else None, unit=unit))
             continue
         handler = HANDLERS.get(key)
         if handler is None:
             unmapped.add(key)
-            for i, record in enumerate(records):
-                samples.append(_unfaithful(key, record, tz, f'{key}:{i}:{record}'))
+            for record in records:
+                samples.append(_unfaithful(key, record, tz))
             continue
         for record in records:
             samples.extend(handler(record, tz))
@@ -433,9 +443,12 @@ def make_server(store: Store, host: str, port: int, secret: str, tz: str) -> Thr
                 # idempotency check re-hashes the whole ingest_batch body (cursor included), so a
                 # byte-identical retry needs a byte-identical cursor to be recognized as a replay
                 # rather than an "idempotency_conflict".
-                result = store.ingest_batch(request_id=request_id, source_id=SOURCE_ID, samples=samples,
-                                           deleted_ids=[], cursor=request_id,
-                                           coverage={'kind': 'life_dashboard_companion_webhook'})
+                upserted = 0  # the store takes at most 5000 samples a page; the reply comes only after every page
+                for i in range(0, len(samples), 5000):
+                    result = store.ingest_batch(request_id=f'{request_id}:{i}', source_id=SOURCE_ID,
+                                               samples=samples[i:i + 5000], deleted_ids=[], cursor=request_id,
+                                               coverage={'kind': 'life_dashboard_companion_webhook'})
+                    upserted += result['upserted']
             except StoreError as e:
                 status = 503 if e.code in {'storage_busy', 'storage_unavailable'} else 422
                 self.reply(status, {'error': e.code})
@@ -444,7 +457,7 @@ def make_server(store: Store, host: str, port: int, secret: str, tz: str) -> Thr
                 log.exception('companion_ingest_error')  # never the payload: no health values logged
                 self.reply(503, {'error': 'storage_unavailable'})
                 return
-            self.reply(200, {'accepted': True, 'upserted': result['upserted'], 'unmapped_types': sorted(unmapped)})
+            self.reply(200, {'accepted': True, 'upserted': upserted, 'unmapped_types': sorted(unmapped)})
 
         def do_GET(self):  # noqa: N802
             self.reply(404, {'error': 'not_found'})

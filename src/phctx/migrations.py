@@ -5,7 +5,7 @@ import hashlib
 import json
 import sqlite3
 
-TARGET = 13
+TARGET = 14
 
 
 def statements(sql: str):
@@ -343,7 +343,17 @@ DELETE FROM record_dependencies WHERE record_id IN (SELECT id FROM records
 """)
 
 
-STEPS = {2: _v2, 3: _v3, 4: _v4, 5: _v5, 6: _v6, 7: _v7, 8: _v8, 9: _v9, 10: _v10, 11: _v11, 12: _v12, 13: _v13}
+def _v14(c: sqlite3.Connection) -> None:
+    # Certifications made before v13 were bound by receipts that recorded no completeness (a query also reading
+    # records, pages or source state could certify): they cannot show their dependencies were all tracked, so they
+    # read unverified. v13's cutoff at v11 left those made between v11 and v13. Content is kept.
+    run(c, """
+DELETE FROM record_dependencies WHERE record_id IN (SELECT id FROM records
+ WHERE created_at < coalesce((SELECT applied_at FROM migrations WHERE version=13), '9999'));
+""")
+
+
+STEPS = {2: _v2, 3: _v3, 4: _v4, 5: _v5, 6: _v6, 7: _v7, 8: _v8, 9: _v9, 10: _v10, 11: _v11, 12: _v12, 13: _v13, 14: _v14}
 
 
 def apply(c: sqlite3.Connection, current: int, now: str) -> int:

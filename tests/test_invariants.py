@@ -405,13 +405,35 @@ class ReadReceiptTests(Base):
         read = self.t.call('context_read', {'record_ids': [legacy]}).data
         self.assertEqual(self.ev(self.analysis([read['read_receipt']], [legacy])), (False, False))
 
-    def test_an_analysis_of_bootstrap_counts_turns_stale_after_an_observation_batch(self):
+    def test_bootstrap_cannot_certify_an_analysis(self):
+        """R7-02: bootstrap returns source status, preferences and the record index alongside the catalog; not all of
+        it is tracked, so an analysis of it is saved unverified (cite the underlying reads instead)."""
         self.obs('a', 9, 10.0)
         boot = self.t.call('context_bootstrap', {}).data
-        out = self.analysis([boot['read_receipt']], [])
-        self.assertEqual(self.ev(out), (True, True))
-        self.obs('b', 11, 30.0)
-        self.assertFalse(self.s.get_records([out.data['record_id']])['records'][0]['evidence']['current'])
+        self.assertEqual(self.ev(self.analysis([boot['read_receipt']], [])), (False, False))
+
+    def test_a_query_of_source_state_cannot_certify(self):
+        """R7-02: source state changes (a failed attempt) without an observation batch."""
+        self.obs('a', 9, 10.0)
+        read = self.query("SELECT state FROM sources WHERE id = 'synthetic:watch'")
+        self.assertEqual(self.ev(self.analysis([read['read_receipt']], [])), (False, False))
+
+    def test_a_page_returned_without_text_is_not_delivered(self):
+        """R7-03"""
+        sha = self.s.put_attachment_bytes(request_id=self.rid(), data=b'SYNTHETIC scan', filename='s.txt',
+                                          mime='text/plain', text='SYNTHETIC file', occurred_at=AT)['object_sha256']
+        self.s.set_extraction(sha, status='done', method='fixture', pages=['A' * 60000, 'SYNTHETIC page two'])
+        out = self.s.read_pages(sha, 1, 2)
+        self.assertEqual(([p['page'] for p in out['pages']], out['continue_from_page']), ([1], 2))
+        self.assertEqual(out['evidence_ids'], [f'obj:{sha}#p1'])
+        read = self.t.call('context_read_original', {'object_sha256': sha, 'mode': 'pages', 'start_page': 1,
+                                                     'end_page': 2}).data
+        self.assertEqual(self.analysis([read['read_receipt']], [f'obj:{sha}#p2']).data['error'], 'evidence_unbound')
+        again = self.t.call('context_read_original', {'object_sha256': sha, 'mode': 'pages', 'start_page': 2}).data
+        self.assertEqual(self.ev(self.analysis([again['read_receipt']], [f'obj:{sha}#p2'])), (True, True))
+        partial = self.s.read_pages(sha, 1, 2, max_chars=59990)  # page 1 only partly returned
+        self.assertEqual(([p['page'] for p in partial['pages']], partial['evidence_ids'], partial['continue_from_page']),
+                         ([1], [], 1))
 
     def test_one_receipt_can_support_several_analyses(self):
         self.obs('a', 9, 10.0)

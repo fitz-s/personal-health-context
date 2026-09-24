@@ -136,6 +136,43 @@ class CompanionTests(unittest.TestCase):
         with self.store.connect() as c:
             self.assertEqual(c.execute('SELECT count(*) FROM observations').fetchone()[0], 0)
 
+    def test_active_and_total_calories_keep_separate_identities(self):
+        """R7-04: one HealthKit sample sent as active_calories and inside total_calories."""
+        from phctx import companion
+        rec = {'uuid': 'SYNTHETIC-energy-1', 'calories': 12.5, 'start_time': '2026-09-20T10:00:00Z',
+               'end_time': '2026-09-20T10:05:00Z', 'source': 'SYNTHETIC Watch'}
+        samples, _ = companion.translate({'active_calories': [rec], 'total_calories': [rec]}, 'America/Chicago')
+        self.assertEqual(sorted(s['native_id'] for s in samples),
+                         ['SYNTHETIC-energy-1', 'companion:total_calories:SYNTHETIC-energy-1'])
+        status, _ = self.post_json({'active_calories': [rec]})
+        status2, _ = self.post_json({'total_calories': [rec]})
+        with self.store.connect() as c:
+            rows = dict(c.execute("SELECT native_id, metric FROM active_observations").fetchall())
+        self.assertEqual(rows['SYNTHETIC-energy-1'], 'HKQuantityTypeIdentifierActiveEnergyBurned')
+
+    def test_uuidless_record_identity_ignores_array_position(self):
+        """R7-06"""
+        from phctx import companion
+        a = {'start_time': '2026-09-01T00:00:00Z', 'end_time': '2026-09-05T00:00:00Z', 'SYNTHETIC': 1}
+        b = {'start_time': '2026-08-01T00:00:00Z', 'end_time': '2026-08-05T00:00:00Z', 'SYNTHETIC': 2}
+        first, _ = companion.translate({'menstruation_period': [a, b]}, 'America/Chicago')
+        second, _ = companion.translate({'menstruation_period': [b, a]}, 'America/Chicago')
+        self.assertEqual({s['native_id'] for s in first}, {s['native_id'] for s in second})
+
+    def test_a_payload_larger_than_one_store_page_is_applied_whole(self):
+        """R7-07"""
+        recs = [{'uuid': f'SYNTHETIC-s{i}', 'count': 1, 'start_time': f'2026-09-20T10:{i // 60 % 60:02d}:{i % 60:02d}Z',
+                 'end_time': f'2026-09-20T10:{i // 60 % 60:02d}:{i % 60:02d}Z', 'source': 'SYNTHETIC'} for i in range(5001)]
+        status, body = self.post_json({'steps': recs})
+        self.assertEqual((status, body['upserted']), (200, 5001))
+
+    def test_truncated_heart_rate_gets_no_equivalence_key(self):
+        """R7-05: the app sends heart rate as an integer, so it cannot be proven equal to its export copy."""
+        from phctx import companion
+        [row] = companion.HANDLERS['heart_rate']({'uuid': 'SYNTHETIC-hr', 'bpm': 59, 'time': '2026-09-20T10:00:00Z',
+                                                  'source': 'SYNTHETIC'}, 'America/Chicago')
+        self.assertIsNone(row['origin_key'])
+
     def test_malformed_signature_header_is_refused_not_a_crash(self):
         from phctx import companion
         self.assertFalse(companion._verify(b'{}', 'sha256=\u00e9' * 3, SECRET))
@@ -165,7 +202,7 @@ class CompanionTests(unittest.TestCase):
         self.assertEqual(ack['unmapped_types'], ['total_calories'])
         with self.store.connect() as c:
             row = c.execute('SELECT metric, raw_json FROM observations WHERE native_id=?',
-                            ('SYNTHETIC-total-cal-1',)).fetchone()
+                            ('companion:total_calories:SYNTHETIC-total-cal-1',)).fetchone()
         self.assertEqual(row[0], 'companion.total_calories')
         self.assertEqual(json.loads(row[1])['metadata']['raw']['calories'], 45.0)
 
