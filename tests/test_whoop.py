@@ -98,3 +98,40 @@ class WhoopSyncTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class ConsentServerTests(unittest.TestCase):
+    """One localhost server answers every provider's registered redirect; a code is exchanged as soon as it arrives."""
+
+    def test_two_providers_on_one_port_each_exchange_their_own_code(self):
+        import threading
+        import urllib.parse
+        import urllib.request
+        from phctx import oura
+        stored = {f'phctx-{n}-{k}': f'SYNTHETIC-{n}-{k}' for n in ('whoop', 'oura') for k in ('client-id', 'client-secret')}
+        urls, exchanged = [], []
+
+        def browse(url):  # stands in for the owner approving in the browser
+            urls.append(url)
+            if len(urls) == 2:
+                def approve():
+                    for u in urls:
+                        q = urllib.parse.parse_qs(urllib.parse.urlsplit(u).query)
+                        cb = q['redirect_uri'][0] + '?' + urllib.parse.urlencode({'code': 'SYNTHETIC-code-' + q['client_id'][0],
+                                                                                  'state': q['state'][0]})
+                        direct = urllib.request.build_opener(urllib.request.ProxyHandler({}))  # bypass any HTTP proxy
+                        direct.open(cb.replace('localhost', '127.0.0.1'), timeout=10).read()
+                threading.Thread(target=approve).start()
+
+        def post(p, form):
+            exchanged.append((p.name, form['code']))
+            return {'access_token': 'SYNTHETIC-a', 'refresh_token': f'SYNTHETIC-r-{p.name}'}
+        with patch.object(oauth, 'keychain_get', stored.get), \
+                patch.object(oauth, 'keychain_set', lambda k, v: stored.__setitem__(k, v)), \
+                patch.object(oauth, '_post', post), patch.object(oauth, 'PORT', 47899), \
+                patch('builtins.print'):
+            out = oauth.login([whoop.PROVIDER, oura.PROVIDER], open_browser=browse, timeout=30)
+        self.assertEqual(out, {'whoop': 'connected', 'oura': 'connected'})
+        self.assertEqual(sorted(exchanged), [('oura', 'SYNTHETIC-code-SYNTHETIC-oura-client-id'),
+                                             ('whoop', 'SYNTHETIC-code-SYNTHETIC-whoop-client-id')])
+        self.assertEqual(stored['phctx-oura-refresh-token'], 'SYNTHETIC-r-oura')

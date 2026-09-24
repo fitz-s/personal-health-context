@@ -67,45 +67,55 @@ def connected(p: Provider) -> bool:
     return keychain_get(p.key('refresh-token')) is not None
 
 
-def login(p: Provider, open_browser=webbrowser.open, timeout: float = 600) -> dict:
-    """One-time owner consent. Prints the consent URL (to open in the browser that holds the vendor session)."""
-    cid, secret = client(p)
-    state = secrets.token_urlsafe(16)
-    got: dict = {}
+def login(providers: list[Provider], open_browser=webbrowser.open, timeout: float = 600) -> dict:
+    """One-time owner consent for each provider on one localhost server (all redirects share the port). Prints each
+    consent URL, to open in the browser that holds the vendor session; returns once every provider answered or timed out."""
+    pending = {p.name: (p, *client(p), secrets.token_urlsafe(16)) for p in providers}
+    got: dict[str, dict] = {}
 
     class Callback(http.server.BaseHTTPRequestHandler):
         def do_GET(self):
             url = urllib.parse.urlsplit(self.path)
             q = urllib.parse.parse_qs(url.query)
-            ok = url.path == f'/{p.name}/callback' and q.get('state') == [state]
+            name = url.path.removeprefix('/').removesuffix('/callback')
+            ok = name in pending and name not in got and q.get('state') == [pending[name][3]]
             if ok:
-                got.update(code=(q.get('code') or [''])[0], error=(q.get('error') or [''])[0])
+                got[name] = {'code': (q.get('code') or [''])[0], 'error': (q.get('error') or [''])[0]}
             self.send_response(200 if ok else 400)
             self.send_header('Content-Type', 'text/plain; charset=utf-8')
             self.end_headers()
-            self.wfile.write(f'{p.name} connected; you can close this tab.'.encode() if ok else b'Unexpected request.')
+            self.wfile.write(f'{name} connected; you can close this tab.'.encode() if ok else b'Unexpected request.')
 
         def log_message(self, *a):  # no request logging: the query carries the authorization code
             pass
 
     server = http.server.HTTPServer(('127.0.0.1', PORT), Callback)
     server.timeout = 5
-    url = p.auth_url + '?' + urllib.parse.urlencode({'response_type': 'code', 'client_id': cid,
-                                                     'redirect_uri': p.redirect, 'scope': p.scopes, 'state': state})
-    print(url, flush=True)
-    open_browser(url)
+    for p, cid, _, state in pending.values():
+        url = p.auth_url + '?' + urllib.parse.urlencode({'response_type': 'code', 'client_id': cid,
+                                                         'redirect_uri': p.redirect, 'scope': p.scopes, 'state': state})
+        print(url, flush=True)
+        open_browser(url)
     deadline = time.monotonic() + timeout
+    out = {}
     try:
-        while not got and time.monotonic() < deadline:
+        while len(got) < len(pending) and time.monotonic() < deadline:
             server.handle_request()
+            for name in [n for n in got if n not in out]:
+                p, cid, secret, _ = pending[name]
+                if not got[name]['code']:
+                    out[name] = f'consent_{got[name]["error"] or "denied"}'
+                    continue
+                try:  # exchange at once: authorization codes are short-lived
+                    tokens = _post(p, {'grant_type': 'authorization_code', 'code': got[name]['code'],
+                                       'redirect_uri': p.redirect, 'client_id': cid, 'client_secret': secret})
+                    keychain_set(p.key('refresh-token'), tokens['refresh_token'])
+                    out[name] = 'connected'
+                except OAuthError as e:
+                    out[name] = e.code
     finally:
         server.server_close()
-    if not got.get('code'):
-        raise OAuthError(f'{p.name}_consent_' + (got.get('error') or 'timeout'))
-    tokens = _post(p, {'grant_type': 'authorization_code', 'code': got['code'], 'redirect_uri': p.redirect,
-                       'client_id': cid, 'client_secret': secret})
-    keychain_set(p.key('refresh-token'), tokens['refresh_token'])
-    return {'status': 'connected', 'provider': p.name, 'scope': tokens.get('scope')}
+    return {name: out.get(name, 'consent_timeout') for name in pending}
 
 
 def access_token(p: Provider) -> str:
