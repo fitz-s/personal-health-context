@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""Scan the repo for secrets / live data, then build the code delivery archive + manifest.sha256.
+"""Build the code delivery archive + manifest.sha256 from exactly the files git tracks at HEAD.
 
-Refuses to package when a secret pattern or a live-data file is found. Production data never lives in the repo.
+The allowlist is the commit: an untracked file (a real export, a scratch report, a local database) cannot enter the
+archive however it is named, and a tracked file got there through a reviewed commit. The secret/live-data scan stays
+as a second check on that set. Refuses to package with uncommitted changes to tracked files.
 """
 from __future__ import annotations
 
@@ -17,8 +19,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
 from phctx import __version__  # noqa: E402
-EXCLUDE_DIRS = {'.venv', '.git', '__pycache__', 'traces', 'package_ref', '.build', 'dist'}
-EXCLUDE_FILES = {'tunnel-client', 'cloudflared'}  # large third-party binaries: fetched + checksum-verified by docs
 SECRET = [re.compile(p) for p in [
     r'sk-[A-Za-z0-9_-]{20,}', r'sk-proj-[A-Za-z0-9_-]{20,}', r'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----',
     r'ghp_[A-Za-z0-9]{30,}', r'xox[bap]-[A-Za-z0-9-]{10,}', r'AKIA[0-9A-Z]{16}',
@@ -27,18 +27,16 @@ LIVE_DATA = re.compile(r'(context\.sqlite3(-wal|-shm)?|\.phbk|export\.zip|ingest
 
 
 def files() -> list[Path]:
-    out = []
-    for p in ROOT.rglob('*'):
-        rel = p.relative_to(ROOT)
-        if any(part in EXCLUDE_DIRS for part in rel.parts) or not p.is_file():
-            continue
-        if rel.parts[0] == 'tools' and (p.name in EXCLUDE_FILES or p.suffix == '.zip'):
-            continue
-        out.append(p)
-    return sorted(out)
+    out = subprocess.run(['git', 'ls-files', '-z'], cwd=ROOT, capture_output=True, check=True).stdout.decode()
+    return sorted(ROOT / f for f in out.split('\0') if f and (ROOT / f).is_file())
 
 
 def main() -> int:
+    dirty = subprocess.run(['git', 'status', '--porcelain', '--untracked-files=no'], cwd=ROOT, capture_output=True,
+                           text=True).stdout.strip()
+    if dirty:
+        print(json.dumps({'refused': 'uncommitted changes to tracked files', 'status': dirty.splitlines()[:20]}))
+        return 1
     findings = []
     fs = files()
     for p in fs:
@@ -66,19 +64,18 @@ def main() -> int:
     if findings:
         print(json.dumps(report, indent=1))
         return 1
-    fs = files()  # include the scan report
     manifest = ''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(ROOT)}\n' for p in fs
-                       if p.name != 'manifest.sha256')
+                       if p.name not in {'manifest.sha256', 'package_scan.json'})
     (ROOT / 'delivery' / 'manifest.sha256').write_text(manifest)
     dist = ROOT / 'dist'
     dist.mkdir(exist_ok=True)
     rev = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], cwd=ROOT, capture_output=True, text=True).stdout.strip()
     arc = dist / f'personal-health-context-{__version__}-{rev or "worktree"}.tar.gz'
     with tarfile.open(arc, 'w:gz') as tar:
-        for p in files():
+        for p in fs:
             tar.add(p, arcname=f'personal-health-context/{p.relative_to(ROOT)}')
     print(json.dumps({'archive': str(arc), 'bytes': arc.stat().st_size,
-                      'sha256': hashlib.sha256(arc.read_bytes()).hexdigest(), 'files': len(files()),
+                      'sha256': hashlib.sha256(arc.read_bytes()).hexdigest(), 'files': len(fs),
                       'findings': 0}, indent=1))
     return 0
 

@@ -752,6 +752,21 @@ if __name__ == '__main__':
     unittest.main(verbosity=2)
 
 
+class PackageAllowlistTests(unittest.TestCase):
+    def test_archive_holds_exactly_the_tracked_files(self):
+        sys.path.insert(0, str(ROOT / 'scripts'))
+        import package_release
+        stray = ROOT / 'delivery' / 'SYNTHETIC-untracked-report.md'  # e.g. a real-data note left in the tree
+        stray.write_text('SYNTHETIC resting heart rate 58 on 2026-09-01')
+        try:
+            names = {str(p.relative_to(ROOT)) for p in package_release.files()}
+        finally:
+            stray.unlink()
+        self.assertNotIn('delivery/SYNTHETIC-untracked-report.md', names)
+        tracked = subprocess.run(['git', 'ls-files'], cwd=ROOT, capture_output=True, text=True).stdout.split()
+        self.assertEqual(names, {t for t in tracked if (ROOT / t).is_file()})
+
+
 class AllowlistTests(unittest.TestCase):
     def test_only_exact_hosts_are_allowed(self):
         from phctx.download import host_allowed
