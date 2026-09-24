@@ -51,3 +51,19 @@ Tunnel restarted on a330512 (MCP server started after the last source change). C
 
 Regional file hosts observed today: 8 (`oaisdmntpr` + northcentralus, centralus, nznorth, westus2, indiasocentral, southeastus3,
 southcentralus, koreacentral). Each first use of a new region fails with "nothing saved" until the exact host is added.
+
+## Round 4 — delivered-content receipts and inherited freshness (commits 53c288e + c709e5a, schema v10, 2026-09-24 10:04–10:23 CDT)
+
+Tunnel restarted on c709e5a; tools refreshed in Settings → Plugins → Personal Health Context. Server log:
+`chatgpt_mcp_server_log_round4.txt`. All data real (resting HR) except the synthetic probe files.
+
+| Probe | ChatGPT conversation | Server / DB evidence | Result |
+|---|---|---|---|
+| Aggregate listing its population | chat A: March-2026 resting-HR mean saved as analysis. The model's query put the 11 ids in one `GROUP_CONCAT(id, ',')` cell; 53c288e matched whole cells only → `context_capture status=error:evidence_unbound`, model said "未保存" (committed=false). Fixed in c709e5a (observation ids inside a cell count when the query read observations), tunnel restarted | rerun: `context_query ok`, `context_capture ok` → parent `rec_4bbb55123e5545079471d1eed768068c` (11 observation refs, dependency observations=1) | PASS after fix |
+| Parent → child | chat A: child analysis citing only the parent, receipt from `context_read` | `context_capture ok` → child `rec_99d5e68ef30d49dea7d382998a93cd05` (1 ref: the parent); both read back bound=true, current=true | PASS |
+| Reference-only read cannot certify observations | chat A: `context_read` of the parent only, then cite its first `obs_` id with that receipt | `context_capture status=error:evidence_unbound` ("Evidence not returned by the cited reads"); model explained reading a record ≠ reading its observations, re-queried that observation (59 count/min, 2026-03-20) and saved `rec_95dc2287e14a48569119593c9715c014` bound/current | PASS |
+| Population change invalidates parent AND child | operator: one observation batch committed (`ingest_batch` request `phctx-probe-r4-population-change`, a no-op tombstone on source user) | parent current=false stale_ids=[observations]; child current=false stale_ids=[parent]; ref analysis current=false | PASS |
+| Stale parent cannot be cited again | chat B (new): read child + parent, then save a grandchild citing the stale parent with a fresh read receipt | `context_capture status=error:stale_evidence` ("Cited record … is stale (observations); re-derive it from current data"); model re-derived a new parent `rec_9916fd8f0e7f4a3fac4d803113cda57a` from current data and saved grandchild `rec_542569eaa21c4dfda90c39023bfd5cfe`, both bound/current | PASS |
+| Photo + PDF originals, page image | chat C (new): synthetic PNG + 2-page PDF. PDF saved (`file_saved sha=ad7af05ff1c4 size=1371`), page 2 rendered with `page_image` (Test Analyte D 41 U/L, 10–40, H). Photo first went through a new region `oaisdmntprjapaneast` → refused, "未保存"; host added, retry saved (`sha 89d93e86…`, `rec_d628c876bac74c0fa36a3611125ebf3b`) | stored SHA-256 = local SHA-256 for both files | PASS |
+
+Regional file hosts observed: 9 (round-3 list + japaneast).
