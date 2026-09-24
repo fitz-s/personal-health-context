@@ -20,10 +20,7 @@ from .store import Store, StoreError, dump, utcnow
 
 API = 'https://api.ouraring.com/v2/usercollection/'
 SOURCE = 'oura'
-PROVIDER = oauth.Provider('oura', 'https://cloud.ouraring.com/oauth/authorize', 'https://api.ouraring.com/oauth/token',
-                          'email personal daily heartrate workout tag session spo2 heart_health')
-# Oura deprecated personal access tokens in Dec 2025; the owner's old one still answers, so it serves until OAuth consent.
-LEGACY_TOKEN = ('openclaw-oura-personal-access-token', 'leofitz')
+TOKEN = ('openclaw-oura-personal-access-token', 'leofitz')  # the owner's token (Secret Pipeline entry)
 FIRST_DAY = date(2015, 1, 1)  # before the first Oura ring; a full backfill asks from here
 REREAD_DAYS = 14  # Oura revises recent documents as the ring syncs
 TIME_SERIES_DAYS = 30  # heartrate / battery: the API caps a request's datetime range
@@ -121,8 +118,7 @@ def _windows(first: date, last: date, days: int):
 def sync(store: Store, tz: str = 'America/Chicago', full: bool = False, token: str | None = None,
          today: date | None = None) -> dict:
     """Backfill (first run or full=True) or re-read the trailing window, one committed page per collection window."""
-    if token is None:
-        token = oauth.access_token(PROVIDER) if oauth.connected(PROVIDER) else keychain_get(*LEGACY_TOKEN)
+    token = token or keychain_get(*TOKEN)
     if not token:
         raise oauth.OAuthError('oura_token_missing')
     today = today or datetime.now(timezone.utc).date()

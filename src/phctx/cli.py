@@ -83,7 +83,7 @@ def main(argv: list[str] | None = None) -> int:
     oa = sub.add_parser('sync-oura', help="pull the owner's Oura data (backfill on first run, then a trailing window)")
     oa.add_argument('--full', action='store_true', help='re-read every collection from the first day')
     cn = sub.add_parser('connect', help='one-time OAuth consent for a wearable API (refresh token kept in the Keychain)')
-    cn.add_argument('providers', nargs='+', choices=['whoop', 'oura'])
+    cn.add_argument('providers', nargs='+', choices=['whoop'])
     cn.add_argument('--timeout', type=float, default=3600, help='seconds to wait for consent')
     cn.add_argument('--no-browser', action='store_true', help='only print the consent URL')
     wa = sub.add_parser('sync-whoop', help="pull the owner's WHOOP data (backfill on first run, then a trailing window)")
@@ -153,10 +153,10 @@ def dispatch(cfg, args) -> int:
             return 1
         return 0
     if c in {'connect', 'sync-whoop'}:
-        from . import oauth, oura, whoop
+        from . import oauth, whoop
         try:
             if c == 'connect':
-                known = {'whoop': whoop.PROVIDER, 'oura': oura.PROVIDER}
+                known = {'whoop': whoop.PROVIDER}
                 result = oauth.login([known[n] for n in args.providers], timeout=args.timeout,
                                      **({'open_browser': lambda u: None} if args.no_browser else {}))
                 out(result)
