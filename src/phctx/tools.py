@@ -42,14 +42,19 @@ class ToolContext:
     run_extraction: bool = True
 
 
+# Parts of a read result that only mention other items: a record's payload and its own evidence list name ids whose
+# content this read did not return, so they cannot certify that the reader saw them.
+MENTIONS = frozenset({'payload', 'evidence', 'evidence_links', 'supersedes', 'superseded_by', 'history'})
+
+
 def evidence_ids_in(data: Any) -> set[str]:
-    """Every string in a read result that is an evidence id (rec_*, obs_*, obj:<sha>[#p<n>])."""
+    """Evidence ids (rec_*, obs_*, obj:<sha>[#p<n>]) of the items a read returned, not ids those items mention."""
     out: set[str] = set()
     stack = [data]
     while stack:
         x = stack.pop()
         if isinstance(x, dict):
-            stack.extend(x.values())
+            stack.extend(v for k, v in x.items() if k not in MENTIONS)
         elif isinstance(x, list):
             stack.extend(x)
         elif isinstance(x, str) and EVIDENCE_ID.fullmatch(x):

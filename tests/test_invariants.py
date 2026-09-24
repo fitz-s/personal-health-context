@@ -304,6 +304,15 @@ class ReadReceiptTests(Base):
         self.assertEqual(self.analysis(None, []).data['error'], 'evidence_unbound')  # an analysis always binds
         self.assertFalse(self.analysis([read['read_receipt']], [read['rows'][0][0]]).is_error)
 
+    def test_ids_a_record_only_mentions_do_not_bind(self):
+        self.obs('a', 9, 10.0)
+        a = oid('synthetic:watch', 'a')
+        note = self.s.put_record(request_id=self.rid(), kind='note', text='SYNTHETIC', occurred_at=AT,
+                                 payload={'cites': [a]})['record_id']
+        read = self.t.call('context_read', {'record_ids': [note]}).data  # returns the note, not observation a
+        self.assertEqual(self.analysis([read['read_receipt']], [a]).data['error'], 'evidence_unbound')
+        self.assertFalse(self.analysis([read['read_receipt']], [note], kind='note').is_error)
+
     def test_primary_facts_need_no_read(self):
         out = self.analysis(None, [], kind='event')
         self.assertFalse(out.is_error, out.data)
