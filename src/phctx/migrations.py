@@ -5,7 +5,7 @@ import hashlib
 import json
 import sqlite3
 
-TARGET = 7
+TARGET = 8
 
 
 def statements(sql: str):
@@ -188,6 +188,10 @@ def _v6(c: sqlite3.Connection) -> None:
     shas = [r[0] for r in c.execute("SELECT DISTINCT input_sha256 FROM import_runs WHERE kind='apple_export'")]
     if len(shas) == 1:
         c.execute("INSERT OR REPLACE INTO meta VALUES('export_legacy_owner', ?)", (shas[0][:16],))
+    # A supersession is history: the live row that once held a key may since carry another one. Carry every existing
+    # relation over to the recomputed key of each export row it suppressed, before the keys change.
+    held = c.execute("SELECT o.id, s.live_observation_id FROM supersessions s JOIN observations o "
+                     "ON o.origin_key=s.origin_key AND o.source_id='apple_health_export'").fetchall()
     rows = c.execute("SELECT id, metric, start_at, end_at, value_num, value_text, unit, raw_json FROM observations "
                      "WHERE metric != 'tombstone'")
     batch = []
@@ -195,8 +199,10 @@ def _v6(c: sqlite3.Connection) -> None:
         batch.append((origin_key_of_row(metric, start, end, vn, vt, unit, raw), oid))
     for i in range(0, len(batch), 20000):
         c.executemany('UPDATE observations SET origin_key=? WHERE id=?', batch[i:i + 20000])
+    c.execute('DELETE FROM supersessions')
+    c.executemany('INSERT OR IGNORE INTO supersessions SELECT origin_key, ? FROM observations WHERE id=? '
+                  'AND origin_key IS NOT NULL', [(live, oid) for oid, live in held])
     run(c, '''
-DELETE FROM supersessions;
 INSERT OR IGNORE INTO supersessions SELECT origin_key, id FROM observations
  WHERE source_id LIKE 'apple_health:%' AND origin_key IS NOT NULL ORDER BY updated_at, id;
 INSERT OR IGNORE INTO shadow_insights(id, question_id, payload_json, evidence_versions_json, would_queue, reason, created_at)
@@ -242,7 +248,33 @@ def _v7(c: sqlite3.Connection) -> None:
         c.execute('UPDATE records SET source_key=? WHERE id=?', (key, last))
 
 
-STEPS = {2: _v2, 3: _v3, 4: _v4, 5: _v5, 6: _v6, 7: _v7}
+def _v8(c: sqlite3.Connection) -> None:
+    # 1. Page text is derived and can be re-extracted, so a page reference is versioned by its content hash, not
+    #    'immutable'. 2. canonical_observations also hides export rows that are exact source-record repeats (the source
+    #    app wrote the same sample twice: every measured field and the device are equal, only creation metadata
+    #    differs); canonical_observations_raw keeps every permitted source row. 3. An import in progress is recorded
+    #    in meta so reads can refuse observation analytics while two parser generations overlap.
+    if 'sha256' not in {r[1] for r in c.execute('PRAGMA table_info(object_pages)')}:
+        c.execute('ALTER TABLE object_pages ADD COLUMN sha256 TEXT')
+    run(c, """
+DROP VIEW IF EXISTS canonical_observations_raw;
+DROP VIEW IF EXISTS canonical_observations;
+CREATE VIEW canonical_observations_raw AS SELECT * FROM observations WHERE deleted=0 AND NOT (
+ source_id='apple_health_export' AND origin_key IS NOT NULL
+ AND origin_key IN (SELECT origin_key FROM supersessions));
+CREATE VIEW canonical_observations AS SELECT o.* FROM canonical_observations_raw o WHERE NOT (
+ o.source_id='apple_health_export' AND EXISTS (SELECT 1 FROM observations d INDEXED BY obs_origin
+  WHERE d.origin_key=o.origin_key AND d.id<o.id AND d.deleted=0 AND d.source_id=o.source_id
+  AND d.start_at=o.start_at AND d.end_at=o.end_at AND d.value_num IS o.value_num AND d.value_text IS o.value_text
+  AND d.unit IS o.unit AND d.source_name IS o.source_name
+  AND json_extract(d.raw_json, '$.device') IS json_extract(o.raw_json, '$.device')));
+""")
+    for sha, page, text in c.execute('SELECT object_sha, page, text FROM object_pages').fetchall():
+        c.execute('UPDATE object_pages SET sha256=? WHERE object_sha=? AND page=?',
+                  (hashlib.sha256(text.encode()).hexdigest(), sha, page))
+
+
+STEPS = {2: _v2, 3: _v3, 4: _v4, 5: _v5, 6: _v6, 7: _v7, 8: _v8}
 
 
 def apply(c: sqlite3.Connection, current: int, now: str) -> int:

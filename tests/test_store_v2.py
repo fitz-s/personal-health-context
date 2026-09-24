@@ -295,5 +295,27 @@ print(json.dumps({'schema_version': s.status()['schema_version'], 'snapshot': st
             self.assertEqual(c.execute('SELECT count(*) FROM objects').fetchone()[0], 0)
 
 
+    def test_directory_sync_failure_is_retried_on_an_existing_blob(self):
+        args = dict(data=b'SYNTHETIC dir-sync bytes', filename='s.bin', mime='application/octet-stream',
+                    text='SYNTHETIC attachment', occurred_at=AT)
+        real = os.fsync
+        blobs_fd = []
+
+        blobs_ino = os.stat(self.s.blobs).st_ino
+
+        def failing(fd):  # the objects directory never syncs: file renamed into place, entry not durable
+            if os.fstat(fd).st_ino == blobs_ino:
+                blobs_fd.append(fd)
+                raise OSError(5, 'injected EIO')
+            return real(fd)
+        with patch('phctx.store.os.fsync', side_effect=failing):
+            self.expect_error('storage_unavailable', self.s.put_attachment_bytes, request_id='d1', **args)
+            self.expect_error('storage_unavailable', self.s.put_attachment_bytes, request_id='d1', **args)
+        self.assertGreaterEqual(len(blobs_fd), 2)  # the retry synced again instead of trusting the existing file
+        with self.s.connect() as c:
+            self.assertEqual(c.execute('SELECT count(*) FROM objects').fetchone()[0], 0)
+            self.assertEqual(c.execute("SELECT count(*) FROM receipts WHERE request_id='d1'").fetchone()[0], 0)
+        self.assertTrue(self.s.put_attachment_bytes(request_id='d1', **args)['original_saved'])
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

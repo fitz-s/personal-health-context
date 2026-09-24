@@ -120,7 +120,10 @@ class Store:
     """
     KINDS = {'event', 'routine', 'question', 'analysis', 'note', 'attachment', 'preference'}
     CLOSED_QUESTION = {'closed', 'superseded', 'answered_final'}
+    OBSERVATION_TABLES = {'observations', 'active_observations', 'canonical_observations', 'canonical_observations_raw',
+                          'observation_catalog', 'supersessions'}
     PUBLIC_TABLES = {'records', 'active_records', 'observations', 'active_observations', 'canonical_observations',
+                     'canonical_observations_raw',
                      'sources', 'objects', 'evidence_links', 'evidence_refs', 'object_pages', 'extractions',
                      'observation_catalog', 'supersessions'}
     SAFE_FUNCTIONS = {'abs', 'avg', 'coalesce', 'count', 'date', 'datetime', 'ifnull', 'julianday',
@@ -285,9 +288,10 @@ class Store:
         sha, _, page = ref[4:].partition('#p')
         if not c.execute('SELECT 1 FROM objects WHERE sha256=?', (sha,)).fetchone():
             return None
-        if page and not c.execute('SELECT 1 FROM object_pages WHERE object_sha=? AND page=?', (sha, int(page))).fetchone():
-            return None
-        return 'immutable'
+        if not page:
+            return 'immutable'  # original bytes are content-addressed
+        row = c.execute('SELECT sha256 FROM object_pages WHERE object_sha=? AND page=?', (sha, int(page))).fetchone()
+        return None if row is None else 'text:' + row[0]  # derived text: re-extraction changes the version
 
     def _evidence_versions(self, c: sqlite3.Connection, refs: list[str]) -> dict[str, str]:
         versions = {}
@@ -300,17 +304,39 @@ class Store:
             versions[ref] = v
         return versions
 
-    def _written_after(self, c: sqlite3.Connection, ref: str, at: str) -> bool:
-        """True when the ref was created or changed after `at` (a store-clock instant): a reader that started at `at`
-        cannot be shown to have seen that version."""
-        kind = ref_kind(ref)
-        if kind == 'record':
-            row = c.execute('SELECT created_at FROM records WHERE id=?', (ref,)).fetchone()
-        elif kind == 'observation':
-            row = c.execute('SELECT updated_at FROM observations WHERE id=?', (ref,)).fetchone()
-        else:
-            return False  # originals are immutable
-        return bool(row) and row[0] > at
+    def read_token(self) -> int:
+        """Change-log sequence at this read. A writer citing evidence passes the token of the read that produced it."""
+        with self.connect() as c:
+            return c.execute('SELECT coalesce(max(seq),0) FROM changes').fetchone()[0]
+
+    def _changed_since(self, c: sqlite3.Connection, refs: list[str], token: int) -> list[str]:
+        """Cited refs that a reader holding `token` cannot have seen as they are now: a record written after it, an
+        observation inside any batch window (same source, metric, overlapping time) committed after it — which also
+        covers new members of an aggregate over that window — or a page whose original was re-extracted after it.
+        The change log is ordered by a monotonic sequence, not a clock."""
+        batches, records, extracted = [], set(), set()
+        for entity, eid, detail in c.execute('SELECT entity, entity_id, detail FROM changes WHERE seq>?', (token,)):
+            if entity == 'observations':
+                d = json.loads(detail)
+                batches.append((eid, set(d.get('metrics', [])), d.get('start'), d.get('end')))
+            elif entity == 'record':
+                records.add(eid)
+            elif entity == 'extraction':
+                extracted.add(eid)
+        stale = []
+        for ref in refs:
+            kind = ref_kind(ref)
+            if kind == 'record':
+                hit = ref in records
+            elif kind == 'observation':
+                o = c.execute('SELECT source_id, metric, start_at, end_at FROM observations WHERE id=?', (ref,)).fetchone()
+                hit = bool(o) and any(src == o[0] and o[1] in metrics and lo and hi and lo <= o[3] and o[2] <= hi
+                                      for src, metrics, lo, hi in batches)
+            else:
+                hit = '#p' in ref and ref[4:].partition('#p')[0] in extracted
+            if hit:
+                stale.append(ref)
+        return stale
 
     def _stale_refs(self, c: sqlite3.Connection, versions: dict[str, str]) -> list[str]:
         return [ref for ref, v in versions.items() if self._ref_version(c, ref) != v]
@@ -325,7 +351,7 @@ class Store:
                    timezone_name: str = 'America/Chicago', payload: dict | None = None,
                    source_id: str = 'user', source_key: str | None = None,
                    object_sha: str | None = None, supersedes: str | None = None,
-                   evidence_ids: list[str] | None = None) -> dict:
+                   evidence_ids: list[str] | None = None, read_token: int | None = None) -> dict:
         if kind not in self.KINDS:
             raise StoreError('invalid_kind', 'Unsupported context kind.')
         nonempty(text, 'text')
@@ -339,11 +365,14 @@ class Store:
             raise StoreError('invalid_argument', 'At most 100 evidence IDs.')
         body = dict(op='record', kind=kind, text=text, at=at, tz=timezone_name, payload=payload,
                     source=source_id, source_key=source_key, object=object_sha,
-                    supersedes=supersedes, evidence=evidence_ids)
+                    supersedes=supersedes, evidence=evidence_ids, read_token=read_token)
 
         def write(c: sqlite3.Connection) -> dict:
             self._source(c, source_id)
             versions = self._evidence_versions(c, evidence_ids)
+            if read_token is not None and (stale := self._changed_since(c, evidence_ids, read_token)):
+                raise StoreError('stale_evidence', f'Evidence changed after it was read ({", ".join(stale[:5])}); '
+                                 're-read it and write again with the new read_token.')
             if supersedes:
                 old = c.execute('SELECT * FROM active_records WHERE id=?', (supersedes,)).fetchone()
                 if not old or old['kind'] != kind or old['source_id'] != source_id:
@@ -516,28 +545,33 @@ class Store:
         return self._mutate(request_id, body, write)
 
     def _write_blob(self, data: bytes) -> str:
+        """Content-addressed, fsynced original. The file AND its directory entry are synced on every call, including
+        when the blob already exists (an earlier writer may have renamed it and then failed its directory sync), so
+        no database reference is ever made to bytes whose publication is not durable."""
         sha = hashlib.sha256(data).hexdigest()
         blob = self.blobs / sha
-        # Concurrent identical writes are harmless. No DB reference until bytes are fully fsynced.
-        if not blob.exists():
-            fd, temp = tempfile.mkstemp(prefix='.upload-', dir=self.blobs)
-            try:
+        temp = None
+        try:
+            if not blob.exists():
+                fd, temp = tempfile.mkstemp(prefix='.upload-', dir=self.blobs)
                 with os.fdopen(fd, 'wb') as f:
                     f.write(data)
                     f.flush()
                     os.fsync(f.fileno())
                 os.chmod(temp, 0o600)
                 os.replace(temp, blob)
-                dfd = os.open(self.blobs, os.O_RDONLY)
+                temp = None
+            for path in (blob, self.blobs):
+                fd = os.open(path, os.O_RDONLY)
                 try:
-                    os.fsync(dfd)
+                    os.fsync(fd)
                 finally:
-                    os.close(dfd)
-            except OSError as e:
-                raise StoreError('storage_unavailable', 'Could not write the original; nothing was saved.') from e
-            finally:
-                if os.path.exists(temp):
-                    os.unlink(temp)
+                    os.close(fd)
+        except OSError as e:
+            raise StoreError('storage_unavailable', 'Could not write the original; nothing was saved.') from e
+        finally:
+            if temp and os.path.exists(temp):
+                os.unlink(temp)
         if hashlib.sha256(blob.read_bytes()).hexdigest() != sha:
             raise StoreError('object_corrupt', 'Object checksum failed; no capture acknowledgment.')
         return sha
@@ -575,8 +609,9 @@ class Store:
             if not c.execute('SELECT 1 FROM objects WHERE sha256=?', (sha,)).fetchone():
                 raise StoreError('not_found', 'Object is not registered.')
             c.execute('DELETE FROM object_pages WHERE object_sha=?', (sha,))
-            c.executemany('INSERT INTO object_pages VALUES(?,?,?,?)',
-                          [(sha, i + 1, t, method or 'unknown') for i, t in enumerate(pages or [])])
+            c.executemany('INSERT INTO object_pages(object_sha, page, text, method, sha256) VALUES(?,?,?,?,?)',
+                          [(sha, i + 1, t, method or 'unknown', hashlib.sha256(t.encode()).hexdigest())
+                           for i, t in enumerate(pages or [])])
             c.execute('INSERT INTO extractions VALUES(?,?,?,?,?,?) ON CONFLICT(object_sha) DO UPDATE SET '
                       'status=excluded.status, method=excluded.method, page_count=excluded.page_count, '
                       'error_code=excluded.error_code, updated_at=excluded.updated_at',
@@ -622,9 +657,14 @@ class Store:
         deadline = time.monotonic() + 8.0  # multi-year aggregates over ~2M rows; still bounded
         c.set_progress_handler(lambda: int(time.monotonic() > deadline), 1000)
 
+        gated = c.execute("SELECT value FROM meta WHERE key='import_in_progress'").fetchone() is not None
+        touched: set[str] = set()
+
         def authorize(action: int, a: str | None, b: str | None, db: str | None, trigger: str | None) -> int:
             if action == sqlite3.SQLITE_SELECT:
                 return sqlite3.SQLITE_OK
+            if action == sqlite3.SQLITE_READ and a:
+                touched.add(a)
             # SQLite reports db=None,column='' for cardinality-only table reads.
             # Table allowlist still applies; ATTACH/CREATE and secret-table reads remain denied.
             if action == sqlite3.SQLITE_READ and a in self.PUBLIC_TABLES and (
@@ -636,6 +676,10 @@ class Store:
         c.set_authorizer(authorize)
         try:
             cur = c.execute(sql, parameters or [])
+            if gated and touched & self.OBSERVATION_TABLES:
+                raise StoreError('import_in_progress', 'An Apple import is replacing observation rows; old and new '
+                                 'rows overlap until it finishes, so observation totals would be wrong. Records, '
+                                 'originals and search still work. Say so to the user and retry later.')
             columns = [x[0] for x in cur.description or []]
             rows, encoded_bytes, truncated = [], len(dump(columns).encode()), False
             for index, row in enumerate(cur):
@@ -814,9 +858,18 @@ class Store:
                 row['active_observations'] = c.execute(
                     'SELECT coalesce(sum(n),0) FROM observation_catalog WHERE source_id=?', (r['id'],)).fetchone()[0]
                 rows.append(row)
-        return {'checked_at': utcnow(), 'sources': rows,
-                'note': 'latest_sample_at is not complete coverage; permission-denied can look like empty data. '
-                        'apple_health_export is a one-time backfill, not continuous sync.'}
+            importing = c.execute("SELECT value FROM meta WHERE key='import_in_progress'").fetchone()
+        out = {'checked_at': utcnow(), 'sources': rows,
+               'note': 'latest_sample_at is not complete coverage; permission-denied can look like empty data. '
+                       'apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides '
+                       'export rows superseded by the live stream and exact repeats of one source record; '
+                       'canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure '
+                       'pairs) are not stored: pair the child records by time if needed. Export dates without a '
+                       'recorded zone use the importing timezone.'}
+        if importing:
+            out['observation_reads'] = ('blocked: an Apple import is in progress (old and new parser rows overlap); '
+                                        'observation queries refuse until it finishes')
+        return out
 
     # ---- preferences ---------------------------------------------------------------------
     def set_preference(self, *, request_id: str, key: str, value: Any) -> dict:
@@ -848,11 +901,11 @@ class Store:
         return bool(row) and json.loads(row[0]).get('state', 'open') not in self.CLOSED_QUESTION
 
     def queue_insight(self, *, request_id: str, candidate: dict, ttl_days: int | None = None,
-                      fence: Callable[[sqlite3.Connection], None] | None = None, read_at: str | None = None) -> dict:
+                      fence: Callable[[sqlite3.Connection], None] | None = None, read_token: int | None = None) -> dict:
         """Local background writer only. Silence is an output, not a persisted health conclusion.
 
         `fence` runs first inside the same transaction; raising there (e.g. lease lost) drops the whole write.
-        `read_at` (store clock, taken before the investigation began) rejects evidence written during it."""
+        `read_token` (taken before the investigation began) rejects evidence that changed during it."""
         if candidate.get('decision') == 'silence':
             return {'status': 'silent', 'queued': False}
         qid, evidence = self._candidate(candidate)
@@ -861,7 +914,7 @@ class Store:
         def write(c: sqlite3.Connection) -> dict:
             if fence:
                 fence(c)
-            versions, fingerprint, verdict = self._gate(c, candidate, qid, evidence, read_at)
+            versions, fingerprint, verdict = self._gate(c, candidate, qid, evidence, read_token)
             if verdict:
                 return verdict
             iid = 'ins_' + uuid.uuid4().hex
@@ -885,14 +938,14 @@ class Store:
         return candidate.get('question_id'), evidence
 
     def _gate(self, c: sqlite3.Connection, candidate: dict, qid: str | None, evidence: list[str],
-              read_at: str | None = None) -> tuple[dict[str, str], str, dict | None]:
+              read_token: int | None = None) -> tuple[dict[str, str], str, dict | None]:
         """(current evidence versions, fingerprint, why a real insight would not be queued now or None to queue)."""
         if qid and not self._question_open(c, qid):
             raise StoreError('missing_question', 'Question reference is not an active open stored question.')
         versions = self._evidence_versions(c, evidence)
         read = candidate.get('evidence_versions') or {}
         if any((versions[r] if r in versions else self._ref_version(c, r)) != v for r, v in read.items()) or (
-                read_at and any(self._written_after(c, r, read_at) for r in evidence)):
+                read_token is not None and self._changed_since(c, evidence, read_token)):
             raise StoreError('stale_evidence', 'Evidence changed after it was read; re-read and re-investigate.')
         fingerprint = hashlib.sha256(dump({'question_id': qid, 'evidence': versions,
                                            'topic': candidate.get('topic', 'unspecified')}).encode()).hexdigest()
@@ -912,7 +965,7 @@ class Store:
         return versions, fingerprint, None
 
     def queue_shadow(self, *, request_id: str, candidate: dict,
-                     fence: Callable[[sqlite3.Connection], None] | None = None, read_at: str | None = None) -> dict:
+                     fence: Callable[[sqlite3.Connection], None] | None = None, read_token: int | None = None) -> dict:
         """Shadow mode: record what the gate would have done, in shadow_insights only. Never reaches the outbox,
         pending_insights, bootstrap, real-insight dedup or the attention budget."""
         if candidate.get('decision') == 'silence':
@@ -922,7 +975,7 @@ class Store:
         def write(c: sqlite3.Connection) -> dict:
             if fence:
                 fence(c)
-            versions, _, verdict = self._gate(c, candidate, qid, evidence, read_at)
+            versions, _, verdict = self._gate(c, candidate, qid, evidence, read_token)
             sid = 'shd_' + uuid.uuid4().hex
             c.execute('INSERT INTO shadow_insights VALUES(?,?,?,?,?,?,?)',
                       (sid, qid, dump(candidate), dump(versions), int(verdict is None),

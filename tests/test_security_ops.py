@@ -744,12 +744,14 @@ if __name__ == '__main__':
     unittest.main(verbosity=2)
 
 
-class AllowlistPatternTests(unittest.TestCase):
-    def test_regional_pattern_is_anchored(self):
+class AllowlistTests(unittest.TestCase):
+    def test_only_exact_hosts_are_allowed(self):
         from phctx.download import host_allowed
-        pat = [r're:oaisdmntpr[a-z0-9]{2,24}\.blob\.core\.windows\.net']
-        self.assertTrue(host_allowed('oaisdmntprcentralus.blob.core.windows.net', pat))
-        self.assertTrue(host_allowed('OAISDMNTPRNORTHCENTRALUS.blob.core.windows.net.', pat))
-        for bad in ('evil.blob.core.windows.net', 'xoaisdmntprcentralus.blob.core.windows.net',
-                    'oaisdmntprcentralus.blob.core.windows.net.evil.com', 'oaisdmntpr.blob.core.windows.net'):
-            self.assertFalse(host_allowed(bad, pat), bad)
+        hosts = ['oaisdmntprcentralus.blob.core.windows.net', 'oaisdmntprnorthcentralus.blob.core.windows.net']
+        self.assertTrue(host_allowed('OAISDMNTPRNORTHCENTRALUS.blob.core.windows.net.', hosts))
+        for bad in ('oaisdmntprattacker.blob.core.windows.net', 'evil.blob.core.windows.net',
+                    'x.oaisdmntprcentralus.blob.core.windows.net', 'oaisdmntprcentralus.blob.core.windows.net.evil.com'):
+            self.assertFalse(host_allowed(bad, hosts), bad)
+        self.assertFalse(host_allowed('a.example.com', ['.example.com']))  # no suffix entries either
+        self.assertFalse(host_allowed('oaisdmntprcentralus.blob.core.windows.net',
+                                      [r're:oaisdmntpr[a-z0-9]{2,24}\.blob\.core\.windows\.net']))

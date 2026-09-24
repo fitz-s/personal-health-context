@@ -196,10 +196,73 @@ class EvidenceBindingTests(Base):
                                           mime='text/plain', text='SYNTHETIC file', occurred_at=AT)['object_sha256']
         self.s.set_extraction(sha, status='done', method='fixture', pages=['SYNTHETIC page'])
         pages = tools.call('context_read_original', {'object_sha256': sha, 'mode': 'pages'}).data
-        self.assertEqual(pages['versions'], {f'obj:{sha}#p1': 'immutable'})
+        page_v = 'text:' + hashlib.sha256(b'SYNTHETIC page').hexdigest()
+        self.assertEqual(pages['versions'], {f'obj:{sha}#p1': page_v})
         info = tools.call('context_read_original', {'object_sha256': sha, 'mode': 'info'}).data
         self.assertEqual(info['versions'], {f'obj:{sha}': 'immutable'})
 
+    def test_re_extracted_page_is_a_new_version(self):
+        sha = self.s.put_attachment_bytes(request_id=self.rid(), data=b'SYNTHETIC scan', filename='s.txt',
+                                          mime='text/plain', text='SYNTHETIC file', occurred_at=AT)['object_sha256']
+        self.s.set_extraction(sha, status='done', method='fixture', pages=['SYNTHETIC first reading'])
+        ref = f'obj:{sha}#p1'
+        v1 = self.s.read_versions([ref])
+        self.s.set_extraction(sha, status='done', method='fixture', pages=['SYNTHETIC corrected reading'])
+        self.assertNotEqual(self.s.read_versions([ref]), v1)
+
+
+
+class ReadTokenTests(Base):
+    """R2-07/R2-08: a foreground analysis is bound to the read that produced it, by change-log sequence."""
+
+    def setUp(self):
+        super().setUp()
+        self.s.register_source('synthetic:watch', 'SYNTHETIC watch')
+        self.t = Tools(ToolContext(store=self.s))
+
+    def analysis(self, token, ids):
+        return self.t.call('context_capture', {'request_id': self.rid(), 'kind': 'analysis',
+                                               'text': 'SYNTHETIC weekly mean', 'occurred_at': AT,
+                                               'evidence_ids': ids, 'read_token': token})
+
+    def test_changed_observation_after_the_read_is_refused(self):
+        self.batch('synthetic:watch', [dict(native_id='a', metric='SYNTHETIC.m', start_at=hour(1), value_num=1.0)])
+        read = self.t.call('context_query', {'sql': 'SELECT id FROM observations'}).data
+        self.batch('synthetic:watch', [dict(native_id='a', metric='SYNTHETIC.m', start_at=hour(1), value_num=2.0)])
+        out = self.analysis(read['read_token'], [read['rows'][0][0]])
+        self.assertEqual(out.data['error'], 'stale_evidence')
+        fresh = self.t.call('context_query', {'sql': 'SELECT 1'}).data['read_token']
+        self.assertFalse(self.analysis(fresh, [read['rows'][0][0]]).is_error)
+
+    def test_a_new_member_of_the_aggregated_window_invalidates_old_members(self):
+        self.batch('synthetic:watch', [dict(native_id='a', metric='SYNTHETIC.m', start_at=hour(1), end_at=hour(2),
+                                            value_num=1.0)])
+        read = self.t.call('context_query', {'sql': 'SELECT id FROM observations'}).data
+        # a second sample lands in the same window: the mean over [hour1, hour3) the model computed is now wrong
+        self.batch('synthetic:watch', [dict(native_id='b', metric='SYNTHETIC.m', start_at=hour(1), end_at=hour(3),
+                                            value_num=9.0)])
+        self.assertEqual(self.analysis(read['read_token'], [read['rows'][0][0]]).data['error'], 'stale_evidence')
+        # a batch of another metric, or of this metric at another time, does not (the check is per batch window,
+        # so a batch mixing both would conservatively refuse)
+        read = self.t.call('context_query', {'sql': 'SELECT 1'}).data
+        self.batch('synthetic:watch', [dict(native_id='c', metric='SYNTHETIC.other', start_at=hour(1), value_num=1.0)])
+        self.batch('synthetic:watch', [dict(native_id='d', metric='SYNTHETIC.m', start_at=hour(40), value_num=1.0)])
+        self.assertFalse(self.analysis(read['read_token'], [oid('synthetic:watch', 'a')]).is_error)
+
+    def test_re_extracted_page_after_the_read_is_refused(self):
+        sha = self.s.put_attachment_bytes(request_id=self.rid(), data=b'SYNTHETIC scan', filename='s.txt',
+                                          mime='text/plain', text='SYNTHETIC file', occurred_at=AT)['object_sha256']
+        self.s.set_extraction(sha, status='done', method='fixture', pages=['SYNTHETIC first'])
+        read = self.t.call('context_read_original', {'object_sha256': sha, 'mode': 'pages'}).data
+        self.s.set_extraction(sha, status='done', method='fixture', pages=['SYNTHETIC corrected'])
+        self.assertEqual(self.analysis(read['read_token'], [f'obj:{sha}#p1']).data['error'], 'stale_evidence')
+
+    def test_every_read_tool_returns_a_token_and_writes_do_not(self):
+        for name, args in (('context_bootstrap', {}), ('context_search', {}), ('context_query', {'sql': 'SELECT 1'})):
+            self.assertIsInstance(self.t.call(name, args).data['read_token'], int, name)
+        out = self.t.call('context_capture', {'request_id': self.rid(), 'kind': 'note', 'text': 'SYNTHETIC',
+                                              'occurred_at': AT})
+        self.assertNotIn('read_token', out.data)
 
 class PostCommitTruthTests(Base):
     def test_errors_after_original_commit_still_return_the_committed_receipt(self):

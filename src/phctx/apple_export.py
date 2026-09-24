@@ -345,26 +345,34 @@ def _active_profile(store: Store) -> str | None:
     return row[0] if row else None
 
 
-def _retire(store: Store, sha16: str, rid: str, cursor: str, since_at: str | None = None) -> int:
-    """Tombstone rows of THIS export written by an older parser.
+def _retire(store: Store, sha16: str, rid: str, cursor: str, since_at: str | None = None) -> tuple[int, int]:
+    """Tombstone rows of THIS export written by an older parser, but only those this run replaced.
 
-    Tagged rows: metadata.import.export == sha16 and parser < current. Untagged (pre-v4) rows only when migration v6
-    attributed them to this export (meta export_legacy_owner, set only if the DB ever imported exactly one export);
-    rows that cannot be attributed are left alone, never guessed. With `since`, only rows at/after it.
+    Candidates: tagged rows (metadata.import.export == sha16, parser < current) and untagged pre-v4 rows when migration
+    v6 attributed them to this export (meta export_legacy_owner, set only if the DB ever imported exactly one export).
+    With `since`, only rows at/after it. A candidate is retired only if a current-parser row of this export has its
+    equivalence key; one the new parser did not reproduce (unparseable, skipped, a changed mapping) stays and is
+    counted as unreplaced. Imports are serialized (import_in_progress), so nothing changes between select and delete.
+    Returns (retired, unreplaced).
     """
     with store.connect() as c:
         owner = c.execute("SELECT value FROM meta WHERE key='export_legacy_owner'").fetchone()
-        ids = [r[0] for r in c.execute(
-            "SELECT native_id FROM observations WHERE source_id=? AND deleted=0 AND start_at>=? AND "
-            "(json_extract(raw_json, '$.metadata.import') IS NULL AND ? OR "
-            "json_extract(raw_json, '$.metadata.import.export')=? AND json_extract(raw_json, '$.metadata.import.parser')<?)",
-            (SOURCE, since_at or '', bool(owner and owner[0] == sha16), sha16, PARSER_VERSION))]
+        rows = c.execute(
+            "SELECT o.native_id, EXISTS(SELECT 1 FROM observations n INDEXED BY obs_origin WHERE n.origin_key=o.origin_key "
+            "AND n.source_id=o.source_id AND n.deleted=0 AND json_extract(n.raw_json, '$.metadata.import.export')=? "
+            "AND json_extract(n.raw_json, '$.metadata.import.parser')=?) FROM observations o "
+            "WHERE o.source_id=? AND o.deleted=0 AND o.start_at>=? AND "
+            "(json_extract(o.raw_json, '$.metadata.import') IS NULL AND ? OR "
+            "json_extract(o.raw_json, '$.metadata.import.export')=? AND json_extract(o.raw_json, '$.metadata.import.parser')<?)",
+            (sha16, PARSER_VERSION, SOURCE, since_at or '', bool(owner and owner[0] == sha16), sha16,
+             PARSER_VERSION)).fetchall()
+    ids = [nid for nid, replaced in rows if replaced]
     for i in range(0, len(ids), PAGE):
         chunk = ids[i:i + PAGE]
         store.ingest_batch(request_id=f'{rid}:retire:' + hashlib.sha256(dump(chunk).encode()).hexdigest()[:16],
                            source_id=SOURCE, samples=[], deleted_ids=chunk, cursor=cursor,
                            coverage={'kind': 'backfill_retire_older_parser'})
-    return len(ids)
+    return len(ids), len(rows) - len(ids)
 
 
 def _ecg_header(data: bytes) -> tuple[str, str | None]:
@@ -412,6 +420,15 @@ def import_export(store: Store, zip_path: Path, dry_run: bool = False, since: st
     run_id = 'imp_' + uuid.uuid4().hex
     if not dry_run:
         with store.transaction() as c:
+            # One import at a time, and while it runs old- and new-parser rows overlap: the marker makes observation
+            # reads refuse (Store.observation_gate) until retirement finishes. A crashed run leaves the marker set on
+            # purpose — re-run the import to reconcile.
+            held = c.execute("SELECT value FROM meta WHERE key='import_in_progress'").fetchone()
+            if held and json.loads(held[0])['export'] != sha:  # the same export may resume (it is how one reconciles)
+                raise StoreError('import_in_progress', 'An import of a different Apple export has not finished; '
+                                                       're-run that export first.')
+            c.execute("INSERT OR REPLACE INTO meta VALUES('import_in_progress', ?)",
+                      (dump({'run': run_id, 'export': sha}),))
             c.execute('INSERT INTO import_runs VALUES(?,?,?,?,?,?,?)',
                       (run_id, 'apple_export', sha, utcnow(), None, 'running', '{}'))
     page: list[dict] = []
@@ -507,7 +524,8 @@ def import_export(store: Store, zip_path: Path, dry_run: bool = False, since: st
         else:
             counts['cda'] = {'present': False}
         if not dry_run:  # also after a partial (since) import: its rows replace older-parser rows of this export
-            counts['retired'] = _retire(store, sha[:16], rid, f'export:{tag}:{max(page_no - 1, 0)}', since_at)
+            counts['retired'], counts['unreplaced_older_rows'] = _retire(
+                store, sha[:16], rid, f'export:{tag}:{max(page_no - 1, 0)}', since_at)
         _attachments(store, zip_path, counts, routes, refused, export_at, tag, tz, dry_run)
     except BaseException as e:  # any failure (a corrupt member, an interrupt) closes the run: never left 'running'
         if not dry_run:
@@ -521,6 +539,7 @@ def import_export(store: Store, zip_path: Path, dry_run: bool = False, since: st
         with store.transaction() as c:
             c.execute("UPDATE import_runs SET status='done', finished_at=?, counts_json=? WHERE id=?",
                       (utcnow(), dump(counts), run_id))
+            c.execute("DELETE FROM meta WHERE key='import_in_progress' AND json_extract(value, '$.run')=?", (run_id,))
     return {'dry_run': dry_run, 'export_sha256': sha, 'preflight': info, 'counts': counts,
             'note': 'Backfill only. Continuous sync requires the iPhone helper.'}
 

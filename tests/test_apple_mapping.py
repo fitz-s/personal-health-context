@@ -242,10 +242,12 @@ class PagingTests(Base):
 
 class RetirementTests(Base):
     def legacy(self, native_id, value, metadata=None):
-        return dict(native_id=native_id, metric='HKQuantityTypeIdentifierBodyMass', start_at='2026-09-20T08:00:00-05:00',
-                    end_at='2026-09-20T08:00:00-05:00', timezone='America/Chicago', value_num=value, value_text=None,
-                    unit='kg', source_name='SYNTHETIC Watch', source_bundle_id='SYNTHETIC Watch', device={},
-                    metadata=metadata or {})
+        at = '2026-09-20T08:00:00-05:00'  # the key migration v6 would have recomputed for this row
+        return dict(native_id=native_id, metric='HKQuantityTypeIdentifierBodyMass', start_at=at, end_at=at,
+                    timezone='America/Chicago', value_num=value, value_text=None, unit='kg',
+                    source_name='SYNTHETIC Watch', source_bundle_id='SYNTHETIC Watch', device={},
+                    metadata=metadata or {},
+                    origin_key=ok('HKQuantityTypeIdentifierBodyMass', at, at, value, None, 'kg', 'SYNTHETIC Watch'))
 
     def seed_v3(self):
         other = {'import': {'parser': apple_export.PARSER_VERSION, 'export': 'f' * 16}}
@@ -277,6 +279,14 @@ class RetirementTests(Base):
                           (apple_export.SOURCE, 'HKQuantityTypeIdentifierBodyMass')).fetchone()[0]
         self.assertEqual(n, 3)
         self.assertEqual(self.run_import(body)['counts']['retired'], 0)
+
+    def test_an_older_row_the_new_parser_did_not_reproduce_is_kept(self):
+        self.seed_v3()
+        body = rec()  # the new parse reproduces only the 72.5 row; the 71.0 row has no replacement
+        self.attribute_legacy_to(body)
+        c = self.run_import(body)['counts']
+        self.assertEqual((c['retired'], c['unreplaced_older_rows']), (1, 1))
+        self.assertIn('x:' + 'b' * 40, [r['native_id'] for r in self.rows()])
 
     def test_unattributed_v3_rows_of_another_export_are_never_retired(self):
         self.seed_v3()

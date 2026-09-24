@@ -77,7 +77,12 @@ class Tools:
             return Result({'error': 'invalid_arguments',
                            'message': f'{"/".join(map(str, e.path)) or "arguments"}: {e.message}'[:500]}, True)
         try:
+            token = self.s.read_token() if tool['annotations']['readOnlyHint'] else None  # before the read runs
             out = getattr(self, name)(**args)
+            if token is not None:
+                data = out.data if isinstance(out, Result) else out
+                if isinstance(data, dict) and not (isinstance(out, Result) and out.is_error):
+                    data['read_token'] = token
             return out if isinstance(out, Result) else Result(out)
         except StoreError as e:
             return Result({'error': e.code, 'message': str(e)}, True)
@@ -138,16 +143,17 @@ class Tools:
     # ---- write tools ---------------------------------------------------------------------
     def context_capture(self, request_id: str, kind: str, text: str, occurred_at: str,
                         timezone_name: str = 'America/Chicago', payload: dict | None = None,
-                        evidence_ids: list[str] | None = None) -> dict:
+                        evidence_ids: list[str] | None = None, read_token: int | None = None) -> dict:
         return self.s.put_record(request_id=request_id, kind=kind, text=text, occurred_at=occurred_at,
-                                 timezone_name=timezone_name, payload=payload, evidence_ids=evidence_ids)
+                                 timezone_name=timezone_name, payload=payload, evidence_ids=evidence_ids,
+                                 read_token=read_token)
 
     def context_revise(self, request_id: str, supersedes: str, kind: str, text: str, occurred_at: str,
                        timezone_name: str = 'America/Chicago', payload: dict | None = None,
-                       evidence_ids: list[str] | None = None) -> dict:
+                       evidence_ids: list[str] | None = None, read_token: int | None = None) -> dict:
         return self.s.put_record(request_id=request_id, kind=kind, text=text, occurred_at=occurred_at,
                                  timezone_name=timezone_name, payload=payload, evidence_ids=evidence_ids,
-                                 supersedes=supersedes)
+                                 supersedes=supersedes, read_token=read_token)
 
     def context_capture_file(self, request_id: str, file: dict, text: str, occurred_at: str,
                              timezone_name: str = 'America/Chicago', payload: dict | None = None) -> dict:

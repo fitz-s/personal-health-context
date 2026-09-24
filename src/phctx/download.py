@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import http.client
 import ipaddress
-import re
 import socket
 import ssl
 import threading
@@ -46,21 +45,9 @@ def public_ip(ip: str, fake_ip_ok: bool = False) -> bool:
 
 
 def host_allowed(host: str, allowlist: list[str]) -> bool:
-    """Exact host, a listed parent domain written as '.example.com', or a 're:' full-match pattern.
-
-    Patterns exist for hosts that vary only by region (ChatGPT file storage uses several regional accounts);
-    they must be anchored and specific, never a bare shared-cloud suffix.
-    """
-    host = host.lower().rstrip('.')
-    for entry in allowlist:
-        if entry.startswith('re:'):
-            if re.fullmatch(entry[3:], host):
-                return True
-            continue
-        entry = entry.lower().rstrip('.')
-        if host == entry or (entry.startswith('.') and host.endswith(entry)):
-            return True
-    return False
+    """Exact hosts only. A shared cloud namespace (e.g. *.blob.core.windows.net) lets anyone pick a matching account
+    name, so neither suffixes nor name patterns prove who owns a host: each host is added once it is observed."""
+    return host.lower().rstrip('.') in {e.lower().rstrip('.') for e in allowlist}
 
 
 @dataclass

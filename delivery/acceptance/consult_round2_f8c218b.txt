@@ -1,0 +1,291 @@
+1. APPROACH / PLAN VERDICT
+
+CORRECT-BUT-SUBOPTIMAL. My verdict is NO-GO for using f8c218b as the authoritative foreground health context today. Confidence: high. The changes clear substantial parts of Round 1, but they do not clear all six blockers. Several remaining problems affect foreground capture and interpretation even with the background model disabled and the iPhone and Oura integrations unavailable.
+
+The better release decision is capability-scoped, not all-or-nothing. I would not require a working iPhone helper, available Oura integration, or completed background shadow period before accepting a foreground-only product. Those are legitimate disabled capabilities. But foreground acceptance must separately establish durable capture, reliable original retrieval, coherent observation queries, truthful analysis provenance, and the actual credential boundary. Disabling background inference does not disable foreground-generated analyses or protect foreground queries from an in-progress import.
+
+The architecture should remain SQLite, immutable originals, a private ChatGPT connection, and one optional worker. The superior implementation is a small refinement of that architecture: publish complete archive generations; distinguish source records from logical measurements; bind interpretations to database-issued evidence versions; and issue release claims from the transitive evidence that actually supports them. None of this requires a dashboard, another user-facing application, a vector database, or additional agents.
+
+The strongest counterargument is substantial: you now report a functioning ChatGPT connection; the committed evidence includes actual record/receipt metadata and matching local/stored file hashes; the catalog, shadow isolation, worker fencing, and recovery changes have meaningful regression tests; and the new model failures remain recorded as failures. This is materially better than Round 1. I accept those improvements rather than treating the entire delivery as still unimplemented.
+
+What defeats foreground sign-off is narrower and concrete: an existing-blob durability bypass; visible overlap during parser re-import; incomplete foreground evidence binding; an active plaintext credential fallback; and release-evidence binding that remains incomplete. The documented duplicate-record policy also needs to become a safe analytical interface, not advice that the model must remember.
+
+The appropriate near-term destination is GO-WITH-GAPS for a defined foreground release, after those foreground blockers are repaired. It is not full A–L acceptance, and it is not a claim that the model’s interpretations become medical ground truth.
+
+2. CORE CORRECTNESS
+
+Durability: successful backup publication does not fix the existing-blob capture path
+
+Revising F14: the post-commit attachment response handling is substantially repaired. The handler now preserves a committed original receipt when subsequent extraction fails, and the new tests deliberately inject post-commit failures. That is a genuine improvement over falsely saying nothing was saved.
+
+However, I found a separate foreground durability defect in _write_blob. Its file synchronization and directory synchronization occur only inside if not blob.exists(). Consider this sequence:
+
+An upload writes and synchronizes the temporary file, renames it to its content-addressed name, and then directory synchronization fails.
+
+The call returns storage_unavailable, but the renamed blob remains.
+
+The same upload is retried. Because the blob exists, the retry skips synchronization, verifies its readable hash, and proceeds to the database mutation and committed receipt.
+
+The missing durability barrier has not been retried. A concurrent identical upload can take the same shortcut after another writer’s rename but before that writer’s directory synchronization. Readable bytes and a matching hash do not establish the directory-publication ordering promised by the capture contract. I am not claiming your existing originals have disappeared; I am identifying a supported path that acknowledges them without establishing that ordering.
+
+The small fix is to ensure the verified blob and its directory are successfully synchronized before permitting a new database reference, including the existing-file branch. The discriminating test is a persistent directory-sync failure: the first attempt and same-byte retry must both fail without a receipt; removing the fault must then allow one committed capture.
+
+Migration v6 and retirement: attribution is improved, publication remains unsafe
+
+Revising F01: boundary-shrink detection, affected-group rebuilding, indexed latest-sample recomputation, and the randomized SQL-oracle test address the original catalog defect. The property test compares maintenance results with independent aggregation after mutations, rather than merely asserting a successful import. I count that specific finding as cleared at the code/test level.
+
+The export_legacy_owner rule is conservative under its necessary assumption: import_runs is the complete history of imports that created those untagged rows. V6 assigns an owner only when the distinct archive-hash set has one member. _retire requires that owner for untagged rows, or a matching export tag and older parser version for tagged rows. A later, different export’s tagged rows do not satisfy that predicate merely because the legacy owner exists. Failed or repeated imports of other archive hashes make attribution more conservative, not more aggressive. I did not find a straightforward serialized-import counterexample that makes this owner predicate select an unrelated tagged export.
+
+That is not an unconditional retirement guarantee, for two reasons.
+
+First, eligibility checking and retirement are separate transactions. _retire selects native IDs, closes the connection, and later sends deletion-only batches. Those deletions do not recheck the selected row’s export attribution, parser version, or observation version. If another import updates a selected identity between selection and deletion—for example a shared day-summary identity—the retirement can delete its replacement. This is a concurrency hole, not a defect in the Boolean owner predicate. Serialize import generations or revalidate eligibility inside the mutation transaction. Test the actual interleaving, not only two sequential imports.
+
+Second, the archive exposes both generations while replacement is underway. New x2: rows are committed page by page; old rows remain canonical until _retire, which itself runs page by page. The supersession table does not suppress old-parser backfill rows in favor of new-parser backfill rows. Foreground queries can therefore see old-plus-new contributions during import, and an interrupted import can leave that overlap in place. Recording a failed import internally does not protect ChatGPT when its readable source status and query tools do not expose an analytical maintenance gate.
+
+This matters immediately because your context says the production re-import is running. The reported final reconciliation on the rehearsal copy does not establish coherent queries during that operation.
+
+For the current deployment, the smallest fix is a durable import-maintenance state that blocks affected observation analyses until reconciliation succeeds, while allowing unrelated text capture. A staged generation with an atomic publication switch is the better permanent implementation.
+
+--since is substantially improved: filtering uses normalized instants, naive/date-only inputs use the selected user timezone, and import options contribute to request identity. The existing partial-import tests are useful. But passing those tests does not prove all older rows selected for retirement received valid replacements: parsing can increment unparseable and continue, after which retirement still executes. Retirement should fail closed on unresolved replacement gaps, and its window tests should include legacy timestamps whose projection changes under the new parser—not just identical old/new instant representations.
+
+Canonicalization: stable-key arrival ordering is fixed, identity ambiguity is not
+
+Revising F02/F03: for a stable equivalence key, the supersession relation fixes the original arrival-order defect and retains deletion authority. Export-first and live-first produce the intended suppression, and tombstoned live rows are included when rebuilding the relation. The permutation and migration tests exercise real regressions.
+
+There is a remaining migration-history case. V5 treats supersession as a historical fact: a live observation that once carried key K can suppress K even after that observation is updated to another key. V6 deletes the relation and rebuilds it from the live rows’ currently stored fields. An earlier key represented only by a historical supersession can disappear, allowing an old export copy to reappear. A retained tombstoned row with unchanged fields is handled; a historical key lost through an upsert is a different case. Preserve or explicitly reconcile that history before deleting the old relation. Your reported archive has no production live-phone stream, so this is not evidence that the rehearsal suffered that defect; it prevents unconditional acceptance of the migration across supported histories.
+
+The 291 restored source records are not themselves a defect. Preserving distinct source elements is better than silently destroying their distinctions. The problem is the analytical contract: canonical_observations retains their multiplicity, while documentation recommends grouping by origin_key for strict totals. That key deliberately discards fractional seconds, rounds values, and omits distinguishing device/metadata fields. Consequently, blanket DISTINCT origin_key is not a universally valid logical-measurement deduplicator either. It can merge genuinely distinct observations that share those reduced inputs.
+
+The remedy is to expose source-record multiplicity, resolved logical observations, and ambiguous equivalence groups separately. Preserve all source rows. For the reported 120 groups, record the justified duplicate resolution or report their unresolved contribution. Do not make every new ChatGPT conversation rediscover a footnote before producing a sum or weighted average. I cannot infer which metrics the 291 rows affect or how large their metric-specific impact is from the overall row count.
+
+Swift/Python normalization: meaningful alignment, incomplete equivalence proof
+
+The ordinary category/workout mismatch is improved. Both server ingestion and export import use the Python key function; Swift now emits explicitly mapped units, category strings, and workout strings. The Swift tests check representative XML forms and, where HealthKit is available, SDK constants and unit compatibility. Those are genuinely discriminating tests, not mere compilation evidence.
+
+Whole-second keying is not automatically a bug. It addresses precision differences between the two producers. But the passing fractional-second example does not establish every boundary case, and reduced precision makes the key an equivalence heuristic rather than an identity proof.
+
+Two concrete gaps remain. Python’s quantity normalization largely preserves the incoming unit, apart from its explicit alias mapping, while Swift converts requested quantities to selected units. An allowed export expressed in a different compatible unit can therefore fail to match the equivalent live quantity. Also, unknown workout raw values are mapped to HKWorkoutActivityTypeOther; a test positively asserts that fallback. “Unknown activity identifier” is not the same fact as the known “Other” category. Preserve the raw identifier and mark unsupported normalization rather than inventing that classification.
+
+Before live sync is enabled, add an actual cross-language pipeline test: Swift-serialized payload → Python accept_batch → equivalence with the corresponding export element. Cover fractional boundary values, compatible-unit conversions, legacy category aliases, unknown activities, and multiple distinct samples sharing a whole second. These are live-sync activation blockers, not reasons to withhold a repaired export-only foreground release.
+
+read_at: the string ordering is sound within its invariant; the evidence guarantee is narrower
+
+The stored timestamps generated by utcnow() have a common UTC offset and fixed fractional precision. Lexicographic comparison is chronologically sound for those canonical strings. I would not reject _written_after merely because it compares strings.
+
+The new worker guard also closes a real case: it rejects cited records or observations written after investigation start even when the model echoes no versions. The regression deliberately supplies empty version metadata and creates evidence during the investigation. That would fail if the guard were removed.
+
+However, investigation-start wall time is not a database snapshot or a commit-order token. It still leaves these gaps:
+
+Foreground analysis writes: context_capture/context_revise still pass evidence IDs without a trusted read token or expected versions; put_record stamps whatever versions are current at commit.
+
+Derived pages: page references remain "immutable" although extraction can replace their text.
+
+Query membership and normalization: newly added rows or changed canonical membership can change an aggregate without invalidating references to its old members.
+
+Clock behavior: backward clock adjustment or identical timestamps do not provide a strictly increasing mutation order.
+
+The first three affect foreground authority today. The timestamp safeguard in the disabled worker does not clear them.
+
+The smallest robust implementation is a database-issued investigation/read token tied to a monotonic committed data generation, plus versioned derived-page content. Initially, rejecting any relevant generation change is acceptable and conservative. Later, dependencies can be narrowed to avoid unnecessary retries. Keep original-byte hashes immutable; do not apply that label to replaceable extraction text.
+
+Security: the TLS repair is real, but the foreground tunnel violates the stated secret boundary
+
+Revising F17: the production CLI now passes the Keychain adapter into certificate provisioning. The implementation supports migrating the legacy key, and the tests exercise the production wiring and stable certificate pin. The temporary TLS-loading representation is encrypted rather than a persistent plaintext PEM. That is a substantive repair.
+
+But ops/tunnel.sh has an active fallback that reads an API key from the WebCodex application’s JSON configuration when Keychain lookup fails. The live evidence and capabilities report explicitly describe reusing that configuration. Permission to reuse a credential is not permission to waive the unchanged Keychain-only constraint. Remove the fallback, fail closed on missing Keychain credentials, and provision the required credential through Keychain without altering another application’s secret files.
+
+The background Codex change avoids copying the credential file, but symlinking an existing plaintext auth.json is not Keychain-only storage. That is an activation issue while this backend is disabled. Current official documentation provides a fail-closed OS credential-store mode; using it requires validating the isolated-home/login setup rather than retaining the file dependency.  OpenAI Developers
+
+The downloader’s address filtering, connection pinning, redirect checks, and timeout improvements deserve credit. The new regional-host regex establishes syntax, not ownership. Azure storage account names are customer-selected identifiers in a shared namespace. No supplied evidence establishes that every account name matching the oaisdmntpr… pattern belongs to OpenAI. Anchoring prevents suffix tricks; it does not authenticate the account-name prefix. Restrict the allowlist to verified exact accounts or another independently authenticated host-provenance mechanism. I did not create or test an attacker-owned account.   Microsoft Learn+1
+
+Revising F16 and the GPX portion of F09: the expanded pre-outbox filter and permitted-parent route checks address the identified paths, with meaningful negative fixtures. That does not prove arbitrary unrecognized provenance safe. In particular, the normalization document’s parent-based claim is stronger than the ECG implementation, which checks header text rather than a permitted parent relation. Keep that distinction explicit.
+
+Recovery and disabled components
+
+Revising F13/F42/F43: nonempty-observation migration snapshots, staged backup publication, synchronization checks, the premigration restore route, and restoring before uninstalling repair the specific earlier recovery defects. The corruption, synchronization-failure, and restore tests have real negative conditions. I accept these improvements at the implementation/test level; I did not rerun the Mac drill or certify independent remote-cloud recovery.
+
+Revising F24/F25 and the specific stale-owner replay finding: separate shadow storage, job coalescing, and owner-specific receipt keys with transactional fencing have discriminating tests. These are not merely ledger assertions.
+
+There is still a phone-side ambiguous-durability case: OutboxStore.atomicWrite can rename successfully and then fail directory synchronization, leaving the destination visible. Later anchor enumeration can see that file. The new directory-failure test asserts an exception but does not establish that subsequent anchor access cannot treat it as durable. Poison or quarantine the store after ambiguous publication until recovery succeeds. Separately, the background coordinator starts re-queries after draining and completes its background task without awaiting those queries’ durable completion. These remain phone-activation concerns, not current foreground blockers.
+
+3. VALIDATION SOUNDNESS
+
+The single load-bearing claim still not established is that a successful foreground answer is grounded in one coherent, correctly interpreted archive state produced by the release being accepted. Transport connectivity and final import counts are necessary evidence, but neither establishes that claim.
+
+The manifest improvements close one laundering route, not the evidence chain
+
+Deleting declared output before running the command is useful. The no-op-command regression demonstrates that stale output cannot simply remain in place and receive a new manifest. Before/after tree hashing and rejection of changed evidence are also real controls. Revising that part of F38: it is fixed.
+
+A different laundering route remains:
+
+Retain an older passing dev/holdout campaign under delivery/.
+
+Change the current implementation.
+
+Run the summarizer under the current tree, producing a genuinely new summary from those older inputs.
+
+The wrapper binds that newly produced summary to the current tree.
+
+The builder can accept its PASS because it checks the summary’s output manifest, not the transitive run provenance of the campaign it summarizes.
+
+This does not require forging a hash or leaving stale output untouched. The summarizer checks agreement between campaign metadata, but it does not establish that its input runs are valid evidence for the current release. delivery/ input artifacts are not part of the general source-tree hash.
+
+The per-case mixed-run check is also narrower than “no mixed campaign”: a whole case can come from another prompt/model campaign without mixing tuples within that case. Validate each result against the campaign identity, including judge configuration and relevant hashes, rather than only checking internal consistency among that case’s repetitions.
+
+The execution command needs binding too. The committed engineering manifest invokes a script under a private temporary directory, outside the hashed source inputs. Additionally, excluding all test-report directories excludes executable iOS test drivers as well as generated evidence. Those omissions prevent the manifest from being a complete reproducible account of the command’s inputs.
+
+Live evidence is useful, but the current release binding is not valid
+
+Revising Round 1’s “ChatGPT not connected”: the supplied live evidence now supports an observed working web path. The database verification contains the probe record and receipt, matching PNG hashes, and matching native-text PDF hashes with two extracted pages. I no longer characterize this as merely a local Codex demonstration. These remain reported local observations, not my own execution of that account.
+
+The builder’s live() check nevertheless accepts a textual src-tree: marker based only on Python-file contents. It does not bind the tool schema, prompts, SQL resources, tunnel/configuration, linked verification artifacts, or the code actually loaded by the server process. Changing those can invalidate a probe without changing that marker. The committed probe also lacks the marker the current builder requires, so this particular file would be NOT_RUN, not a valid current-tree PASS.
+
+Furthermore, delivery/release.json did not become a new release report. At this pin it still declares version 0.3.0, the old source-tree identifier, old test hashes, and old connection blockers. Its engineering hash differs from the one recorded by the new engineering manifest. That is stale release metadata, not evidence of a current accepted release. Preserve the historical report separately and generate a new one after the evidence chain is corrected.
+
+The new “blind” designation is not justified by the supplied evidence
+
+The c519 campaign’s case-file hash is identical to the case-file hash recorded by the original Round 1 holdout campaign. The same holdout case IDs and expected behaviors had already been exposed to this project’s evaluation and repair process. A changed fixture hash or fresh model context does not, by itself, restore blindness. Call c519 a frozen regression campaign on the holdout-labeled split unless separately withheld new instances can be demonstrated. It is not established as a fresh blind acceptance test.
+
+Keeping model_eval=FAIL is correct. The summary reports unsupported causal interpretation in E020; the prompt now addresses that failure explicitly. The post-fix reruns are repair evidence, not blind generalization evidence. E048 also needs precise severity wording: its individual result says hard_failure=false, while the aggregate hard-failure list includes it through the critical-case failure rule. That is not evidence that E048 fabricated a diagnosis.
+
+The same-family judge remains correlated evidence, and the Codex harness still differs from the target ChatGPT host/model. These are limitations to calibrate, not reasons to discard every result. A sound next acceptance campaign needs a corrected harness, immutable transitive provenance, newly withheld cases or instances, human adjudication of disputed safety judgments, and representative synthetic adversarial probes in the actual target host.
+
+The “still open” list should therefore be classified as follows:
+
+Open itemDisposition for today’s foreground release
+
+iPhone not built; Oura unavailable; background disabledAcceptable disabled capabilities; not independent foreground blockers. Full A–L acceptance still requires explicit scope disposition.
+
+Multi-address LAN connection exhaustionResidual ingest availability risk; not a foreground blocker with ingest outside today’s scope.
+
+291 duplicate source recordsRaw preservation is correct; unguarded authoritative aggregates are not. Requires an analytical policy/interface.
+
+Multi-export unattributed legacy rowsConservative retention is correct; unresolved overlap must block or qualify affected analyses. Not demonstrated in your reported single-export root.
+
+Correlation-parent information not preservedA conditional analytical blocker for questions needing those relationships; must be exposed through runtime coverage, not only documentation.
+
+No new blind post-fix campaignAcceptance-evidence gap; do not relabel regression as blind.
+
+Missing from the listExisting-blob durability bypass, foreground evidence binding, import publication state, credential fallback, host ownership validation, and transitive release binding.
+
+4. PER-FILE / PER-STAGE FINDINGS
+
+Severity scale: HIGH blocks the named current or activation scope; MEDIUM requires a bounded operating condition or repair for the affected capability; LOW is a documentation/operational correction; INFO records a supported improvement. Activation-only findings below do not independently block the requested disabled-feature foreground scope. Local checks are proposed regressions, not claims that I ran your Mac suite.
+
+Actionable findings
+
+[HIGH] R2-01 capture durability — file:src/phctx/store.py:517–545 — Blocks foreground original capture because an existing blob bypasses synchronization after a failed or concurrent publication — Synchronize the verified blob and directory before any new database reference, including reuse — verify locally: persistent directory-fsync failure must prevent both the first attempt and same-byte retry from obtaining a receipt.
+
+[HIGH] R2-02 import publication — file:src/phctx/apple_export.py:410–503 — Blocks authoritative observation queries during or after an interrupted parser re-import because old and new generations remain simultaneously canonical — Add a durable analytical maintenance gate now, then staged generation publication — verify locally: pause or kill after a new page commits and require affected queries to refuse rather than return doubled totals.
+
+[HIGH] R2-03 retirement race — file:src/phctx/apple_export.py:333–351 — Blocks concurrent-import acceptance because selected retirement IDs can change ownership or version before deletion — Serialize imports or recheck export/parser/version predicates inside the deleting transaction — verify locally: replace a selected row with a current-parser row from another export before deletion and prove the replacement survives.
+
+[MEDIUM] R2-04 retirement completeness — file:src/phctx/apple_export.py:465–501 — A partial import can retire older rows without proving valid replacements for every affected source identity — Stop retirement on unresolved parse/replacement gaps and compare windows under the replacement mapping — verify locally: combine an older readable row, a new-parser rejection, and a timezone-sensitive --since boundary without silently losing canonical coverage.
+
+[HIGH] R2-05 historical supersession — file:src/phctx/migrations.py:196–205 — Blocks migration acceptance for histories whose old supersession keys are no longer present in current live-row fields — Preserve or reconcile historical relations before rebuilding — verify locally: migrate a live UUID that changed K1→K2 and require an export copy at K1 to remain suppressed.
+
+[HIGH] R2-06 analytical identity — file:src/phctx/apple_export.py:49–65 — Blocks unqualified aggregates because neither raw canonical multiplicity nor blanket equivalence-key grouping universally represents logical measurements — Expose resolved logical rows and ambiguous groups separately while retaining raw records — verify locally: distinguish verified duplicate source writes from distinct same-second/device samples.
+
+[HIGH] R2-07 foreground evidence binding — file:src/phctx/store.py:330–389 — Blocks authoritative persisted analyses because evidence is stamped at commit rather than bound to the foreground reads that produced the interpretation — Require database-issued read/generation tokens and expected versions in the write path — verify locally: read V1, ingest V2, then submit the V1 analysis and require rejection or explicit stale status.
+
+[HIGH] R2-08 derived and aggregate evidence — file:src/phctx/store.py:278–316 — Blocks authoritative freshness claims because replaceable page text is called immutable and aggregate membership lacks a dependency — Version page extraction and query/data generations — verify locally: re-extract a cited page and insert a new aggregate member without changing old IDs; both dependent interpretations must invalidate.
+
+[HIGH] R2-09 credential boundary — file:ops/tunnel.sh:17–24 — Blocks the current foreground security contract because missing Keychain access falls back to a plaintext application configuration — Remove that fallback and fail closed; provision the credential in Keychain — verify locally: with Keychain unavailable and the JSON file present, tunnel startup must refuse and never read the file.
+
+[HIGH] R2-10 download-host authorization — file:src/phctx/download.py:49–66 — Blocks the claimed verified-host boundary because an anchored shared-namespace prefix does not establish account ownership — Use independently verified exact account hosts or authenticated host provenance — verify locally: an otherwise valid prefix-matching but unverified account name is refused before network access.  Microsoft Learn
+
+[HIGH] R2-11 transitive evidence binding — file:scripts/run_manifest.py:20–69 — Blocks release acceptance because a fresh derived output can be stamped against current code while its input campaign is stale — Hash and validate declared input artifacts and their producing manifests, including executable drivers — verify locally: freshly summarize an old passing campaign after a runtime change and require rejection as current acceptance evidence.
+
+[HIGH] R2-12 campaign identity — file:evals/summarize.py:31–76 — Blocks acceptance-oracle completeness because whole cases can come from different campaigns without triggering a within-case mixed-run check — Validate every result against its campaign identity and transitive inputs — verify locally: substitute all runs of one case from another model/prompt campaign and require FAIL.
+
+[HIGH] R2-13 live release binding — file:scripts/build_release.py:29–65 — Blocks current-build certification because a Python-content marker bypasses complete probe/runtime dependency binding — Record structured probe results, loaded server identity, schema/prompt/config hashes, and linked artifact hashes — verify locally: change a tool schema or prompt without changing Python and require revalidation of affected live claims.
+
+[MEDIUM] R2-14 wall-clock fence — file:src/phctx/store.py:885–901 — Blocks stronger background snapshot claims, not today’s disabled-worker scope, because wall time is not a monotonic mutation generation — Retain the conservative guard but replace its ordering authority with committed sequence tokens — verify locally: clock rollback and equal timestamp updates cannot admit superseded evidence.
+
+[HIGH] R2-15 phone ambiguous publication — file:ios/HealthSyncCore/Sources/HealthSyncCore/OutboxStore.swift:318–331 — Blocks phone activation because a rename followed by directory-sync failure leaves an entry later anchor enumeration can treat as durable — Quarantine ambiguous state until verified recovery or successful synchronization — verify locally: after that failure, subsequent anchor access must not advance using the uncertain entry.
+
+[HIGH] R2-16 phone task lifetime — file:ios/HealthSyncHelper/AnchoredSyncCoordinator.swift:80–87 — Blocks unattended phone acceptance because background-task completion does not await re-query persistence — Await the required durable work and make expiration/completion mutually exclusive — verify locally: delay a query callback and prove the task is not marked successfully complete first.
+
+[HIGH] R2-17 normalization coverage — file:ios/HealthSyncCore/Sources/HealthSyncCore/Normalization.swift:1 — Blocks live-sync activation for unsupported unit/category/activity cases, including unknown activities relabeled as Other — Preserve raw identifiers and add cross-language normalization fixtures with explicit unsupported states — verify locally: compatible-unit equivalents match, while unknown activities never become a known category without evidence.
+
+[MEDIUM] R2-18 future Codex credentials — file:src/phctx/model.py:65–73 — Blocks enabling this backend under Keychain-only policy because its authentication still depends on a plaintext file — Use supported fail-closed credential-store authentication and test the isolated-home arrangement — verify locally: startup and token refresh create no credential-file dependency.  OpenAI Developers
+
+[MEDIUM] R2-19 original readability — file:src/phctx/tools.py:116–144 — Large scanned originals and unsupported images can be stored without a complete future visual-reading path — Expose precise readability capability and add bounded page/image rendering where promised — verify locally: a fresh conversation either retrieves the required visual evidence or clearly reports the unsupported capability without inferred contents.
+
+[MEDIUM] R2-20 source coverage — file:contracts/normalization.md:1 — Parent-provenance, correlation preservation, and historical timezone assumptions are stronger or less explicit than runtime guarantees — Align the contract with implemented lineage and return missing/assumed coverage in readable source metadata — verify locally: affected questions receive the limitation through tools without relying on the model reading repository documentation.
+
+[MEDIUM] R2-21 package assurance — file:scripts/package_release.py:29–64 — Regex and filename screening still do not prove arbitrary packaged text contains no real health content — Package from an explicit artifact allowlist with provenance-aware evidence inclusion — verify locally: a non-synthetic report lacking secret patterns cannot enter a distribution unnoticed.
+
+[MEDIUM] R2-22 acceptance claims — file:delivery/KNOWN_LIMITATIONS.md:8–19 — Several “met” claims and evaluation/device descriptions lag or contradict the current capability and evaluation reports — Generate current dispositions from one reconciled evidence inventory and retain older campaigns as history — verify locally: voice NOT_RUN, current measurement failures, and deferred device status cannot coexist with unqualified claims of completion.
+
+[MEDIUM] R2-23 stale release artifact — file:delivery/release.json:1–38 — Blocks treating this unchanged report as acceptance of the new build because it names the old version, source identifier, and evidence hashes — Archive it as historical and regenerate the current report after fixing binding — verify locally: all referenced current evidence hashes and runtime identities match without manually promoting statuses.
+
+Remaining changed-file dispositions
+
+The change set contains eight commits. The following accounts for the remaining changed paths without manufacturing a separate defect for every supporting file. Generated artifacts are assessed as evidence records, not independently rerun or exhaustively re-judged.
+
+Storage/security implementation and tests. src/phctx/backup.py, src/phctx/cli.py, and ops/rollback.sh implement the repaired recovery path described above. src/phctx/config.py now rejects the unenforced monetary-budget option and unsupported production backends; that clears the corresponding misleading configuration claim. src/phctx/extract.py removes preexec_fn and applies limits inside the child with a reduced environment; it is not an OS filesystem/network sandbox, and I am not certifying it as one. src/phctx/ingest.py adds actual connection limits and deadlines. tests/test_invariants.py, tests/test_security_ops.py, tests/test_upgrade_integrity.py, tests/test_apple_mapping.py, tests/test_apple_ingest.py, and tests/test_store_v2.py supply useful negative tests and oracles; extend them with R2-01 through R2-13 rather than replacing existing expectations to obtain green output.
+
+Worker/evaluation implementation. src/phctx/worker.py and tests/test_worker_backup.py contain the real shadow, coalescing, and owner-replay repairs. evals/harness.py and its tests correct the positive-case oracle so a rejected proposal does not count as successfully surfaced, and remove process-global failure injection across parallel cases. Negative-case accounting now distinguishes model silence from gate blocking; that accounting should remain visible in acceptance results. prompts/foreground.md addresses the reported causal overreach, but is not an enforcement substitute for R2-07/R2-08. scripts/verify.py now checks the delivered src layout and a fresh isolated CLI instance, clearing the old obsolete-layout finding.
+
+Phone implementation and test stages. ios/HealthSyncCore/Sources/HealthSyncCore/RestrictedSourceFilter.swift now recursively checks the declared provenance fields. SyncEngine.swift reserves draining before the first suspension, and its suspended-token regression is adversarial. Uploader.swift has the single-completion correction covered by explicit challenge-path tests. PageDecision.swift separates page exhaustion from initial-history completion; its tests discriminate against the original sticky-completion bug. ios/HealthSyncHelper/HealthAuthorizationCoordinator.swift and AnchoredSyncCoordinator.swift use the shared requested-type definition. ios/HealthSyncCore/Sources/InteropProbe/main.swift remains a protocol probe, not device acceptance. ios/HealthSyncCore/Tests/HealthSyncCoreTests/HealthSyncCoreTests.swift adds substantive fault, reentrancy, normalization, and paging checks, with the R2-15/R2-16 limitations above. ios/STATUS.md, ios/test-report/interop.log, ios_core_swift_test.log, ios_typecheck.log, and typecheck.sh must remain explicitly host/core evidence, not proof of an installed iPhone helper.
+
+Build, installation, and documentation. .gitignore is repository hygiene, not source-policy enforcement. ops/install.sh and ops/finish_setup.sh are setup paths; the latter must use the corrected Keychain provisioning path rather than relying on the tunnel fallback. pyproject.toml, src/phctx/__init__.py, and uv.lock participate in the unified-version change; the version consistency test is useful but not deployment attestation. Both delivery/DATA_DICTIONARY.md and src/phctx/DATA_DICTIONARY.md need the analytical/coverage corrections above; the catalog description should also distinguish minimum start from maximum end. delivery/USER_ACTIONS.md, delivery/capabilities.json, and delivery/EXECUTION_LEDGER.md should distinguish actual user-owned prerequisites from remaining engineering defects. The ledger is historical evidence, not the oracle for whether a blocker is closed.
+
+Evaluation artifacts. Under delivery/eval-report/, the changed dev_c519ba9/{results_all_runs.jsonl,run_meta.json}, holdout_c519ba9/{results_all_runs.jsonl,run_meta.json}, postfix_7c0c489/{results_all_runs.jsonl,run_meta.json}, final_case_results.jsonl, summary.json, and summary_blind_holdout_c519ba9.json are campaign evidence. Their acceptance is governed by R2-11/R2-12 and the blindness distinction, not filenames. Under delivery/run-manifests/, engineering.json, eval-dev.json, eval-holdout.json, eval-postfix.json, eval-summary.json, and recovery.json must bind producing commands and transitive inputs. delivery/test-report/p1_p5_engineering_tests.log and delivery/recovery-report/recovery_drill.json remain reported execution evidence; no new execution is inferred from their presence.
+
+Live and acceptance artifacts. delivery/live-evidence/chatgpt_live_probe.md, chatgpt_db_verification_2026-09-24.json, and chatgpt_mcp_server_log_2026-09-24.txt support the reported web integration, subject to R2-13. The three files under probe_files/—synthetic_lab_2p.pdf, synthetic_lab_clean_2p.pdf, and synthetic_meal.png—are binary fixtures; I did not independently recalculate their bytes or treat the unsuccessful PDF attempt as equivalent to the successful clean-PDF probe. delivery/acceptance/consult_round1_574fcc2.txt and delivery/acceptance/slices/{apple,common,ios,secure,store}.md are archived review/implementation guidance, not execution evidence or instructions to this audit.
+
+5. IDEAL-vs-ACTUAL DIFFERENCE + SUPERIOR REALIZATIONS
+
+Highest leverage: make archive readiness enforceable. The current system knows that imports run in stages, but foreground analytics do not inherit that state. Add a durable maintenance/publication gate immediately. Then use source-generation staging so an import exposes either the old complete projection or the new complete projection, never a mixture. This directly protects the production operation you report as running.
+
+Second: close the capture durability hole. The existing-blob synchronization repair is small and should precede further feature work. It restores a fundamental receipt guarantee without changing the user experience.
+
+Third: distinguish preserved evidence from analytical authority. Retain every distinct permitted source record, but expose safe logical-measurement projections and unresolved equivalence groups. Do the same for date-only information, assumed timezones, and missing correlation relationships. A model should receive these boundaries with the data rather than be expected to infer them from repository prose.
+
+Fourth: bind interpretations to a database generation. A monotonic generation/read token is a simpler first implementation than an elaborate dependency graph. Combine it with actual page-extraction versions. It preserves broad model discretion while preventing the backend from certifying an interpretation against evidence it did not use.
+
+Fifth: make credentials and file-host trust fail closed. Remove the cross-application plaintext fallback and replace the regional naming heuristic with verified destination ownership. Keep the dormant Codex credential issue as an explicit activation gate rather than pretending symlinking solves storage policy.
+
+Sixth: separate release capabilities and evidence dependencies. A foreground release should have its own required checks and disabled-capability declarations. Its manifests should bind the actual runtime, configuration, test drivers, input campaigns, and outputs. That is stronger and less wasteful than treating either a single Python-content hash or every unrelated repository change as the universal acceptance boundary.
+
+6. GO / NO-GO
+
+NO-GO for the requested authoritative foreground use at this pin. The implementation is repairable without changing the product architecture, and the iPhone/Oura/background gaps are not the principal reasons for this verdict.
+
+The six Round 1 blocker groups now stand as follows:
+
+Round 1 groupRound 2 disposition
+
+Archive semantics and integrityPartially cleared. Catalog maintenance and substantial mapping preservation are repaired; import publication, analytical identity, foreground evidence binding, and the newly identified blob reuse path remain.
+
+Security boundaryPartially cleared. TLS storage, provenance filtering, and network controls improve; the foreground credential fallback and host-ownership heuristic prevent sign-off.
+
+Unattended behaviorSeveral specific defects cleared; capability disabled. Shadow/coalescing/fencing repairs are real. Remaining activation checks should not delay an otherwise repaired foreground product.
+
+Live synchronizationDeferred, not accepted. Core fixes and tests improve the implementation; device operation, ambiguous durability, normalization edge cases, and background-task lifetime remain activation gates.
+
+RecoveryThe specific earlier recovery implementation defects are substantially cleared. This does not certify untested physical failure modes or fix capture’s separate existing-blob path.
+
+Evidence and target hostConnectivity substantially cleared; release acceptance not cleared. Actual web evidence exists, but current artifact binding, campaign provenance, and quality disposition remain incomplete.
+
+The smallest foreground clearing sequence is:
+
+Repair blob reuse synchronization and add the failed-directory-sync retry/concurrent-publication regressions.
+
+Gate observation analytics during re-import, let the operation finish or resume under that gate, then reconcile the production root before reopening affected reads. Do not abandon it mid-import and call the remaining state authoritative.
+
+Provide a safe analytical projection and visible ambiguity/coverage flags, including the reported duplicate groups. Do not substitute blanket DISTINCT origin_key for an identity policy.
+
+Bind foreground evidence and derived-page versions, or explicitly keep generated interpretations outside the authoritative portion of the product until that path is implemented.
+
+Remove the plaintext tunnel fallback and verify exact download-host ownership.
+
+Repair transitive evidence binding and publish a current foreground release report, with representative target-host adversarial checks and correctly labeled regression/holdout evidence.
+
+After those changes, GO-WITH-GAPS for foreground use is a reasonable release target, with Apple live sync, Oura, background reasoning, mobile/voice modes not actually exercised, and unsupported original formats explicitly disabled or bounded. Full A–L acceptance remains a separate decision; your present operational scope does not retroactively mark C/K complete.
+
+Sources and limits. I used the pinned GitHub comparison and expanded the affected Python, Swift, test, operational, contract, and delivery paths cited above, plus official Microsoft storage-namespace documentation and official OpenAI credential-storage documentation. The GitHub connector provided source access; raw filesystem fetching failed DNS, so I did not run the full repository suite or independently recompute every packaged artifact hash. The production database, completion of its currently running re-import, actual Keychain contents, loaded server build, device behavior, private temporary engineering driver, and excluded full model traces were not independently inspected. Your timings, memory measurements, production counts, and run totals remain reported results.
+
+The material assumptions are that the production root has the single-export history you report, the background model remains disabled, no phone or Oura route is enabled, and the secret-storage constraint has not been waived. A completed, reconciled production import would remove the immediate mixed-generation operating condition; it would not by itself clear the remaining capture, provenance, security, and release-evidence blockers.

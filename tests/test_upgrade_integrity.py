@@ -61,6 +61,21 @@ class UpgradeTests(unittest.TestCase):
                                                   'SYNTHETIC Watch')}])
         self.assertEqual(canonical(s), (1, 500.0))
 
+    def test_historical_supersession_survives_the_rekey(self):
+        s = self.v5_style_db()  # export row with a legacy key
+        with s.transaction() as c:
+            k1 = c.execute("SELECT origin_key FROM observations WHERE source_id='apple_health_export'").fetchone()[0]
+            # v5 history: a live row once carried K1 (superseding the export copy), then was updated to another key
+            c.execute("INSERT OR IGNORE INTO sources(id,label,policy,state) VALUES('apple_health:dev1','live','durable','ready')")
+            c.execute("INSERT INTO observations(id,source_id,native_id,metric,start_at,end_at,timezone,value_num,"
+                      "raw_json,deleted,updated_at,origin_key) VALUES('obs_live','apple_health:dev1','U1',"
+                      "'HKQuantityTypeIdentifierStepCount','2026-09-20T14:00:00.000000+00:00',"
+                      "'2026-09-20T14:10:00.000000+00:00','America/Chicago',777,'{}',0,'t','K2-other')")
+            c.execute("INSERT INTO supersessions VALUES(?, 'obs_live')", (k1,))
+        self.assertEqual(canonical(s), (1, 777.0))  # before: export copy hidden
+        s = Store(self.base / 'live', 'synthetic')  # v6 re-keys everything
+        self.assertEqual(canonical(s), (1, 777.0))  # after: still hidden, not resurrected
+
     def test_since_reimport_after_upgrade_does_not_duplicate_legacy_rows(self):
         s = Store(self.base / 'live', 'synthetic')
         z = export_zip(self.base / 'e.zip')
@@ -120,13 +135,42 @@ class UpgradeTests(unittest.TestCase):
                               "NULL, object_sha, NULL, created_at FROM records WHERE id=?", (rid, f'dup{i}', rid))
             c.execute('UPDATE records SET source_key=NULL')
             c.execute("UPDATE meta SET value='6' WHERE key='schema_version'")
-            c.execute('DELETE FROM migrations WHERE version=7')
+            c.execute('DELETE FROM migrations WHERE version>6')
         s = Store(self.base / 'live', 'synthetic')
         self.assertEqual(active(), ['attachment', 'note'])
         with s.connect() as c:
             self.assertEqual(c.execute("SELECT count(*) FROM records").fetchone()[0], 6)  # nothing deleted
         apple_export.import_export(s, z, tz='America/Chicago')
         self.assertEqual(active(), ['attachment', 'note'])
+
+    def test_observation_reads_refuse_while_an_import_is_unfinished_and_imports_serialize(self):
+        s = Store(self.base / 'live', 'synthetic')
+        apple_export.import_export(s, export_zip(self.base / 'e.zip'), tz='America/Chicago')
+        q = "SELECT count(*) FROM canonical_observations"
+        self.assertEqual(s.query_readonly(q)['rows'], [[1]])
+        real = s.ingest_batch
+
+        def crash_after_first_page(**kw):  # a new-parser page commits, then the process dies before retirement
+            real(**kw)
+            raise KeyboardInterrupt
+        from unittest import mock
+        e2 = export_zip(self.base / 'e2.zip', REC + REC.replace('500', '501'))
+        with mock.patch.object(s, 'ingest_batch', side_effect=crash_after_first_page):
+            with self.assertRaises(KeyboardInterrupt):
+                apple_export.import_export(s, e2, tz='America/Chicago')
+        for sql in (q, 'SELECT n FROM observation_catalog', 'SELECT count(*) FROM active_observations'):
+            with self.assertRaises(StoreError) as e:
+                s.query_readonly(sql)
+            self.assertEqual(e.exception.code, 'import_in_progress')
+        self.assertEqual(s.query_readonly("SELECT count(*) FROM records")['rows'][0][0] >= 0, True)  # records still work
+        self.assertIn('observation_reads', s.source_status())
+        with self.assertRaises(StoreError) as e:  # a different import cannot start over the unfinished one
+            apple_export.import_export(s, export_zip(self.base / 'e3.zip', REC.replace('500', '502')),
+                                       tz='America/Chicago')
+        self.assertEqual(e.exception.code, 'import_in_progress')
+        apple_export.import_export(s, e2, tz='America/Chicago')  # re-running the same export reconciles and reopens
+        self.assertEqual(s.query_readonly(q)['rows'], [[2]])
+        self.assertNotIn('observation_reads', s.source_status())
 
     def test_legacy_shadow_insights_leave_the_outbox_on_upgrade(self):
         s = Store(self.base / 'live', 'synthetic')
