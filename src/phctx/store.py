@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import csv
+import fcntl
 import hashlib
 import json
 import math
@@ -191,26 +192,30 @@ class Store:
             raise StoreError('schema_mismatch', 'Database is newer than this program; never downgrade.')
         if current == migrations.TARGET:
             return
-        # Snapshot before taking the write lock: the backup API cannot run inside this connection's own write
-        # transaction (it hangs waiting on itself).
-        if c.execute('SELECT EXISTS(SELECT 1 FROM records) OR EXISTS(SELECT 1 FROM observations)').fetchone()[0]:
-            snap = self.root / 'migrations'
-            snap.mkdir(exist_ok=True, mode=0o700)
-            target = sqlite3.connect(snap / f'pre-v{current + 1}-{int(time.time())}.sqlite3')
+        # One process migrates: the others wait on the lock, then find the schema current. Without it every process
+        # that started meanwhile took its own full pre-migration snapshot.
+        with open(self.root / 'migrate.lock', 'a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            current = int(c.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0])
+            if current == migrations.TARGET:
+                return
+            # Snapshot before taking the write lock: the backup API cannot run inside this connection's own write
+            # transaction (it hangs waiting on itself). Only the newest pre-migration snapshot is kept.
+            if c.execute('SELECT EXISTS(SELECT 1 FROM records) OR EXISTS(SELECT 1 FROM observations)').fetchone()[0]:
+                snap = self.root / 'migrations'
+                snap.mkdir(exist_ok=True, mode=0o700)
+                target = sqlite3.connect(snap / f'pre-v{current + 1}-{int(time.time())}.sqlite3')
+                try:
+                    c.backup(target)
+                finally:
+                    target.close()
+            c.execute('BEGIN IMMEDIATE')
             try:
-                c.backup(target)
-            finally:
-                target.close()
-        c.execute('BEGIN IMMEDIATE')
-        try:
-            # Another process may have migrated between the check and the lock.
-            now_v = int(c.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0])
-            if now_v < migrations.TARGET:
-                migrations.apply(c, now_v, utcnow())
-            c.commit()
-        except BaseException:
-            c.rollback()
-            raise
+                migrations.apply(c, current, utcnow())
+                c.commit()
+            except BaseException:
+                c.rollback()
+                raise
 
     @contextmanager
     def connect(self) -> Iterator[sqlite3.Connection]:
@@ -1130,6 +1135,11 @@ class Store:
         dest = Path(destination).expanduser().resolve()
         if dest.exists() or dest == self.root or self.root in dest.parents:
             raise StoreError('invalid_backup_path', 'Use a new directory outside the live data root.')
+        need = self.db.stat().st_size * 1.2 + sum(p.stat().st_size for p in self.blobs.iterdir())
+        free = shutil.disk_usage(dest.parent if dest.parent.exists() else self.root).free
+        if free < need + 5 * 2**30:  # never fill the disk the live database needs to keep working
+            raise StoreError('backup_no_space', f'Backup needs ~{need / 2**30:.1f} GB plus 5 GB headroom; '
+                                                f'{free / 2**30:.1f} GB free.')
         dest.mkdir(parents=True, mode=0o700)
         old_umask = os.umask(0o077)  # snapshot files are 0600 from creation, not after the copy
         try:
@@ -1144,7 +1154,9 @@ class Store:
                 src.backup(target)
                 refs = target.execute('SELECT sha256 FROM objects').fetchall()
                 schema = target.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0]
-                if (target.execute('PRAGMA integrity_check').fetchone()[0] != 'ok'
+                # quick_check: page/record structure of the fresh copy (minutes, not hours, at 7 GB). The full
+                # integrity_check runs once, in verify_snapshot, before a snapshot is trusted or restored.
+                if (target.execute('PRAGMA quick_check').fetchone()[0] != 'ok'
                         or target.execute('PRAGMA foreign_key_check').fetchone() is not None):
                     raise StoreError('backup_invalid', 'SQLite integrity check failed.')
             finally:

@@ -284,6 +284,27 @@ class UpgradeTests(unittest.TestCase):
             self.assertEqual(tuple(c.execute("SELECT policy, label FROM sources WHERE id='oura'").fetchone()),
                              ('durable', 'Oura API v2'))
 
+    def test_concurrent_openers_take_one_pre_migration_snapshot(self):
+        import subprocess
+        import sys
+        s = Store(self.base / 'live', 'synthetic')
+        s.put_record(request_id='SYNTHETIC-r', kind='note', text='SYNTHETIC', occurred_at='2026-09-20T12:00:00-05:00')
+        with s.transaction() as c:
+            c.execute("UPDATE meta SET value='11' WHERE key='schema_version'")
+            c.execute('DELETE FROM migrations WHERE version>11')
+        with s.transaction() as c:  # enough pages that a snapshot takes long enough for openers to overlap
+            c.execute('CREATE TABLE ballast(x BLOB)')
+            c.executemany('INSERT INTO ballast VALUES(randomblob(4096))', [()] * 40000)
+        # Each opener names its snapshot with its own clock (same-second names would hide duplicates).
+        code = ("import os, time as t\nfrom phctx import store\n"
+                "store.time = type('T', (), {'time': staticmethod(lambda: t.time() + os.getpid() * 1000),"
+                " 'monotonic': staticmethod(t.monotonic), 'sleep': staticmethod(t.sleep)})\n"
+                f"store.Store({str(self.base / 'live')!r}, 'synthetic')")
+        procs = [subprocess.Popen([sys.executable, '-c', code], env={'PYTHONPATH': 'src', 'PATH': '/usr/bin:/bin'})
+                 for _ in range(4)]
+        self.assertEqual([p.wait(60) for p in procs], [0] * 4)
+        self.assertEqual(len(list((self.base / 'live' / 'migrations').glob('pre-v12-*.sqlite3'))), 1)
+
     def test_legacy_shadow_insights_leave_the_outbox_on_upgrade(self):
         s = Store(self.base / 'live', 'synthetic')
         q = s.put_record(request_id='q', kind='question', text='SYNTHETIC q', occurred_at='2026-01-01T00:00:00Z')

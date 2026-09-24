@@ -245,6 +245,13 @@ class FoundationTests(unittest.TestCase):
         restored = Store.restore(snap, self.base / 'restored')
         self.assertEqual(len(restored.get_records([a['record_id']])['records']), 1)
         self.assertEqual(restored.read_object(r['object_sha256']), b'SYNTHETIC')
+    def test_backup_refuses_to_fill_the_disk(self):
+        import collections
+        from unittest.mock import patch
+        tight = collections.namedtuple('usage', 'total used free')(100 * 2**30, 99 * 2**30, 4 * 2**30)
+        with patch('phctx.store.shutil.disk_usage', return_value=tight):
+            self.expect_error('backup_no_space', self.s.backup, self.base / 'snapshot')
+        self.assertFalse((self.base / 'snapshot').exists())
     def test_backup_inside_live_rejected(self):
         self.expect_error('invalid_backup_path', self.s.backup, self.s.root / 'backup')
     def test_restore_existing_root_rejected(self):
