@@ -138,8 +138,6 @@ class ConsentServerTests(unittest.TestCase):
     def test_two_providers_on_one_port_each_exchange_their_own_code(self):
         import urllib.parse
         from phctx import oura
-        oura = type('P', (), {'PROVIDER': oauth.Provider('oura', 'https://example.invalid/auth',
-                                                         'https://example.invalid/token', 'daily')})
         stored = {f'phctx-{n}-{k}': f'SYNTHETIC-{n}-{k}' for n in ('whoop', 'oura') for k in ('client-id', 'client-secret')}
         exchanged = []
         out, pages, seen = self.run_login(

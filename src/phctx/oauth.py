@@ -1,6 +1,6 @@
 """OAuth authorization-code consent on a localhost redirect, with the refresh token kept in the Keychain.
 
-One flow for every vendor whose API the owner connects by OAuth (WHOOP): `login` serves the redirect registered for the
+One flow for every vendor whose API the owner connects (WHOOP, Oura): `login` serves the redirect registered for the
 owner's app on http://localhost:47822, exchanges the code and stores the refresh token; `access_token` redeems it and
 stores the replacement first, because these vendors rotate refresh tokens on every use.
 """
