@@ -1,0 +1,331 @@
+1. APPROACH / PLAN VERDICT
+
+CORRECT-BUT-SUBOPTIMAL. Do not accept this snapshot as ready for reliance on real health data. Confidence: high in the NO-GO verdict and the code-level defects below; substantially lower in whether those defects have already affected the production archive, which I did not inspect.
+
+The basic architecture is appropriate: a locally controlled archive, immutable originals, SQLite, broad model-accessible retrieval, a private ChatGPT connection, and a background worker that can remain silent. There is no compelling reason to replace this with a cloud archive, vector database, distributed agent system, or dashboard. The native phone application’s permission and pairing screen is an implementation necessity, not the second daily health interface that the product contract rejects. The architecture also correctly distinguishes local ownership of the archive from cloud processing of information supplied to the conversational model.
+
+The superior realization is a tighter decomposition of this architecture, not a rewrite:
+
+Preserve permitted source facts and source fragments independently of their normalized projections.
+
+Make canonical identity, catalog statistics, calendar semantics, and evidence versions explicit, rebuildable invariants.
+
+Separate an unrestricted local-writing conversation from any restricted-source investigation through actual capabilities—not a model’s declaration of provenance.
+
+Separate background investigation, candidate eligibility, shadow evaluation, and user-visible delivery.
+
+Those boundaries matter because this implementation presently makes several different things look equivalent: matching content and matching identity; a date and an instant; current evidence and evidence the model actually read; a proposed alert and an accepted alert; a shadow candidate and a deliverable candidate. They are not equivalent. The existing specifications already require much of this separation, so most recommended changes restore the intended contract rather than expand it.
+
+There is also a premise that must be rejected: “one ChatGPT interface” cannot mean “one unrestricted security context containing every source and every writer.” A local MCP server cannot prove that arbitrary prose submitted to its writer was not derived from an Oura response seen elsewhere. Keeping Oura disabled is presently a defensible safety boundary; labeling an additional tunnel read-only does not make the simultaneously available full writer safe. The official tunnel is a suitable private transport, but transport privacy does not establish cross-app information-flow isolation.   OpenAI Developers
+
+The strongest counterargument is that this is a substantial, conservatively labeled partial delivery: the transaction design is largely sound, the tests contain meaningful failure injection, the reported large import is credible evidence of useful engineering, and the release remains BLOCKED with the historical model failure intact. I agree with that counterargument. It justifies preserving and repairing the implementation—not accepting its broader correctness and security claims. In particular, the release’s empty scope_changes_accepted_by_user means unavailable original requirements have not become accepted scope reductions.
+
+2. CORE CORRECTNESS
+
+Transactional capture is the strongest part, but its response semantics are not consistently truthful
+
+For ordinary database mutations, _mutate has the right structure: acquire a write transaction, compare an existing request’s content hash, execute the mutation, insert its receipt in that same transaction, commit, and only then return the result. A matching retry returns the existing receipt; conflicting reuse is rejected. I did not find an ordinary successful _mutate path that commits its receipt while rolling back the database mutation it describes. The object-before-reference ordering likewise prefers an unreferenced file after interruption over a committed reference to bytes never successfully written.
+
+There is, however, the inverse truthfulness failure. context_capture_file commits the original and receipt, then performs extraction and reads extraction metadata. A subsequent sqlite3.Error escapes to Tools.call, which says nothing from this call was saved. That is false after the original’s commit. Inject an SQLite error during extraction or the final metadata lookup: the client can receive a failure denying persistence while context_receipt subsequently proves persistence. The fix is to preserve the committed receipt across all post-commit failures and report extraction separately.
+
+A receipt lookup returning no row is also only a statement about currently visible committed state. It is not proof that another in-flight transaction cannot subsequently commit that request. Retry guidance should retain the same request key rather than encourage a new one.
+
+Catalog and latest-sample maintenance are incorrect under supported updates
+
+The incremental optimization handles append-heavy imports, but not all upserts.
+
+Consider a source containing one observation whose interval is [1,10]. Update the same native ID, metric, and unit to [2,9]. The code reads the previous metric, unit, and deletion flag—but not its previous endpoints. It applies a zero-count delta and only expands the stored extrema. The catalog can therefore remain [1,10] while the observation is [2,9]. Independently, latest_sample_at retains max(previous_latest, new_page_latest) unless the batch contains deletions, so it can remain 10 instead of 9. This is a direct counterexample to invariant maintenance, not a disagreement with the reported append-only production check.
+
+The smallest safe repair is to detect removal of an existing boundary during same-key updates and recompute only affected source/metric/unit groups, plus the source’s latest endpoint when necessary. An indexed boundary query is preferable to permanently incorrect “O(page)” bookkeeping. Keep a slow ground-truth aggregation as the oracle for randomized update/delete/reinsert tests.
+
+Canonical observations depend on ingestion order and migration history
+
+Three cases break the intended equivalence between a normalized archive and its canonical view.
+
+Live first, export second: only live ingestion marks already existing export rows as superseded. A subsequently inserted matching export row defaults to superseded_by_live=0, leaving both rows canonical.
+
+A tombstoned live row during migration: the earlier canonical view suppresses a matching export row when a live identity exists, including a deleted live row. The v4 backfill considers only live rows with deleted=0. Migration can therefore make an export observation visible again.
+
+The same deletion after v4: ingesting live data first sets the export flag; deleting that live row does not clear it. Thus the post-migration result can differ from migrating an equivalent preexisting state.
+
+The fix must first define deletion authority. Blindly clearing the flag when a live row disappears could resurrect data the user deleted. A persistent identity/supersession relation that retains tombstone authority is safer than a loosely maintained boolean. Both ingestion directions and migration backfill must implement the same rule.
+
+The catalog currently describes raw active observations per source/metric/unit, not necessarily canonical observations. That is acceptable if explicitly labeled. It is not acceptable to use raw counts as canonical counts.
+
+Apple import identity is lossy before canonicalization even starts
+
+The export fingerprint includes metric, normalized timestamps, rounded numeric value, textual value, and source name. It omits the unit, device identity, and other distinguishing metadata, yet becomes the export row’s native identity. Records differing in omitted fields can collapse into one row. Rounding also creates another potential collision. These are not merely ambiguous cross-source matching candidates: the implementation uses the match as an overwrite/deduplication identity.
+
+Moreover, the XML and live HealthKit paths do not actually produce equivalent representations for every metric. Sleep categories and workouts have differing numeric/textual representations, and quantity normalization must be reconciled explicitly. Fixing flag maintenance will not make fingerprints match when the two producers encode the same observation differently.
+
+Use two separate concepts: a provenance-preserving source identity and a versioned cross-source equivalence relation. Normalize units and category representations before matching, preserve the original representation, and retain ambiguous matches rather than silently choosing a winner.
+
+Apple calendar semantics and preservation claims need correction
+
+ActivitySummary supplies a local calendar date. _summary converts it into UTC midnight through UTC 23:59:59 and labels the timezone UTC, while its metadata simultaneously says “local calendar day.” That invents an instant interval and can put the start on the preceding Chicago calendar date. It also assumes a fixed-length day across daylight-saving transitions. Preserve the date as a date. Only derive a half-open instant interval when a justified timezone is available; otherwise keep that timezone unknown. Explicit-offset Record timestamps are handled much more appropriately.
+
+The importer is not a lossless preservation of allowed XML fields. It counts instantaneous heartbeat points rather than retaining their values and timestamps; limits workout events to 200; selects only some workout-statistic attributes; and drops useful unit information associated with workout totals. Since raw_json contains the constructed sample, it does not restore fields already discarded by the parser. This contradicts the broad data-dictionary preservation claim, although the ledger’s narrower disclosure that heartbeat points are counted is honest.
+
+Skipping CDA as “duplicate” is not established by code that never compares its contents with the XML projection. I cannot determine whether this particular CDA contains unique useful information. The proper disposition is an explicit coverage gap or a measured equivalence check—not an unconditional duplicate assertion.
+
+There are also concrete import-control defects: adding several ActivitySummary rows can push an almost-full page over the store’s batch limit; since compares timestamp strings rather than normalized instants, does not consistently apply to summaries, and is absent from checkpoint identity. Reimporting the same archive with different filtering options can therefore reuse request keys for different page contents. Attachment reads allocate the entire ZIP member before enforcing the attachment-size limit.
+
+“Current evidence” is not necessarily the evidence that produced the analysis
+
+This is a load-bearing trust defect.
+
+A model can read observation version V1, spend time reasoning, and return after ingestion replaces it with V2. queue_insight obtains the current versions and stamps them onto the candidate; it does not compare them with the candidate’s declared evidence_versions. The resulting analysis can describe V1 while being recorded as current against V2. put_record has the analogous problem for persisted analyses: existence/currentness at write time is not read-time version binding.
+
+A trusted read receipt must bind the evidence actually supplied to the model. At candidate or analysis commit, compare those versions transactionally; reject and re-investigate on mismatch.
+
+Two related gaps remain. Extracted pages are treated as immutable references although extraction can replace their text. And an aggregate over a time window needs a dependency on that query’s membership, normalization, and coverage—not merely the IDs of previously returned rows. Otherwise a newly inserted observation can change the answer without invalidating the old analysis. Canonical supersession also needs to invalidate evidence whose meaning depended on canonical membership.
+
+Oura isolation is partially implemented, not proved end to end
+
+The official agreement currently prohibits MCP-data storage/cache without separate authorization and restricts LLM access to the permitted MCP route. For this audit, the user’s stricter no-persistence instruction is independently controlling; there is no reason to test an unauthorized workaround. Oura
+
+The store does refuse recognizable restricted sources, and the read-only profile blocks write dispatch server-side. Those are real controls. But two persistence paths escape the broader claim:
+
+The phone filter examines source name and an ouraring bundle substring, while the Mac examines additional provenance fields. A sample whose restriction is apparent only in device/metadata or a differently formatted bundle can enter the durable phone outbox before the Mac rejects it.
+
+The export attachment loop saves matching GPX/ECG files without demonstrating that they belong to permitted records. Rejecting a restricted workout does not prevent its referenced route from being persisted by that later loop.
+
+I am not asserting that the six production GPX files contain Oura data. Their provenance is unknown to this review. I am asserting that zero restricted observation rows does not establish zero restricted persisted content. Unattributed aggregate summaries likewise need an explicit provenance policy rather than an assumption that everything labeled Apple is necessarily independent of restricted inputs.
+
+Finally, two available tunnels—one full, one read-only—do not prevent an Oura-containing conversation from invoking the full writer. The documentation’s acknowledgment of residual cross-app copying risk is honest; treating that risk as completely fixed is not. Keep Oura unavailable in the writable product until the actual host can enforce the separation.
+
+Network controls are meaningful, but “all security findings fixed” is too broad
+
+The downloader’s HTTPS restrictions, destination allowlist, address checks, connection pinning, TLS hostname validation, redirect validation, and size cap are substantive defenses. The fake-IP opt-in for 198.18/15 is not automatically an SSRF bypass: allowlisting and TLS validation still apply. It does, however, transfer part of the destination-safety assumption to the trusted local proxy. That dependency must be explicit and tested.
+
+The remaining timeout controls are not strict end-to-end deadlines. DNS and slow-progress body reads can exceed an advertised overall duration. Similarly, the ingest server’s body limits, authentication ordering, deferred TLS handshake, and socket timeout improve its behavior, but an unbounded threaded server remains vulnerable to connection exhaustion. “Idle timeout exists” does not prove “slow-client denial of service is resolved.”
+
+The Keychain-only requirement is violated directly: the TLS private key is persisted as unencrypted PEM, and the Codex adapter copies credentials into a temporary auth.json. Restrictive file permissions do not satisfy the stronger stated requirement. The adapter also leaves its owned work directory containing the final model output outside the managed health-data lifecycle.
+
+The PDF extractor is resource-limited, but not network-isolated merely because NO_PROXY=* is set. It also uses preexec_fn from a process that can have threads, a pattern Python explicitly warns can deadlock before execution. Set limits inside the child entry point, minimize its environment, and enforce network denial if the delivery claims a sandbox.  Python documentation
+
+Background work does not yet reliably implement “frequent work, sparse output”
+
+The no-change fast path is useful and real. Retrying previously failed work without another data change is also reasonable; that should be described as retrying unfinished investigation, not falsely characterized as unnecessary fresh work.
+
+However, shadow mode currently queues an ordinary pending insight with a shadow field. The normal pending-insight path can return it, and it consumes ordinary attention/deduplication state. The corresponding test expects that behavior. This is not an invisible shadow evaluation. A separate state or table must exclude shadow candidates from user-visible reads and production attention history.
+
+The semantic interval is also not implemented as a true interval between investigations. Each new job is delayed relative to prior job creation, rather than merging new evidence into one pending question/window or enforcing time since execution. Frequent changes can create a delayed train of closely spaced investigations. Missing watch metadata, deletion-only changes, and changed old metrics can fail to schedule relevant revisits. A weekly broad review is not a substitute for demonstrating that natural questions are reliably reawakened by their relevant changes.
+
+Leases lack adequate renewal/fencing for a worker that claims several jobs and may perform long model calls. The completion updates do not establish that the completing worker still owns the current lease generation. Call-count limits exist, but cost fields containing zero are not measured zero cost, and configured monetary limits are not implemented as a corresponding spending gate. The configured API backend is also not simply waiting for a user key: its implementation remains unprovisioned.
+
+Backup design is substantially sound; migration recovery and power-loss guarantees are incomplete
+
+The online SQLite snapshot, immutable-object inclusion, integrity/FK checks, completion manifest, hash verification, and restore-to-new-root design are appropriate. Those are much stronger than copying the main WAL-mode database file.
+
+But the automatic premigration snapshot is conditional on there being records, so an observations-only database can migrate without one. The documented rollback route also confuses a raw premigration SQLite file with the manifest-directory/encrypted-archive formats accepted by the restore command. Complete the rollback contract instead of treating an existing .sqlite3 backup file as an executable recovery procedure. Filesystem synchronization of completed snapshots and renamed archives also needs strengthening before asserting power-loss durability.
+
+3. VALIDATION SOUNDNESS
+
+The single load-bearing claim not proved is that the target ChatGPT deployment performs the complete A–L product behavior end to end. The evidence demonstrates portions of the local implementation and portions of model behavior in another host. It does not demonstrate the product’s required target-client capture, original-file retrieval, fresh-conversation recovery, cross-source investigation, and trustworthy sparse interaction as one system. The release correctly leaves several of these blocked.
+
+What the engineering evidence establishes
+
+I did not rerun the user’s Mac measurements. I treat the supplied counts, timings, deployment state, and run results as reported evidence.
+
+The tests are not uniformly trivial. There are genuine checks for failed-batch rollback, idempotency conflicts, concurrent retry behavior, original-byte integrity, rejected SQL operations, HTTPS handling, ACK ordering, and restore/tamper behavior. The Swift interoperability probe exercises an actual uploader against the ingest protocol and includes a wrong-certificate-pin negative case. Those tests would fail on meaningful regressions.
+
+Their scope is nevertheless narrower than several labels suggest. The recovery drill’s disk-full case injects ENOSPC at file replacement; it is not a full-volume SQLite/WAL commit test. The SIGKILL case samples interruption during a write burst rather than instrumenting every transaction boundary. The stale-lease case tests expiry, not a live worker continuing after losing ownership. The cloud exercise reads an encrypted archive back through the same synchronized folder; that demonstrates encryption/decryption/local readback and restore, not independent remote retrieval or recovery on a fresh machine.
+
+The reported production catalog equality is compatible with the update bug above. A large append-oriented import can produce a correct current catalog while the maintenance algorithm remains wrong under later endpoint corrections. Likewise, quick_check=ok does not establish correct calendar semantics, canonical identity, provenance, or preserved XML fields.
+
+The model harness has acceptance-oracle defects
+
+The most serious positive-case defect is that a background test can count success when a model returns surface even though the production gate does not queue the candidate. A rejected proposal is not evidence of useful revisit delivery. Negative tests also need to distinguish “the model correctly chose silence” from “every candidate was mechanically blocked.” Otherwise a degenerate system can score well by preventing all actual output.
+
+The harness’s background trace handling does not supply the same detailed evidence of actual retrieval as the foreground path. Its process-global replacement of model.investigate is also unsafe when cases run concurrently in threads. Fixture-prepopulated watch metadata and simplified observations avoid important parts of the real question-creation and HealthKit mapping paths.
+
+The summarizer introduces a separate false-PASS route: it does not require the promised three critical-case runs, reports code/prompt equality without making it a gate, rewrites result prompt hashes from dev metadata, and computes summary status without requiring the downstream scorer to succeed. A plausible summary is not sufficient evidence that the required campaign ran against one frozen implementation.
+
+The same-family judge is useful but correlated evidence, not an independent truth oracle. Separate judge context reduces direct contamination; it does not remove shared blind spots. Codex is a legitimate real-model host, but its injected instructions, tool configuration, and auto-approval behavior do not demonstrate how ChatGPT actually handles the same tools. Auto-approval is reasonable for isolated synthetic tests; it cannot establish the live host’s authorization or user-experience behavior.
+
+Acceptance against A–L
+
+A, B, and I are not accepted. Local capture and fresh-instance storage work have evidence, but actual ChatGPT text/transcript/photo/document capture, new-conversation recovery, and ordinary one-interface use remain blocked. The helper’s existence does not violate I; an unconnected main interface does prevent demonstrating it.
+
+C is not accepted. The original criterion expressly includes Oura. Apple/user/files-only investigation is valuable partial scope, not the full criterion. K is partially met: avoiding integration sprawl is good, but the requested initial Oura support is absent.
+
+D is structurally supported. Broad SQL, search, record, and original-access tools do not force all foreground questions through a narrow retrieval plan. Nevertheless, inaccessible visual originals and limited background routing can hide relevant evidence in particular workflows.
+
+E has a valid silence path, but production sparse behavior is not accepted. Shadow leakage, interval behavior, and the positive-case oracle prevent accepting “usefully sparse,” rather than merely “often silent.” F is partial: questions and jobs persist, but relevant scheduling and evidence-currentness failures remain. G has synthetic behavioral evidence, not a validated complete delivery: preserve that distinction and the holdout failure.
+
+H is not established. Prompts discourage fake certainty, but evidence-version laundering and fabricated time precision can make an otherwise cautious model confidently rely on incorrect context. J is substantially implemented, subject to the recovery and integrity repairs. L remains unverified: it calls for a representative user session, not a proxy judge’s impression of separate cases.
+
+Keeping the blind holdout failure is correct
+
+Do not replace the historical blind FAIL with a targeted post-fix pass. E040 has become known regression material; rerunning it measures repair, not fresh generalization. A fixture correction such as E009 should be documented as an invalidated/replaced test instance, not silently rewritten into the original campaign. E016 needs adjudication against the exact user request, fixture, trace, and paging requirement; the current summary alone cannot settle that dispute.
+
+A sound revalidation should freeze the corrected code, SQL migrations, contracts, prompts, fixture generator, host configuration, and judge criteria. Run deterministic state-based oracles first; require actual read/version evidence and actual gate acceptance for positive cases. Regress every known failure, then evaluate newly authored, genuinely withheld cases with the prescribed repetitions. Calibrate subjective judgments against blinded human review; a different-family judge can provide additional disagreement detection, not replace ground truth. Finally run synthetic probes in the actual ChatGPT account/client/mode, including approval denial, renewed file references, large/scanned originals, new conversations, and mobile where required. Only after true hidden shadow mode exists should elapsed observation contribute to acceptance.
+
+The delivery documents also need reconciliation. The pinned release says 87/88, while the supplied later context says 86/88 plus targeted 6/6; the pinned device notes say no Xcode, while the supplied context reports Xcode installed. These may be different moments in the execution history. I do not infer fabrication. I do infer that the committed manifest is not a complete, current, reproducibly bound account of the later claims.
+
+4. PER-FILE / PER-STAGE FINDINGS
+
+Severity scale: HIGH blocks the affected production capability; MEDIUM requires repair or an explicit disabled/limited operating condition before unattended use; LOW is a documentation or operational consistency defect; INFO records a supported control or a bounded review limitation. The checks below are proposed local verification, not tests I executed.
+
+This snapshot is broader than a small PR. I reviewed the production modules and the related test, integration, operational, and delivery paths discussed below. I did not independently audit every generated evidence blob, vendored reference copy, lockfile entry, or Xcode project asset; those are not implicitly approved.
+
+Storage, migration, and import
+
+[HIGH] F01 catalog integrity — file:src/phctx/store.py:699 — Same-group endpoint corrections leave catalog extrema and source latest-sample time stale — Detect boundary removal and recompute affected indexed groups/source extrema — verify locally: shorten both endpoints of the sole/latest row, then compare all catalog fields and source latest time with direct SQL.
+
+[HIGH] F02 canonical ordering — file:src/phctx/store.py:744 — Live-before-export ingestion leaves duplicate canonical observations — Apply the same identity/suppression rule on both insertion directions — verify locally: permute export/live insertion and replay order and require identical canonical identities and totals.
+
+[HIGH] F03 deletion semantics — file:src/phctx/migrations.py:136 — The v4 backfill changes tombstone authority and can resurrect export observations — Define and preserve supersession/deletion identity across migration — verify locally: migrate v2/v3 databases containing live matches, deleted matches, and tombstone-only histories and compare with equivalent v4 ingestion.
+
+[HIGH] F04 source identity — file:src/phctx/apple_export.py:32 — A rounded content fingerprint omitting unit/device/metadata can collapse distinct allowed records — Separate source identity from cross-source equivalence and preserve distinguishing original fields — verify locally: import records identical in the current key but differing in unit, device, or relevant metadata.
+
+[HIGH] F05 cross-producer equivalence — file:ios/HealthSyncHelper/AnchoredSyncCoordinator.swift:1 — Live category/workout representations do not consistently match export representations — Share a versioned normalization specification and preserve original encodings — verify locally: encode the same sleep, workout, and quantity samples through both producers and compare normalized identity and canonical totals.
+
+[HIGH] F06 calendar integrity — file:src/phctx/apple_export.py:151 — Date-only ActivitySummary data is assigned fabricated UTC interval semantics — Store calendar dates separately and derive intervals only with justified timezone information — verify locally: ordinary, spring-forward, fall-back, and unknown-timezone days never shift calendar identity.
+
+[HIGH] F07 source preservation — file:src/phctx/apple_export.py:69 — Beat details, workout attributes, and excess events are discarded before raw_json persistence — Preserve permitted source fragments independently of projections and inventory unsupported elements — verify locally: round-trip detailed workout/heartbeat fixtures and account for every retained, filtered, or explicitly unsupported field.
+
+[MEDIUM] F08 import boundaries — file:src/phctx/apple_export.py:220 — Multirow summaries can exceed page limits, and filtering options are not safely bound to checkpoints — Split pages at the actual limit, normalize filter instants, and hash import options into request identity — verify locally: a 4,999-row page followed by a four-row summary and repeated imports with different since values.
+
+[HIGH] F09 restricted originals — file:src/phctx/apple_export.py:254 — Attachment persistence is not tied to permitted parent-record provenance — Authorize each original through its provenance linkage and refuse unknown restricted-source lineage — verify locally: a rejected synthetic restricted workout referencing a GPX leaves neither its row nor its original in the store or backup.
+
+[MEDIUM] F10 import allocation and timestamps — file:src/phctx/apple_export.py:254 — ZIP members are fully allocated before size enforcement, and archive timestamps are used as attachment occurrence times — Stream bounded members and distinguish archive metadata from health-event time — verify locally: an oversized permitted member is refused before allocation and unknown event time remains unknown.
+
+[HIGH] F11 evidence binding — file:src/phctx/store.py:819 — Candidate commit stamps current versions rather than validating the versions actually read — Require trusted read-version receipts and compare them transactionally — verify locally: change an observation between model read and candidate commit and require rejection/re-investigation.
+
+[HIGH] F12 dependency invalidation — file:src/phctx/store.py:276 — Re-extracted pages, canonical-membership changes, and aggregate-window changes can leave analyses falsely current — Version derived pages and query/projection dependencies separately from immutable originals — verify locally: change extraction, canonical membership, and aggregate membership without deleting the original evidence IDs.
+
+[MEDIUM] F13 premigration recovery — file:src/phctx/store.py:164 — An observations-only database can migrate without an automatic snapshot — Snapshot every nonempty persistent database before migration and bind the snapshot to a usable recovery procedure — verify locally: migrate a records-empty/observations-nonempty v3 database and restore the exact prior state.
+
+Tools, security, and original access
+
+[HIGH] F14 post-commit truthfulness — file:src/phctx/tools.py:83 — Post-commit extraction or metadata errors can falsely deny that an original was saved — Return the committed receipt with a separate extraction failure state — verify locally: inject an SQLite error after original commit and require a truthful committed result.
+
+[HIGH] F15 future original access — file:src/phctx/tools.py:116 — A large scanned PDF or unsupported image can be saved without a reliable later visual-reading path — Add bounded page rendering/compatible image transport while preserving original bytes — verify locally: a fresh conversation retrieves evidence from a scanned PDF above 4 MiB and an actual HEIC fixture.
+
+[HIGH] F16 pre-persistence source policy — file:ios/HealthSyncCore/Sources/HealthSyncCore/RestrictedSourceFilter.swift:8 — The phone’s narrower filter permits restricted provenance to reach its durable outbox — Apply one shared provenance policy before any phone persistence — verify locally: source-name, bundle, device, and metadata-only restricted markers produce identical Python/Swift decisions and no persisted sample bytes.
+
+[HIGH] F17 credential storage — file:src/phctx/ingest.py:1 — Unencrypted private-key PEM storage violates the Keychain-only constraint — Use Keychain-backed TLS identity handling rather than a persistent PEM secret — verify locally: provision, restart, and rotate TLS with no private-key file created outside Keychain.
+
+[MEDIUM] F18 ingest availability — file:src/phctx/ingest.py:1 — Unbounded request threads and idle-only timeouts do not close slow-client resource exhaustion — Bound concurrent connections/handshakes and impose absolute request deadlines — verify locally: stalled and slow-progress clients cannot consume all service capacity or prevent an authenticated healthy upload.
+
+[MEDIUM] F19 downloader deadline — file:src/phctx/download.py:1 — Resolution and slow-progress reads can exceed the intended total download bound — Enforce a monotonic end-to-end deadline including resolution and body transfer — verify locally: delayed DNS, slow headers, slow chunks, and redirects all terminate within the documented bound.
+
+[MEDIUM] F20 parser isolation — file:src/phctx/extract.py:51 — preexec_fn is unsafe in a threaded parent and proxy variables do not prohibit networking — Set limits after child startup and add actual restricted execution/environment controls — verify locally: concurrent extraction cannot deadlock startup and the child cannot make an outbound connection.  Python documentation
+
+[HIGH] F21 credential copying — file:src/phctx/model.py:65 — Copying Codex credentials into temporary auth.json violates the secret-storage contract — Authenticate through a supported Keychain-backed mechanism without credential-file cloning — verify locally: inspect owned temporary directories during success, failure, and timeout for secret files.
+
+[MEDIUM] F22 temporary health output — file:src/phctx/model.py:89 — Owned work directories retain final model output outside the managed archive lifecycle — Remove owned work artifacts in finally and explicitly govern any retained diagnostic content — verify locally: success, cancellation, timeout, and malformed output leave no health-output files behind.
+
+[HIGH] F23 cross-app isolation — file:ops/tunnel.sh:1 — Separate full/read-only tunnels do not prevent the full writer being used in a restricted-source context — Keep restricted access disabled unless the actual host enforces a clean write boundary — verify locally: a restricted-source session cannot invoke any local persistence capability, including another registered app.
+
+Worker and phone lifecycle
+
+[HIGH] F24 shadow separation — file:src/phctx/worker.py:190 — Shadow candidates become ordinary pending insights and consume production attention state — Use a separate shadow state/table excluded from all user-visible retrieval and production budgets — verify locally: a qualifying shadow candidate is auditable locally but absent from bootstrap/pending results.
+
+[MEDIUM] F25 semantic scheduling — file:src/phctx/worker.py:118 — Scheduling from previous job creation produces delayed job trains instead of a minimum investigation interval — Coalesce evidence per question/window and gate from last execution — verify locally: changes every 15 minutes do not produce investigations every 15 minutes after the initial delay.
+
+[HIGH] F26 revisit completeness — file:src/phctx/worker.py:65 — Missing watch metadata and incomplete deletion/change descriptors can prevent relevant revisits — Establish routing metadata for naturally captured questions and include removed/changed metric identities — verify locally: a plain-language question is revisited after relevant addition, correction, and deletion without fixture-only setup.
+
+[MEDIUM] F27 lease ownership — file:src/phctx/worker.py:174 — Long work can outlive leases while completion remains insufficiently fenced — Claim work just in time, renew ownership, and compare owner/generation before committing results — verify locally: an expired old worker cannot complete or queue output after a new owner takes over.
+
+[MEDIUM] F28 budget/configuration truth — file:src/phctx/config.py:1 — Configured monetary controls and reported zero costs are not corresponding measured/enforced spending guarantees — Implement the controls or reject unsupported settings and mark cost unknown — verify locally: every exposed budget field has a behavioral test and unavailable accounting never reports measured zero.
+
+[MEDIUM] F29 backend readiness — file:src/phctx/model.py:1 — The API backend is unimplemented rather than merely awaiting credentials — Implement and evaluate the backend or remove instructions implying credentials alone enable it — verify locally: an authorized synthetic probe completes through the exact production-configured backend.
+
+[HIGH] F30 phone durability — file:ios/HealthSyncCore/Sources/HealthSyncCore/OutboxStore.swift:1 — Ignored synchronization failures and checkpoint mutation before durable completion weaken the anchor/payload durability claim — Propagate I/O failures and publish in-memory checkpoint changes only after durable commit — verify locally: inject file/rename/fsync/index-write failures and reopen without losing an unacknowledged page.
+
+[MEDIUM] F31 actor reentrancy — file:ios/HealthSyncCore/Sources/HealthSyncCore/SyncEngine.swift:1 — Setting the drain guard after awaiting credentials permits overlapping drains — Reserve the drain before the first suspension and release it with defer — verify locally: simultaneous drains with a suspended token provider produce one upload sequence.
+
+[MEDIUM] F32 TLS callback lifecycle — file:ios/HealthSyncCore/Sources/HealthSyncCore/Uploader.swift:1 — A cancellation branch invokes the authentication completion handler twice — Make every challenge path complete exactly once — verify locally: enumerate accepted, rejected, and unexpected challenge methods with a completion-count assertion.
+
+[HIGH] F33 incremental pagination — file:ios/HealthSyncHelper/AnchoredSyncCoordinator.swift:1 — Sticky initial-history completion can suppress continued draining of a later full page — Separate history-coverage completion from current-query page exhaustion — verify locally: after bootstrap completes, introduce 501 and 1,001 changes and drain them without requiring another observer event.
+
+Evaluation and release evidence
+
+[HIGH] F34 positive-case oracle — file:evals/harness.py:1 — A model surface outcome can satisfy a positive case despite gate rejection — Assert eligible, evidence-valid accepted output rather than proposed output — verify locally: force gate rejection of a superficially correct candidate and require the positive case to fail.
+
+[MEDIUM] F35 evaluation isolation — file:evals/harness.py:1 — Process-global monkeypatching can contaminate parallel cases and background traces lack equivalent retrieval proof — Inject per-case dependencies or use isolated processes and capture actual tool evidence — verify locally: concurrent cases retain their own backend, trace, and database identities.
+
+[MEDIUM] F36 fixture realism — file:evals/fixtures.py:1 — Preseeded routing fields and simplified files/observations bypass important real producer behavior — Add fixtures produced through the actual capture/import/sync paths — verify locally: representative tests fail when watch routing, category mapping, scanned-page access, or large-file paging is broken.
+
+[HIGH] F37 campaign acceptance — file:evals/summarize.py:1 — Missing repetitions, mismatched run versions, or scorer failure can still yield a passing summary — Gate on exact run counts, frozen input hashes, and successful scorer output, and return a failing exit code otherwise — verify locally: remove a critical run, alter a hash, and force scorer failure independently.
+
+[MEDIUM] F38 evidence binding — file:scripts/build_release.py:1 — Historical log success markers are promoted to current capability PASS without complete run-to-build binding — Require machine-readable run manifests covering code, SQL, contracts, prompts, and fixtures — verify locally: modifying any load-bearing input invalidates the corresponding release evidence.
+
+[INFO] F39 gate scope — file:scripts/release_gate.py:1 — Hash/path/status validation is useful but explicitly does not certify test truth — Preserve that limitation and require semantic evidence validation upstream — verify locally: a well-formed irrelevant evidence file cannot become a capability PASS through the release builder.
+
+[MEDIUM] F40 obsolete verification entry point — file:scripts/verify.py:1 — References to the absent reference_core layout do not verify the delivered source layout reliably — Point verification and hashing at the actual package and supported CLI — verify locally: run in a clean environment without an editable installation masking path errors.
+
+[MEDIUM] F41 packaging assurance — file:scripts/package_release.py:1 — Secret-pattern and filename scans do not prove absence of real health content in arbitrary text artifacts — Package from a controlled allowlist with explicit synthetic-evidence provenance — verify locally: an intentionally marked non-synthetic report cannot enter the archive merely because it lacks a secret regex match.
+
+Recovery, documentation, and tests
+
+[MEDIUM] F42 snapshot durability — file:src/phctx/backup.py:1 — File/manifest completion and archive publication are not uniformly synchronized before success is declared — Synchronize completed files and relevant directories and propagate failures — verify locally: injected synchronization errors cannot produce a successful recoverable-snapshot declaration.
+
+[MEDIUM] F43 executable rollback — file:ops/rollback.sh:1 — The stated premigration SQLite rollback input does not match the restore interface — Produce a supported premigration snapshot or implement a dedicated validated rollback route — verify locally: follow the documented command sequence literally on a disposable migrated root.
+
+[MEDIUM] F44 release claim consistency — file:delivery/release.json:1 — Overall BLOCKED is appropriate, but revision binding, sparse-proactivity PASS, and some environment notes overstate or lag evidence — Regenerate capability claims from reconciled run manifests without altering historical results — verify locally: every claim resolves to the exact tested version and scope.
+
+[MEDIUM] F45 security closure — file:delivery/security-review.md:1 — Closing the five named findings is presented more broadly than remaining timeout, credential, and taint controls support — Distinguish implemented fixes from residual risks and missing regression evidence — verify locally: each closure has a regression that fails when its fix is removed.
+
+[MEDIUM] F46 acceptance wording — file:delivery/KNOWN_LIMITATIONS.md:1 — Some product-level “met” statements exceed proxy-host evidence or omit original Oura requirements — Separate structural support, synthetic behavioral evidence, and live acceptance — verify locally: its A–L disposition agrees with the actual contract and capability manifest.
+
+[MEDIUM] F47 execution evidence — file:delivery/EXECUTION_LEDGER.md:1 — The claimed catalog property-testing and duplicate-CDA disposition are not established by the committed tests and parser I could read — Commit the actual invariant test and comparison evidence or qualify the claims — verify locally: the catalog test fails on F01 and the CDA claim is supported by a field-level comparison.
+
+[LOW] F48 capability freshness — file:delivery/capabilities.json:1 — Some account/device evidence is older than the supplied execution context or points to private evidence not independently inspectable here — Record probe time, exact target, and current blocker separately from historical state — verify locally: installed Xcode and an unconnected ChatGPT app are represented accurately without converting either into a device/host PASS.
+
+[MEDIUM] F49 dictionary accuracy — file:delivery/DATA_DICTIONARY.md:1 — Schema-version and raw-preservation descriptions do not match v4 and the actual import projection — Update both delivered and packaged dictionaries from the implemented schema and explicit mapping coverage — verify locally: documented columns, temporal semantics, and retained fields match a generated fixture inspection.
+
+[MEDIUM] F50 maintenance-test coverage — file:tests/test_store_v2.py:1 — Existing migration/revision tests do not establish the optimized catalog and canonical invariants across adversarial histories — Add a randomized reference-oracle state machine and migration equivalence matrix — verify locally: F01–F03 each fail before their fixes.
+
+[MEDIUM] F51 import-test coverage — file:tests/test_apple_ingest.py:1 — Simple record/workout fixtures and one ingestion direction miss the material mapping and provenance failures — Add paired producers, date-only summaries, detailed children, and restricted-parent attachments — verify locally: F04–F10 each have a discriminating regression.
+
+[MEDIUM] F52 tool-test coverage — file:tests/test_tools_files.py:1 — Strong transport negatives do not cover every claimed replay/security closure or post-commit error — Add changed-envelope, concurrent replay, post-commit failure, and large scanned-original tests — verify locally: broken envelope binding or a false “nothing saved” response fails the suite.
+
+[HIGH] F53 incorrect test oracle — file:tests/test_worker_backup.py:1 — The shadow test positively asserts user-visible pending output — Replace that expectation with true hidden-shadow behavior and counterfactual eligibility assertions — verify locally: current shadow queuing fails the corrected test.
+
+[MEDIUM] F54 phone-test coverage — file:ios/HealthSyncCore/Tests/HealthSyncCoreTests/HealthSyncCoreTests.swift:1 — ACK/reopen tests are meaningful but omit synchronization failure, actor overlap, producer equivalence, and live-query pagination — Add fault injection and coordinator-level integration cases — verify locally: F16 and F30–F33 fail before repair.
+
+[LOW] F55 version consistency — file:pyproject.toml:1 — Package metadata reports 0.1.0 while runtime and delivery report 0.3.0 — Generate one authoritative version into all release surfaces — verify locally: installed metadata, CLI/runtime, archive name, and release manifest agree.
+
+The remaining inspected files/stages do not justify additional invented defects. schema.sql and __main__.py provide the expected schema/entry-point foundation; mcp_server.py and contracts/tools.json expose the defined transport and tool boundary; prompts/foreground.md and background.md support the intended behavior but cannot substitute for the missing runtime guarantees. insight_candidate.schema.json must participate in F11/F37 rather than merely require an otherwise unvalidated evidence_versions object. evals/score.py honestly disclaims independent semantic verification, while tests/test_release_gate.py tests gate structure rather than real deployment truth.
+
+Similarly, BatchModels.swift, HealthAuthorizationCoordinator.swift, KeychainStore.swift, PairingURL.swift, and the setup UI provide useful serialization, read-only HealthKit authorization, native token storage, and setup plumbing—not proof of signed-device operation. InteropProbe/main.swift provides genuine protocol-level negative and positive coverage. The install/status/backup/restore/uninstall wrappers preserve the intended separation between code and data; status reporting a loaded service is not evidence that semantic work succeeded. scripts/perf_bench.py measures its stated synthetic workload, not semantic integrity. scripts/recovery_drill.py should retain its tests but label their exact fault models as discussed above.
+
+5. IDEAL-vs-ACTUAL DIFFERENCE + SUPERIOR REALIZATIONS
+
+First: preserve truth before optimizing retrieval. The current implementation commits to a lossy identity/projection too early. Introduce permitted immutable source fragments, stable source identities, and a separately versioned canonical mapping. Repair date-only semantics at that layer. This has the greatest leverage because no stronger model or better prompt can recover fields discarded before persistence.
+
+Second: bind reasoning to what was actually read. Replace commit-time “current version” stamping with trusted read receipts and transactional version comparison. Add query/window/projection dependencies. This turns evidence freshness from a reassuring label into an enforceable invariant and protects both foreground analyses and background suggestions.
+
+Third: make restricted-source safety a capability property. Unify pre-persistence provenance checks across phone, importer, originals, and server. Keep Oura disabled wherever a clean writing boundary cannot be established. A stricter permitted-only archive is superior to a nominally integrated archive whose compliance depends on the model remembering not to copy information.
+
+Fourth: separate investigation from presentation. Coalesce relevant changes, fence job ownership, enforce actual budgets, and maintain a genuinely hidden shadow channel. Evaluate both positive usefulness and negative silence. This avoids both alert spam and a superficially safe system that never produces a useful update.
+
+Fifth: release the tested artifact, not a narrative assembled from successful fragments. Bind each run to code, SQL, prompts, contracts, fixtures, host, and repetitions; make the summarizer and release builder fail closed. Then prove the narrow complete vertical slice in ChatGPT before treating scale, extra sources, or a longer execution ledger as acceptance.
+
+These upgrades retain the intended one-interface experience and broad model discretion. They do not require turning ordinary user input into forms or adding approval machinery around small factual corrections.
+
+6. GO / NO-GO
+
+NO-GO for full acceptance and for treating this system as the authoritative, unattended health context. The existing BLOCKED release status should remain. This is not merely waiting for a tunnel key or device signature: those external actions would leave the identified internal defects in place.
+
+The first blocker is archive semantics and invariant maintenance: F01–F12. The smallest clearing change is a corrected, tested mapping/migration release with bidirectional identity handling, explicit tombstone authority, correct catalog updates, calendar-date representation, preserved permitted source fields, and read-time evidence binding. Rebuild and reconcile a new root from permitted original material before switching production. Do not delete the current archive, overwrite the only export, or copy the mixed Apple export wholesale into managed backups as a shortcut.
+
+The second blocker is the stated security boundary: F09, F16–F23. Keep Oura access disabled in the writable product; fix filtering before phone/original persistence; remove persistent PEM and copied credential files; clean up owned model-output artifacts; and complete the claimed timeout/isolation controls. Clearing this does not require inventing an Oura endpoint. It requires either proving a compliant available route or retaining a clearly scoped unavailable capability.
+
+The third blocker is trustworthy unattended behavior: F24–F29 and F34–F37. True shadow separation, reliable positive revisit routing, lease fencing, actual budget semantics, and non-degenerate evaluation are prerequisites to enabling production background reasoning. A worker running every 900 seconds with the model disabled is operational scheduling evidence, not evidence of frequent useful reasoning. Keep the model disabled until these checks pass.
+
+The fourth blocker is live synchronization reliability: F30–F33. Correct the phone’s persistence and pagination issues before turning on real continuous ingestion. Then perform the actual device tests: authorization, initial history, later multi-page deltas, deletion, offline retry, locking, restart, and re-pairing. Swift core tests and TLS interoperability are necessary but insufficient.
+
+The fifth blocker is usable recovery: F13, F42–F43. Demonstrate the exact migration rollback and restore commands on a disposable root, including referenced originals and profile/configuration handling. Do not label a raw premigration database file as a complete tested rollback package.
+
+The sixth blocker is acceptance evidence and target-host operation. Correct the harness and manifest, retain the historical holdout failure, run a new frozen validation campaign, and complete the actual ChatGPT read/write/file/fresh-conversation probes. Evaluate a representative user session for L. Original C/K cannot become fully satisfied while Oura remains unavailable; they can only become an explicitly accepted scope reduction. The manifest currently records no such acceptance.
+
+For now, the defensible operating posture is preserve the existing archive and verified backups, keep restricted access and background inference disabled, and use isolated synthetic roots for repairs and revalidation. The reported historical backfill remains valuable. It should not be represented as proof that all allowed source information survived, that canonical totals will remain correct under future sync, or that September questions have current wearable coverage merely because an import ran in September.
+
+Sources and limits. I used the pinned production source, related Python and Swift tests, protocol probe, operational scripts, delivery claims, original A–L criteria, and implementation specification 01–08, plus official Oura terms, OpenAI tunnel documentation, and Python subprocess documentation. Public source was accessible through the GitHub connector. The production database/export contents, private account screenshots and probes, excluded model traces, independently retrieved remote-cloud backup, actual iPhone behavior, and the bytes of the final packaged delivery were not independently verified here. The local measurements remain reported results, not my reruns.
+
+The load-bearing assumptions are the user’s strict no-Oura-persistence, Keychain-only, no-public-endpoint constraints and no accepted reduction of the original product scope. No single missing credential changes this verdict. A corrected pinned build plus evidence clearing the relevant blockers does.
