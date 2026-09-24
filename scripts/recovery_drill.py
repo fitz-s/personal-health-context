@@ -41,7 +41,9 @@ def step(name: str, ok: bool | None, detail: str) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument('--report', type=Path, required=True)
-    ap.add_argument('--cloud-dir', type=Path, help='real cloud folder for the encrypted archive (e.g. iCloud Drive)')
+    ap.add_argument('--cloud-dir', type=Path, default=Path(os.environ['PHCTX_DRILL_CLOUD_DIR'])
+                    if os.environ.get('PHCTX_DRILL_CLOUD_DIR') else None,
+                    help='real cloud folder for the encrypted archive (e.g. iCloud Drive); or PHCTX_DRILL_CLOUD_DIR')
     ap.add_argument('--keychain-service', default='phctx-backup-drill')
     a = ap.parse_args()
     base = Path(tempfile.mkdtemp(prefix='phctx-drill-'))
