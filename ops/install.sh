@@ -1,14 +1,15 @@
 #!/bin/bash
 # Install Personal Health Context for the current user.
-#   ops/install.sh [--profile production|synthetic] [--with-ingest] [--with-worker] [--no-load]
+#   ops/install.sh [--profile production|synthetic] [--with-ingest] [--with-companion] [--with-worker] [--no-load]
 # Creates config/data dirs (0700), writes config.toml if absent, installs launchd agents with absolute paths,
 # and loads them. Never deletes data. No secrets in plists.
 set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-PROFILE=production; WITH_INGEST=0; WITH_WORKER=1; LOAD=1
+PROFILE=production; WITH_INGEST=0; WITH_COMPANION=0; WITH_WORKER=1; LOAD=1
 while [ $# -gt 0 ]; do case "$1" in
   --profile) PROFILE="$2"; shift 2;;
   --with-ingest) WITH_INGEST=1; shift;;
+  --with-companion) WITH_COMPANION=1; shift;;
   --no-worker) WITH_WORKER=0; shift;;
   --no-load) LOAD=0; shift;;
   *) echo "unknown option $1" >&2; exit 2;; esac; done
@@ -91,6 +92,10 @@ plist() { # label, args..., interval(optional via env INTERVAL), keepalive via e
 FILES=()
 if [ "$WITH_WORKER" = 1 ]; then FILES+=("$(INTERVAL=900 plist com.personalhealthcontext.worker worker --once)"); fi
 if [ "$WITH_INGEST" = 1 ]; then FILES+=("$(KEEP=1 plist com.personalhealthcontext.ingest ingest-server)"); fi
+if [ "$WITH_COMPANION" = 1 ]; then
+  "$PY" -m phctx companion-secret
+  FILES+=("$(KEEP=1 plist com.personalhealthcontext.companion companion-server)")
+fi
 FILES+=("$(INTERVAL=86400 plist com.personalhealthcontext.backup backup)")
 FILES+=("$(INTERVAL=3600 plist com.personalhealthcontext.oura sync-oura)")
 FILES+=("$(INTERVAL=3600 plist com.personalhealthcontext.whoop sync-whoop)")
