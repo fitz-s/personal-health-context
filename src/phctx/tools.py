@@ -19,7 +19,7 @@ import re
 from urllib.parse import urlsplit
 
 from . import download, extract
-from .store import Store, StoreError, dump
+from .store import Store, StoreError, dump, ref_kind
 
 log = logging.getLogger('phctx.tools')
 EVIDENCE_ID = re.compile(r'(rec|obs)_[0-9a-f]{32,64}|obj:[0-9a-f]{64}(#p[1-9][0-9]{0,4})?')
@@ -42,24 +42,29 @@ class ToolContext:
     run_extraction: bool = True
 
 
-# Parts of a read result that only mention other items: a record's payload and its own evidence list name ids whose
-# content this read did not return, so they cannot certify that the reader saw them.
-MENTIONS = frozenset({'payload', 'evidence', 'evidence_links', 'supersedes', 'superseded_by', 'history'})
+RECORD_TABLES = frozenset({'records', 'active_records'})
+PAGE_TABLES = frozenset({'object_pages'})
 
 
-def evidence_ids_in(data: Any) -> set[str]:
-    """Evidence ids (rec_*, obs_*, obj:<sha>[#p<n>]) of the items a read returned, not ids those items mention."""
-    out: set[str] = set()
-    stack = [data]
-    while stack:
-        x = stack.pop()
-        if isinstance(x, dict):
-            stack.extend(v for k, v in x.items() if k not in MENTIONS)
-        elif isinstance(x, list):
-            stack.extend(x)
-        elif isinstance(x, str) and EVIDENCE_ID.fullmatch(x):
-            out.add(x)
-    return out
+def delivered(name: str, data: dict) -> set[str]:
+    """Evidence ids whose content this read returned, as each handler shapes its result: record bodies, page text,
+    original bytes. Ids that returned content merely mentions (a payload's pointers, evidence lists, history, an
+    index entry) are not delivered, and neither is a query cell naming a kind of item the query never read."""
+    if name == 'context_bootstrap':
+        return {r['id'] for k in ('context_index', 'recent') for r in data[k]}
+    if name in {'context_search', 'context_read'}:
+        return {r['id'] for r in data['records']}
+    if name == 'context_query':
+        read = set(data['tables_read'])
+        kinds = {'observation': bool(read & Store.OBSERVATION_TABLES), 'record': bool(read & RECORD_TABLES),
+                 'object': bool(read & PAGE_TABLES)}
+        return {v for row in data['rows'] for v in row
+                if isinstance(v, str) and EVIDENCE_ID.fullmatch(v) and kinds[ref_kind(v)]}
+    if name == 'context_read_original':
+        if 'pages' in data:
+            return set(data['evidence_ids'])
+        return {f'obj:{data["object_sha256"]}'} if 'base64' in data or 'cite_as' in data or data.get('image') else set()
+    return set()
 
 
 def _require_receipts(kind: str, evidence_ids: list[str] | None, read_receipts: list[str] | None) -> None:
@@ -112,9 +117,11 @@ class Tools:
             out = getattr(self, name)(**args)
             data = out.data if isinstance(out, Result) else out
             if reads and isinstance(data, dict) and not (isinstance(out, Result) and out.is_error):
-                # The receipt names exactly what this read returned; a derived write cites evidence through it.
-                data['read_receipt'] = self.s.issue_receipt(evidence_ids_in(data), bool(data.get('reads_observations')),
-                                                            seq)
+                # The receipt names what this read delivered; a derived write cites evidence through it. Bootstrap's
+                # catalog and source status are observation data even though they name no observation.
+                shown = dict(data, image=True) if isinstance(out, Result) and out.image else data
+                data['read_receipt'] = self.s.issue_receipt(
+                    delivered(name, shown), name == 'context_bootstrap' or bool(data.get('reads_observations')), seq)
             return out if isinstance(out, Result) else Result(out)
         except StoreError as e:
             return Result({'error': e.code, 'message': str(e)}, True)

@@ -350,6 +350,15 @@ class SummaryRequiredClosureTests(Tmp):
         for missing in (f'eval-report/{d}/run_meta.json' for d in self.dirs.values()):
             self.assertIn(missing, r['notes'])
 
+    def test_a_summary_without_valid_campaign_names_is_refused(self):
+        self.write_summary_manifest(self.rels)
+        for bad in ({}, {'dev_round': '', 'holdout_round': self.dirs['holdout']},
+                    {'dev_round': '../x', 'holdout_round': self.dirs['holdout']}):
+            (self.base / self.summary_rel).write_text(json.dumps({'status': 'PASS', **bad}))
+            self.write_summary_manifest(self.rels)
+            with patch.object(self.br, 'tree_hashes', return_value=self.cur):
+                self.assertEqual(self.br.check('PASS', self.summary_rel, 'n')['status'], 'NOT_RUN', bad)
+
     def test_missing_one_campaigns_results_file_is_refused(self):
         only_dev = [r for r in self.rels if f'/{self.dirs["dev"]}/' in r]
         self.write_summary_manifest(only_dev)

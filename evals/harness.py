@@ -37,7 +37,7 @@ from phctx.store import Store  # noqa: E402
 
 # Synthetic-only harness: uses the developer's file login (symlinked, never copied); production uses the keyring.
 EVAL_AUTH = Path(os.environ.get('PHCTX_CODEX_AUTH', '~/.codex/auth.json')).expanduser()
-INFRA_ERRORS = {'model_timeout', 'model_call_failed'}  # the backend never produced a turn
+INFRA_ERRORS = {'model_timeout', 'model_call_failed', 'model_quota_exhausted'}  # the turn did not complete
 CASES = [json.loads(x) for f in ('cases.jsonl', 'cases_scale.jsonl') if (ROOT / 'evals' / f).exists()
          for x in (ROOT / 'evals' / f).read_text().splitlines() if x.strip()]
 FOREGROUND = (ROOT / 'prompts' / 'foreground.md').read_text()
@@ -159,7 +159,7 @@ def foreground(case: dict, store: Store, ctx: dict, cfgp: Path, model_id: str, w
                                       timeout=600, cwd=str(work), result_cap=60000, file_auth=EVAL_AUTH)
         err = None
     except model.ModelError as e:
-        text, trace, err = '', [], e.code
+        text, trace, err = '', e.trace, e.code  # partial tool calls stay; the database diff is observed regardless
     if ctx.get('break_writes'):
         with store.connect() as c:
             c.execute('DROP TRIGGER IF EXISTS eval_break')
@@ -357,6 +357,17 @@ def diff_of(before: dict, after: dict) -> dict:
             'jobs_after': after['jobs'], 'model_calls_after': after['model_calls']}
 
 
+def classify(error: str | None, checks: list[dict], verdict: dict) -> tuple[str, list[dict], bool]:
+    """(status, failed hard checks, judged). Precedence: an observed deterministic violation is FAIL even if the model
+    or judge later failed; a turn that did not complete (quota, timeout, CLI failure) or an unavailable judge is
+    otherwise NOT_RUN, never PASS and never a model failure; the judge's verdict counts only on a completed turn."""
+    unrun = error in INFRA_ERRORS
+    hard_auto = [c for c in checks if c['hard'] and not c['ok'] and not (unrun and c['check'] == 'model_turn_completed')]
+    judged = not unrun and verdict.get('verdict') in {'PASS', 'FAIL'}
+    status = 'FAIL' if hard_auto or judged and verdict['verdict'] == 'FAIL' else 'PASS' if judged else 'NOT_RUN'
+    return status, hard_auto, judged
+
+
 def run_case(case: dict, out_dir: Path, model_id: str, judge_model: str, run_no: int) -> dict:
     work = Path(tempfile.mkdtemp(prefix=f'phctx-eval-{case["id"]}-'))
     (work / 'judge').mkdir()
@@ -375,16 +386,10 @@ def run_case(case: dict, out_dir: Path, model_id: str, judge_model: str, run_no:
                            'detail': json.dumps(run['pending_after'])[:200], 'hard': True})
         diff = diff_of(before, after)
         verdict = judge(case, run, diff, checks, judge_model, work)
-        # A model call that failed (quota, timeout) produced no turn to judge: its only failing check is the turn
-        # itself, and the run is NOT_RUN, never a model failure. Any other failing hard check still counts.
-        unrun = run.get('error') in INFRA_ERRORS
-        hard_auto = [c for c in checks if c['hard'] and not c['ok']
-                     and not (unrun and c['check'] == 'model_turn_completed')]
-        status = 'PASS' if verdict.get('verdict') == 'PASS' and not hard_auto else (
-            'NOT_RUN' if (verdict.get('verdict') == 'ERROR' or unrun) and not hard_auto and run.get('error') else 'FAIL')
+        status, hard_auto, judged = classify(run.get('error'), checks, verdict)
         rec = {'case_id': case['id'], 'run': run_no, 'category': case['category'], 'split': case['split'],
                'severity': case['severity'], 'status': status,
-               'hard_failure': bool(hard_auto) or bool(verdict.get('hard_failure')),
+               'hard_failure': bool(hard_auto) or judged and bool(verdict.get('hard_failure')),
                'reason': (verdict.get('reason') or '')[:1500], 'violated_forbidden': verdict.get('violated_forbidden'),
                'auto_checks': checks, 'mode': run['mode'], 'model_id': model_id, 'judge_model': judge_model,
                'seconds': run['seconds'], 'tool_calls': [t.get('tool') for t in run['trace'] if t.get('tool')],

@@ -352,9 +352,12 @@ class Store:
             c.execute('DELETE FROM read_receipts WHERE created_at<?', (utc_in(-7 * 86400),))
         return rid
 
-    def _bind(self, c: sqlite3.Connection, evidence: list[str], receipts: list[str]) -> tuple[int, bool]:
-        """(earliest read sequence, depends on observations) for evidence cited through `receipts`; refuses a receipt
-        the store did not issue and evidence none of the receipts returned."""
+    def _bind(self, c: sqlite3.Connection, evidence: list[str], receipts: list[str]) -> tuple[int, bool] | None:
+        """(earliest read sequence, depends on observations) for evidence cited through `receipts`, or None when the
+        reads certify nothing this write could depend on (no cited evidence and no observation data read: a
+        `SELECT 1`, or a record read the write does not cite); such a write is stored with freshness unverified.
+        Refuses a receipt the store did not issue, evidence none of the receipts delivered, and a cited derived
+        record that is already stale (a cited unverified one leaves this write unverified: see _freshness)."""
         rows = c.execute(f'SELECT seq, observations, refs_json FROM read_receipts WHERE id IN '
                          f'({",".join("?" * len(receipts))})', receipts).fetchall()
         if len(rows) != len(set(receipts)):
@@ -364,8 +367,34 @@ class Store:
         if unread:
             raise StoreError('evidence_unbound', f'Evidence not returned by the cited reads: {", ".join(unread[:5])}. '
                              'Pass the read_receipt of the read that returned it.')
-        return min(r['seq'] for r in rows), any(r['observations'] for r in rows) or any(
-            ref_kind(e) == 'observation' for e in evidence)
+        for ref in evidence:
+            if ref_kind(ref) == 'record' and (f := self._freshness(c, ref)) and f[1]:
+                raise StoreError('stale_evidence', f'Cited record {ref} is stale ({", ".join(f[1][:5])}); '
+                                 're-derive it from current data instead of citing it.')
+        observations = any(r['observations'] for r in rows) or any(ref_kind(e) == 'observation' for e in evidence)
+        if not (evidence or observations):
+            return None
+        return min(r['seq'] for r in rows), observations
+
+    def _freshness(self, c: sqlite3.Connection, rid: str) -> tuple[bool, list[str]] | None:
+        """(bound, stale ids) for a derived record, None for a primary fact. Current means every declared dependency
+        is still valid, inherited ones included: a cited derived record that went stale, or was never verified,
+        makes this one stale or unverified too."""
+        refs = {x['ref_id']: x['ref_version'] for x in
+                c.execute('SELECT ref_id, ref_version FROM evidence_refs WHERE record_id=?', (rid,))}
+        dep = c.execute('SELECT seq, observations FROM record_dependencies WHERE record_id=?', (rid,)).fetchone()
+        if not refs and not dep:
+            return None
+        stale = self._stale_refs(c, refs)
+        if dep:
+            stale += [x for x in self._changed_since(c, [], dep['seq'], bool(dep['observations'])) if x not in stale]
+        bound = dep is not None
+        for ref in refs:  # evidence records predate the record citing them: no cycles
+            if ref_kind(ref) == 'record' and (f := self._freshness(c, ref)):
+                if f[1] and ref not in stale:
+                    stale.append(ref)
+                bound = bound and f[0]
+        return bound, stale
 
     def _changed_since(self, c: sqlite3.Connection, refs: list[str], seq: int, observations: bool) -> list[str]:
         """What changed after a read at `seq` that the reader cannot have seen: any observation batch when the evidence
@@ -460,17 +489,16 @@ class Store:
         newer = c.execute('SELECT id FROM records WHERE supersedes=?', (r['id'],)).fetchone()
         r['active'] = newer is None
         r['superseded_by'] = newer[0] if newer else None
-        refs = {x['ref_id']: x['ref_version'] for x in
-                c.execute('SELECT ref_id, ref_version FROM evidence_refs WHERE record_id=?', (r['id'],))}
-        dep = c.execute('SELECT seq, observations FROM record_dependencies WHERE record_id=?', (r['id'],)).fetchone()
-        if refs or dep:
-            stale = self._stale_refs(c, refs)
-            if dep:
-                stale += [x for x in self._changed_since(c, [], dep['seq'], bool(dep['observations'])) if x not in stale]
-            r['evidence'] = {'ids': sorted(refs), 'stale_ids': stale, 'bound': dep is not None,
-                             'current': dep is not None and not stale}
-            if dep is None:
-                r['evidence']['note'] = 'written without a read receipt: freshness unverified'
+        if f := self._freshness(c, r['id']):
+            ids = [x[0] for x in c.execute('SELECT ref_id FROM evidence_refs WHERE record_id=? ORDER BY ref_id',
+                                           (r['id'],))]
+            r['evidence'] = {'ids': ids, 'stale_ids': f[1], 'bound': f[0], 'current': f[0] and not f[1]}
+            if not f[0]:
+                r['evidence']['note'] = ('freshness unverified: written without a read receipt that delivered its '
+                                         'evidence, or it cites an unverified derivation')
+        elif r['kind'] == 'analysis':  # an analysis whose reads certified nothing is stored, never shown as verified
+            r['evidence'] = {'ids': [], 'stale_ids': [], 'bound': False, 'current': False,
+                             'note': 'freshness unverified: no read delivered evidence this analysis depends on'}
         if r['object_sha']:
             ex = c.execute('SELECT status, page_count, method FROM extractions WHERE object_sha=?',
                            (r['object_sha'],)).fetchone()
@@ -756,6 +784,7 @@ class Store:
                     raise StoreError('result_too_large', 'Narrow columns or page the requested range.')
                 rows.append(list(row))
             result = {'columns': columns, 'rows': rows, 'reads_observations': bool(touched & self.OBSERVATION_TABLES),
+                      'tables_read': sorted(touched),
                       'truncated': truncated, 'max_rows': limit,
                       'query_sha256': hashlib.sha256((sql + dump(parameters or [])).encode()).hexdigest()}
             if len(dump(result).encode()) > 256000:
@@ -862,7 +891,8 @@ class Store:
                     metric=excluded.metric,start_at=excluded.start_at,end_at=excluded.end_at,
                     timezone=excluded.timezone,value_num=excluded.value_num,value_text=excluded.value_text,
                     unit=excluded.unit,raw_json=excluded.raw_json,deleted=0,updated_at=excluded.updated_at,
-                    source_name=excluded.source_name,bundle_id=excluded.bundle_id,origin_key=excluded.origin_key''',
+                    source_name=excluded.source_name,bundle_id=excluded.bundle_id,origin_key=excluded.origin_key,
+                    repeat_of=NULL''',
                     (oid, source_id, s['native_id'], s['metric'], start, end, tz, s.get('value_num'),
                      s.get('value_text'), s.get('unit'), dump(s), 0, now, s.get('source_name'),
                      s.get('source_bundle_id'), origin))
@@ -1029,7 +1059,8 @@ class Store:
         read = candidate.get('evidence_versions') or {}
         if any((versions[r] if r in versions else self._ref_version(c, r)) != v for r, v in read.items()) or (
                 since_seq is not None and self._changed_since(
-                    c, evidence, since_seq, any(ref_kind(e) == 'observation' for e in evidence))):
+                    c, evidence, since_seq, any(ref_kind(e) == 'observation' for e in evidence))) or any(
+                ref_kind(e) == 'record' and (f := self._freshness(c, e)) and f[1] for e in evidence):
             raise StoreError('stale_evidence', 'Evidence changed after it was read; re-read and re-investigate.')
         fingerprint = hashlib.sha256(dump({'question_id': qid, 'evidence': versions,
                                            'topic': candidate.get('topic', 'unspecified')}).encode()).hexdigest()

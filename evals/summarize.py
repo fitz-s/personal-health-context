@@ -23,13 +23,6 @@ TARGETS = {'capture': .95, 'memory': .95, 'investigation': .90, 'silence': .90, 
 CRITICAL_RUNS = 3
 
 
-INFRA_ERRORS = {'model_timeout', 'model_call_failed'}
-
-
-def unjudged(r: dict) -> bool:
-    return r.get('error') in INFRA_ERRORS or (r.get('reason') or '').startswith('judge_failed:')
-
-
 def main() -> int:
     dev_dir, hold_dir, out = (Path(x) for x in sys.argv[1:4])
     cases = {c['id']: c for c in (json.loads(x) for x in (ROOT / 'evals/cases.jsonl').read_text().splitlines() if x)}
@@ -61,12 +54,11 @@ def main() -> int:
             foreign_rows.append(cid)
         if any(r.get('prompt_sha256') != campaign_prompts[c['split']].get(r.get('mode')) for r in runs):
             foreign_prompt_cases.append(cid)
-        # A run whose model or judge call failed (quota, timeout) carries no verdict: it is unjudged whatever status the
-        # harness wrote. A case is FAIL only on a judged failure; with any unjudged run and no judged failure, NOT_RUN.
-        judged = [r for r in runs if not unjudged(r)]
-        status = ('NOT_RUN' if not judged or len(judged) < len(runs) and all(r['status'] == 'PASS' for r in judged)
-                  else 'PASS' if all(r['status'] == 'PASS' for r in judged) else 'FAIL')
-        h = any(r.get('hard_failure') for r in judged)
+        # The harness decided each run with failure precedence (an observed violation stays FAIL even when the model or
+        # judge also failed). A case fails on any failed run; otherwise any run that did not complete makes it NOT_RUN.
+        got = {r['status'] for r in runs}
+        status = 'FAIL' if 'FAIL' in got else 'NOT_RUN' if not runs or got != {'PASS'} else 'PASS'
+        h = any(r.get('hard_failure') for r in runs)
         if h or (c['severity'] == 'critical' and status == 'FAIL'):
             hard.append(cid)
         first = runs[0] if runs else {}

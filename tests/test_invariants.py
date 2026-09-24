@@ -188,6 +188,13 @@ class RepeatRecordTests(Base):
                             dict(self.row('x2:c', 't3'), metadata={'creation_date': 't3', 'HKMotionContext': '1'})])
         self.assertEqual(self.counts(), ((3, 15.0), 3))
 
+    def test_a_marked_repeat_moved_to_no_key_is_visible_again(self):
+        a, b = sorted(['x2:a', 'x2:b'], key=lambda n: oid(EXPORT, n))
+        self.batch(EXPORT, [self.row(a, 't1'), self.row(b, 't2')])  # b repeats a
+        self.batch(EXPORT, [dict(self.row(b, 't2'), origin_key=None)])
+        self.assertEqual(self.rows('SELECT repeat_of FROM observations WHERE id=?', (oid(EXPORT, b),)), [(None,)])
+        self.assertEqual(self.counts(), ((2, 10.0), 2))
+
 class ChangeDetailTests(Base):
     def test_deletion_only_change_names_the_removed_metric(self):
         """F26: a revisit router keyed on metrics must see deletions."""
@@ -312,6 +319,74 @@ class ReadReceiptTests(Base):
         read = self.t.call('context_read', {'record_ids': [note]}).data  # returns the note, not observation a
         self.assertEqual(self.analysis([read['read_receipt']], [a]).data['error'], 'evidence_unbound')
         self.assertFalse(self.analysis([read['read_receipt']], [note], kind='note').is_error)
+
+    def test_a_query_cell_naming_an_unread_kind_does_not_bind(self):
+        self.obs('a', 9, 10.0)
+        a = oid('synthetic:watch', 'a')
+        for sql in ('SELECT ?', 'SELECT ? FROM records'):  # a literal id, not a row read from observations
+            read = self.t.call('context_query', {'sql': sql, 'parameters': [a]}).data
+            self.assertEqual(self.analysis([read['read_receipt']], [a]).data['error'], 'evidence_unbound', sql)
+
+    def ev(self, out):
+        self.assertFalse(out.is_error, out.data)
+        ev = self.s.get_records([out.data['record_id']])['records'][0]['evidence']
+        return ev['bound'], ev['current']
+
+    def test_a_constant_read_cannot_certify_an_analysis(self):
+        self.assertEqual(self.ev(self.analysis([self.query('SELECT 1')['read_receipt']], [])), (False, False))
+        self.obs('a', 9, 10.0)  # a real aggregate needs no enumerated ids
+        self.assertEqual(self.ev(self.analysis([self.query('SELECT avg(value_num) FROM canonical_observations')
+                                                ['read_receipt']], [])), (True, True))
+
+    def child_of_parent(self):
+        self.obs('a', 9, 10.0)
+        parent = self.analysis([self.query()['read_receipt']], []).data['record_id']
+        read = self.t.call('context_read', {'record_ids': [parent]}).data
+        return parent, self.analysis([read['read_receipt']], [parent])
+
+    def test_a_child_analysis_inherits_its_parents_population(self):
+        parent, child = self.child_of_parent()
+        self.assertEqual(self.ev(child), (True, True))
+        self.obs('b', 11, 30.0)
+        got = {r['id']: r['evidence'] for r in self.s.get_records([parent, child.data['record_id']])['records']}
+        self.assertFalse(got[parent]['current'])
+        self.assertEqual((got[child.data['record_id']]['current'], got[child.data['record_id']]['stale_ids']),
+                         (False, [parent]))
+
+    def test_a_stale_parent_cannot_be_cited_again(self):
+        parent, _ = self.child_of_parent()
+        self.obs('b', 11, 30.0)
+        read = self.t.call('context_read', {'record_ids': [parent]}).data  # read after the change: the read is fresh
+        self.assertEqual(self.analysis([read['read_receipt']], [parent]).data['error'], 'stale_evidence')
+
+    def test_citing_an_unverified_derivation_leaves_the_child_unverified(self):
+        self.obs('a', 9, 10.0)
+        legacy = self.s.put_record(request_id=self.rid(), kind='analysis', text='SYNTHETIC legacy', occurred_at=AT,
+                                   evidence_ids=[oid('synthetic:watch', 'a')])['record_id']  # no receipt
+        read = self.t.call('context_read', {'record_ids': [legacy]}).data
+        self.assertEqual(self.ev(self.analysis([read['read_receipt']], [legacy])), (False, False))
+
+    def test_an_analysis_of_bootstrap_counts_turns_stale_after_an_observation_batch(self):
+        self.obs('a', 9, 10.0)
+        boot = self.t.call('context_bootstrap', {}).data
+        out = self.analysis([boot['read_receipt']], [])
+        self.assertEqual(self.ev(out), (True, True))
+        self.obs('b', 11, 30.0)
+        self.assertFalse(self.s.get_records([out.data['record_id']])['records'][0]['evidence']['current'])
+
+    def test_one_receipt_can_support_several_analyses(self):
+        self.obs('a', 9, 10.0)
+        read = self.query()
+        for _ in range(2):
+            self.assertEqual(self.ev(self.analysis([read['read_receipt']], [read['rows'][0][0]])), (True, True))
+
+    def test_returned_original_bytes_are_delivered_evidence(self):
+        sha = self.s.put_attachment_bytes(request_id=self.rid(), data=b'SYNTHETIC scan', filename='s.txt',
+                                          mime='text/plain', text='SYNTHETIC file', occurred_at=AT)['object_sha256']
+        info = self.t.call('context_read_original', {'object_sha256': sha, 'mode': 'info'}).data
+        self.assertEqual(self.analysis([info['read_receipt']], [f'obj:{sha}']).data['error'], 'evidence_unbound')
+        raw = self.t.call('context_read_original', {'object_sha256': sha, 'mode': 'file'}).data
+        self.assertEqual(self.ev(self.analysis([raw['read_receipt']], [f'obj:{sha}'])), (True, True))
 
     def test_primary_facts_need_no_read(self):
         out = self.analysis(None, [], kind='event')

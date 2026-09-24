@@ -140,8 +140,10 @@ def _summary_missing_required_inputs(bound_manifest: str) -> list[str]:
     generically mandatory. Returns the missing required relative paths, empty if the closure is complete."""
     record = json.loads((D / 'run-manifests' / bound_manifest).read_text())
     summary = load(SUMMARY_EVIDENCE)
-    required = [f'eval-report/{d}/{name}' for d in (summary.get('dev_round'), summary.get('holdout_round')) if d
-                for name in ('results_all_runs.jsonl', 'run_meta.json')]
+    rounds = [summary.get('dev_round'), summary.get('holdout_round')]
+    if not all(isinstance(d, str) and d and d == Path(d).name and d not in {'.', '..'} for d in rounds):
+        return ['summary.json dev_round/holdout_round (both must name a campaign directory under eval-report/)']
+    required = [f'eval-report/{d}/{name}' for d in rounds for name in ('results_all_runs.jsonl', 'run_meta.json')]
     have = set(record.get('inputs', {}))
     return [r for r in required if r not in have]
 

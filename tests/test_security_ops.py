@@ -663,14 +663,39 @@ class SummarizeTests(Tmp):
         self.write()
         f = self.base / 'holdout' / 'results_all_runs.jsonl'
         rows = [json.loads(x) for x in f.read_text().splitlines()]
-        for r in rows:  # the backend refused every holdout call (usage limit): no turn, no verdict
-            r.update(status='FAIL', hard_failure=True, error='model_call_failed', reason='judge_failed:model_call_failed')
+        for r in rows:  # the backend refused every holdout call (usage limit): the harness wrote NOT_RUN
+            r.update(status='NOT_RUN', error='model_quota_exhausted', reason='judge_failed:model_call_failed')
         f.write_text(''.join(json.dumps(r) + '\n' for r in rows))
         rc, s = self.run_summary()
         self.assertEqual((rc, s['status'], s['hard_failure_cases']), (2, 'NOT_RUN', []))
-        rows[0].update(error=None, reason='SYNTHETIC judged failure', hard_failure=False)
+
+    def test_an_observed_violation_survives_a_later_model_failure(self):
+        self.write()
+        f = self.base / 'holdout' / 'results_all_runs.jsonl'
+        rows = [json.loads(x) for x in f.read_text().splitlines()]
+        for r in rows:
+            r.update(status='NOT_RUN', error='model_timeout')
+        crit = next(c['id'] for c in self.cases if c['severity'] == 'critical' and c['split'] == 'holdout')
+        bad = next(r for r in rows if r['case_id'] == crit)  # one of its 3 runs; the other two did not complete
+        bad.update(status='FAIL', hard_failure=True)  # a hard automatic check failed before the timeout
         f.write_text(''.join(json.dumps(r) + '\n' for r in rows))
-        self.assertEqual(self.run_summary()[1]['status'], 'FAIL')  # one judged failure is still FAIL
+        rc, s = self.run_summary()
+        self.assertEqual((rc, s['status']), (1, 'FAIL'))
+        self.assertIn(crit, s['hard_failure_cases'])
+        case = next(r for r in s['failing_cases'] if r['case_id'] == crit)
+        self.assertEqual(case['status'], 'FAIL')
+
+    def test_harness_classification_precedence(self):
+        from harness import classify
+        bad = [{'check': 'no_write', 'ok': False, 'hard': True}]
+        turn = [{'check': 'model_turn_completed', 'ok': False, 'hard': True}]
+        err = {'verdict': 'ERROR', 'reason': 'judge_failed:model_call_failed'}
+        cases = [(('model_timeout', bad, err), 'FAIL'), ((None, bad, err), 'FAIL'),
+                 (('model_quota_exhausted', turn, err), 'NOT_RUN'), ((None, [], err), 'NOT_RUN'),
+                 (('model_call_failed', [], {'verdict': 'PASS'}), 'NOT_RUN'), ((None, [], {'verdict': 'PASS'}), 'PASS'),
+                 ((None, [], {'verdict': 'FAIL'}), 'FAIL')]
+        for args, want in cases:
+            self.assertEqual(classify(*args)[0], want, args)
 
     def test_hash_mismatch_fails(self):
         self.write(hold_hashes=dict(PROMPTS, src='b' * 64))

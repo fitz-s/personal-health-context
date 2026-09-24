@@ -27,8 +27,11 @@ CANDIDATE_SCHEMA = json.loads((ROOT / 'contracts' / 'insight_candidate.schema.js
 
 
 class ModelError(Exception):
-    def __init__(self, code: str):
+    """`trace` keeps whatever tool calls ran before the failure: a timeout or late CLI failure is not proof that no
+    turn happened."""
+    def __init__(self, code: str, trace: list | None = None):
         self.code = code
+        self.trace = trace or []
         super().__init__(code)
 
 
@@ -120,30 +123,37 @@ def run_codex(prompt: str, *, model_id: str, config_path: str | None, profile: s
             proc = subprocess.run(cmd, input=prompt, capture_output=True, text=True, timeout=timeout,
                                   env={**os.environ, 'CODEX_HOME': home})
         except subprocess.TimeoutExpired as e:
-            raise ModelError('model_timeout') from e
-        trace = []
-        for line in proc.stdout.splitlines():
-            try:
-                ev = json.loads(line)
-            except ValueError:
-                continue
-            item = ev.get('item') or {}
-            if ev.get('type') == 'item.completed' and item.get('type') == 'mcp_tool_call':
-                res = item.get('result') or {}
-                text = ''.join(c.get('text', '') for c in res.get('content', []) if isinstance(c, dict))
-                trace.append({'tool': item.get('tool'), 'arguments': item.get('arguments'),
-                              'is_error': bool(item.get('error')) or '"error":' in text[:200],
-                              'result_text': text[:result_cap]})
-            elif ev.get('type') == 'item.completed' and item.get('type') not in {'agent_message', 'reasoning', None}:
-                trace.append({'other_item': item.get('type'), 'detail': str(item)[:300]})
-            if ev.get('type') in {'error', 'turn.failed'}:
-                trace.append({'event': ev.get('type'), 'detail': str(ev)[:500]})
+            out = e.stdout.decode(errors='replace') if isinstance(e.stdout, bytes) else e.stdout or ''
+            raise ModelError('model_timeout', _trace(out, result_cap)) from e
+        trace = _trace(proc.stdout, result_cap)
         if proc.returncode != 0 or not last.exists():
-            raise ModelError('model_call_failed')
+            quota = 'usage limit' in (proc.stderr + proc.stdout).lower()
+            raise ModelError('model_quota_exhausted' if quota else 'model_call_failed', trace)
         return last.read_text(), trace
     finally:
         shutil.rmtree(home, ignore_errors=True)
         shutil.rmtree(own, ignore_errors=True)
+
+
+def _trace(stdout: str, result_cap: int) -> list[dict]:
+    trace = []
+    for line in stdout.splitlines():
+        try:
+            ev = json.loads(line)
+        except ValueError:
+            continue
+        item = ev.get('item') or {}
+        if ev.get('type') == 'item.completed' and item.get('type') == 'mcp_tool_call':
+            res = item.get('result') or {}
+            text = ''.join(c.get('text', '') for c in res.get('content', []) if isinstance(c, dict))
+            trace.append({'tool': item.get('tool'), 'arguments': item.get('arguments'),
+                          'is_error': bool(item.get('error')) or '"error":' in text[:200],
+                          'result_text': text[:result_cap]})
+        elif ev.get('type') == 'item.completed' and item.get('type') not in {'agent_message', 'reasoning', None}:
+            trace.append({'other_item': item.get('type'), 'detail': str(item)[:300]})
+        if ev.get('type') in {'error', 'turn.failed'}:
+            trace.append({'event': ev.get('type'), 'detail': str(ev)[:500]})
+    return trace
 
 
 # Strict-mode structured output needs every property listed as required and nullable where optional.
