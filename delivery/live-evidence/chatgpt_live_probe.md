@@ -67,3 +67,15 @@ Tunnel restarted on c709e5a; tools refreshed in Settings → Plugins → Persona
 | Photo + PDF originals, page image | chat C (new): synthetic PNG + 2-page PDF. PDF saved (`file_saved sha=ad7af05ff1c4 size=1371`), page 2 rendered with `page_image` (Test Analyte D 41 U/L, 10–40, H). Photo first went through a new region `oaisdmntprjapaneast` → refused, "未保存"; host added, retry saved (`sha 89d93e86…`, `rec_d628c876bac74c0fa36a3611125ebf3b`) | stored SHA-256 = local SHA-256 for both files | PASS |
 
 Regional file hosts observed: 9 (round-3 list + japaneast).
+
+## Round 6 replay — ChatGPT Health space, Extra High (commit 3998723, schema v13, 2026-09-24 18:01–18:13 CDT)
+
+Server log: `chatgpt_mcp_server_log_round6.txt`. One conversation, the model told to report refusals and not work around them.
+
+| Case (round-5/6 finding) | Server | Stored record | Result |
+|---|---|---|---|
+| Cite an observation id taken from a query row (R5-01) | `context_capture error:evidence_unbound` ("No read delivers individual observations…") | none | PASS |
+| `SELECT 1` analysis, then a child citing it (R5-02) | both saved | const `rec_7c92cd006f3841dbbd0c83462b3eff04`, child `rec_408ccdbe3bc34a5aac13d1c0a843be0d`: bound=false, current=false | PASS |
+| Page text read, cite the whole original (R5-03) | `evidence_unbound` (read delivered `obj:…#p1`) | none | PASS |
+| Records + observations in one query (R6-02) | first attempt `query_timeout` (cross join over 3.7 M rows); bounded rewrite saved | `rec_32d189424ceb4e80a1fc7925a87e9c64`: bound=false, current=false; its receipt observations=1, complete=0 | PASS |
+| Positive control: observation-only aggregate, receipt only | saved | `rec_fb2ed0bb4cb14c1d8cc6463032129885`: bound=true, current=true | PASS |
