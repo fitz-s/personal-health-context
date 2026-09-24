@@ -754,6 +754,36 @@ if __name__ == '__main__':
     unittest.main(verbosity=2)
 
 
+class PairThrottleTests(Tmp):
+    def test_wrong_guesses_throttle_only_the_guessing_peer_and_burn_no_codes(self):
+        now = [0.0]
+        t = ingest.PairThrottle(clock=lambda: now[0])
+        s = Store(self.base / 'store', 'synthetic')
+        code = ingest.new_pairing_code(s)
+        for _ in range(t.FREE):
+            with self.assertRaises(StoreError) as e:
+                ingest.pair(s, 'WRONGWRG', 'SYNTHETIC-dev-1', 'x', peer='10.0.0.66', throttle=t)
+            self.assertEqual(e.exception.code, 'pairing_invalid')
+        with self.assertRaises(StoreError):
+            ingest.pair(s, 'WRONGWRG', 'SYNTHETIC-dev-1', 'x', peer='10.0.0.66', throttle=t)
+        with self.assertRaises(StoreError) as e:  # now waiting, even with the right code
+            ingest.pair(s, code, 'SYNTHETIC-dev-1', 'x', peer='10.0.0.66', throttle=t)
+        self.assertEqual(e.exception.code, 'pairing_throttled')
+        # the phone on another address pairs with the outstanding code: nothing was burned
+        out = ingest.pair(s, code, 'SYNTHETIC-dev-2', 'phone', peer='10.0.0.7', throttle=t)
+        self.assertIn('device_token', out)
+
+    def test_throttle_expires(self):
+        now = [0.0]
+        t = ingest.PairThrottle(clock=lambda: now[0])
+        for _ in range(t.FREE + 1):
+            t.failed('p')
+        with self.assertRaises(StoreError):
+            t.check('p')
+        now[0] = t.BASE_S + 1
+        t.check('p')
+
+
 class PackageAllowlistTests(unittest.TestCase):
     def test_archive_holds_exactly_the_tracked_files(self):
         sys.path.insert(0, str(ROOT / 'scripts'))

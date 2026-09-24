@@ -21,6 +21,7 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import Callable
 
 import jsonschema
 
@@ -46,7 +47,36 @@ def new_pairing_code(store: Store, minutes: int = 10) -> str:
     return code
 
 
-def pair(store: Store, code: str, installation_id: str, device_name: str) -> dict:
+class PairThrottle:
+    """Per-peer brake on wrong pairing codes. A code has 32^8 values and expires in minutes, so throttling one guesser is
+    enough; wrong guesses never touch other peers' attempts or outstanding codes (a global burn let any LAN client
+    block pairing). After FREE failures a peer waits BASE_S, doubling per further failure up to MAX_S."""
+    FREE, BASE_S, MAX_S = 5, 30.0, 3600.0
+
+    def __init__(self, clock: Callable[[], float] = time.monotonic):
+        self.clock, self.lock, self.state = clock, threading.Lock(), {}  # peer -> (failures, blocked_until)
+
+    def check(self, peer: str) -> None:
+        with self.lock:
+            fails, until = self.state.get(peer, (0, 0.0))
+        if self.clock() < until:
+            raise StoreError('pairing_throttled', f'Too many wrong codes from this device; retry in {until - self.clock():.0f} s.')
+
+    def failed(self, peer: str) -> None:
+        with self.lock:
+            fails = self.state.get(peer, (0, 0.0))[0] + 1
+            wait = 0.0 if fails <= self.FREE else min(self.MAX_S, self.BASE_S * 2 ** (fails - self.FREE - 1))
+            self.state[peer] = (fails, self.clock() + wait)
+
+    def succeeded(self, peer: str) -> None:
+        with self.lock:
+            self.state.pop(peer, None)
+
+
+def pair(store: Store, code: str, installation_id: str, device_name: str, peer: str = 'local',
+         throttle: PairThrottle | None = None) -> dict:
+    if throttle:
+        throttle.check(peer)
     if not (isinstance(installation_id, str) and 8 <= len(installation_id) <= 100 and installation_id.isascii()
             and all(ch.isalnum() or ch == '-' for ch in installation_id)):
         raise StoreError('invalid_request', 'installation_id must be a UUID-like string.')
@@ -57,24 +87,19 @@ def pair(store: Store, code: str, installation_id: str, device_name: str) -> dic
     with store.transaction() as c:
         row = c.execute('SELECT expires_at, used_at FROM pairing_codes WHERE code_sha256=?', (digest,)).fetchone()
         valid = bool(row) and not row['used_at'] and row['expires_at'] >= utcnow()
-        if not valid:
-            # Brute-force brake: 10 wrong attempts burn every outstanding code (operator issues a new one).
-            fails = int((c.execute("SELECT value FROM meta WHERE key='pairing_failures'").fetchone() or ['0'])[0]) + 1
-            if fails >= 10:
-                c.execute('UPDATE pairing_codes SET used_at=? WHERE used_at IS NULL', (utcnow(),))
-                fails = 0
-            c.execute("INSERT INTO meta VALUES('pairing_failures', ?) ON CONFLICT(key) DO UPDATE SET "
-                      'value=excluded.value', (str(fails),))
-        else:
+        if valid:
             c.execute('UPDATE pairing_codes SET used_at=? WHERE code_sha256=?', (utcnow(), digest))
-            c.execute("DELETE FROM meta WHERE key='pairing_failures'")
             c.execute("INSERT INTO sources(id,label,policy,state) VALUES(?,?,'durable','paired') ON CONFLICT(id) DO "
                       "UPDATE SET state='paired'", (source_id, f'Apple Health via {name}'))
             c.execute('INSERT INTO devices VALUES(?,?,?,?,?,NULL) ON CONFLICT(installation_id) DO UPDATE SET '
                       'device_name=excluded.device_name, token_sha256=excluded.token_sha256, revoked_at=NULL, '
                       'paired_at=excluded.paired_at', (installation_id, name, sha(token), source_id, utcnow()))
     if not valid:
+        if throttle:
+            throttle.failed(peer)
         raise StoreError('pairing_invalid', 'Pairing code is wrong, expired or already used.')
+    if throttle:
+        throttle.succeeded(peer)
     return {'device_token': token, 'installation_id': installation_id, 'source_id': source_id}
 
 
@@ -330,6 +355,7 @@ class _Server(ThreadingHTTPServer):
 
 
 def make_server(store: Store, host: str, port: int, cert: Path, key_pem: bytes) -> ThreadingHTTPServer:
+    throttle = PairThrottle()
     class Handler(BaseHTTPRequestHandler):
         server_version = 'phctx-ingest/1'
         sys_version = ''
@@ -394,9 +420,10 @@ def make_server(store: Store, host: str, port: int, cert: Path, key_pem: bytes) 
                     b = self.body()
                     try:
                         self.reply(200, pair(store, b.get('pairing_code', ''), b.get('installation_id', ''),
-                                             b.get('device_name', '')))
+                                             b.get('device_name', ''), self.client_address[0], throttle))
                     except StoreError as e:
-                        self.reply(403 if e.code == 'pairing_invalid' else 400, {'error': e.code})
+                        self.reply({'pairing_invalid': 403, 'pairing_throttled': 429}.get(e.code, 400),
+                                   {'error': e.code})
                 elif self.path == '/v1/batches':
                     d = self.device()
                     self.reply(200, accept_batch(store, d, self.body()))
