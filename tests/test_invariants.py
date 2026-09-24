@@ -152,6 +152,28 @@ class SupersessionTests(Base):
         self.assertEqual(out['rows'], [[1]])
 
 
+
+class RepeatRecordTests(Base):
+    """R2-06: an export row that repeats an earlier source record is kept but hidden from canonical_observations."""
+
+    def row(self, nid, created, value=5.0, device='SYNTHETIC watch'):
+        return dict(native_id=nid, metric='SYNTHETIC.steps', start_at=hour(1), end_at=hour(2), value_num=value,
+                    unit='count', source_name='SYNTHETIC', device={'raw': device}, origin_key=KEY,
+                    metadata={'creation_date': created})
+
+    def counts(self):
+        return (self.rows('SELECT count(*), sum(value_num) FROM canonical_observations')[0],
+                self.rows('SELECT count(*) FROM canonical_observations_raw')[0][0])
+
+    def test_repeats_are_hidden_distinct_rows_are_not_and_deletion_unhides(self):
+        self.batch(EXPORT, [self.row('x2:a', 't1'), self.row('x2:b', 't2')])  # same sample written twice
+        self.assertEqual(self.counts(), ((1, 5.0), 2))
+        self.batch(EXPORT, [self.row('x2:c', 't3', device='SYNTHETIC phone')])  # same key, other device: distinct
+        self.assertEqual(self.counts(), ((2, 10.0), 3))
+        first = min(oid(EXPORT, 'x2:a'), oid(EXPORT, 'x2:b'))
+        self.batch(EXPORT, deleted=['x2:a' if first == oid(EXPORT, 'x2:a') else 'x2:b'])  # the kept copy goes away
+        self.assertEqual(self.counts(), ((2, 10.0), 2))  # its repeat now stands in for it
+
 class ChangeDetailTests(Base):
     def test_deletion_only_change_names_the_removed_metric(self):
         """F26: a revisit router keyed on metrics must see deletions."""

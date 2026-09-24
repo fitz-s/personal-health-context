@@ -250,24 +250,30 @@ def _v7(c: sqlite3.Connection) -> None:
 
 def _v8(c: sqlite3.Connection) -> None:
     # 1. Page text is derived and can be re-extracted, so a page reference is versioned by its content hash, not
-    #    'immutable'. 2. canonical_observations also hides export rows that are exact source-record repeats (the source
-    #    app wrote the same sample twice: every measured field and the device are equal, only creation metadata
-    #    differs); canonical_observations_raw keeps every permitted source row. 3. An import in progress is recorded
-    #    in meta so reads can refuse observation analytics while two parser generations overlap.
+    #    'immutable'. 2. An export row that exactly repeats an earlier source record (the source app wrote the sample
+    #    twice: every measured field and the device equal, only creation metadata differs) is marked repeat_of=<that
+    #    row's id>; canonical_observations hides it, canonical_observations_raw keeps every permitted source row. The
+    #    mark is set at ingest (Store.ingest_batch), so the view stays an indexed filter.
     if 'sha256' not in {r[1] for r in c.execute('PRAGMA table_info(object_pages)')}:
         c.execute('ALTER TABLE object_pages ADD COLUMN sha256 TEXT')
+    if 'repeat_of' not in {r[1] for r in c.execute('PRAGMA table_info(observations)')}:
+        c.execute('ALTER TABLE observations ADD COLUMN repeat_of TEXT')
     run(c, """
 DROP VIEW IF EXISTS canonical_observations_raw;
 DROP VIEW IF EXISTS canonical_observations;
 CREATE VIEW canonical_observations_raw AS SELECT * FROM observations WHERE deleted=0 AND NOT (
  source_id='apple_health_export' AND origin_key IS NOT NULL
  AND origin_key IN (SELECT origin_key FROM supersessions));
-CREATE VIEW canonical_observations AS SELECT o.* FROM canonical_observations_raw o WHERE NOT (
- o.source_id='apple_health_export' AND EXISTS (SELECT 1 FROM observations d INDEXED BY obs_origin
-  WHERE d.origin_key=o.origin_key AND d.id<o.id AND d.deleted=0 AND d.source_id=o.source_id
-  AND d.start_at=o.start_at AND d.end_at=o.end_at AND d.value_num IS o.value_num AND d.value_text IS o.value_text
-  AND d.unit IS o.unit AND d.source_name IS o.source_name
-  AND json_extract(d.raw_json, '$.device') IS json_extract(o.raw_json, '$.device')));
+CREATE VIEW canonical_observations AS SELECT * FROM canonical_observations_raw WHERE repeat_of IS NULL;
+UPDATE observations SET repeat_of = (SELECT d.id FROM observations d INDEXED BY obs_origin
+  WHERE d.origin_key=observations.origin_key AND d.id<observations.id AND d.deleted=0
+  AND d.source_id=observations.source_id AND d.start_at=observations.start_at AND d.end_at=observations.end_at
+  AND d.value_num IS observations.value_num AND d.value_text IS observations.value_text
+  AND d.unit IS observations.unit AND d.source_name IS observations.source_name
+  AND json_extract(d.raw_json, '$.device') IS json_extract(observations.raw_json, '$.device') ORDER BY d.id LIMIT 1)
+ WHERE source_id='apple_health_export' AND deleted=0 AND origin_key IN (
+  SELECT origin_key FROM observations WHERE source_id='apple_health_export' AND deleted=0
+  GROUP BY origin_key HAVING count(*) > 1);
 """)
     for sha, page, text in c.execute('SELECT object_sha, page, text FROM object_pages').fetchall():
         c.execute('UPDATE object_pages SET sha256=? WHERE object_sha=? AND page=?',

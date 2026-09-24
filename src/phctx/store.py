@@ -756,6 +756,7 @@ class Store:
                     d[2] = hi_
             shrink: set[tuple[str, str]] = set()  # pairs that may have lost their first/last sample
             live = source_id.startswith('apple_health:')
+            touched: set[str] = set()  # export origin_keys whose repeat marks must be re-resolved
 
             def leave(prev: sqlite3.Row) -> None:
                 """prev (metric, unit, _, start, end) leaves or changes: its pair needs a re-read only if prev was that
@@ -798,6 +799,8 @@ class Store:
                 metrics.add(s['metric'])
                 lo = start if lo is None or start < lo else lo
                 hi = end if hi is None or end > hi else hi
+                if origin and not live:
+                    touched.add(origin)
             for sid in deleted_ids:
                 nonempty(sid, 'deleted_id', 200)
                 # A deletion-only object has no measurement body and stays outside active data.
@@ -807,10 +810,15 @@ class Store:
                 if prev and not prev[2]:
                     bump(prev[0], prev[1], -1)
                     leave(prev)
+                    if not live and (k := c.execute('SELECT origin_key FROM observations WHERE id=?',
+                                                    (oid,)).fetchone()[0]):
+                        touched.add(k)
                 c.execute('''INSERT INTO observations(id,source_id,native_id,metric,start_at,end_at,timezone,value_num,
                     value_text,unit,raw_json,deleted,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
                     ON CONFLICT(source_id,native_id) DO UPDATE SET deleted=1,updated_at=excluded.updated_at''',
                     (oid, source_id, sid, 'tombstone', now, now, 'UTC', None, None, None, '{}', 1, now))
+            for k in touched:
+                self._mark_repeats(c, source_id, k)
             # Any deletion or correction may remove the latest sample; one seek on obs_source_end, not a scan.
             latest = c.execute('SELECT max(end_at) FROM observations WHERE source_id=? AND deleted=0',
                                (source_id,)).fetchone()[0]
@@ -828,6 +836,21 @@ class Store:
                 out.update(_extra(c))
             return out
         return self._mutate(request_id, body, write)
+
+    REPEAT_FIELDS = ('start_at', 'end_at', 'value_num', 'value_text', 'unit', 'source_name')
+
+    def _mark_repeats(self, c: sqlite3.Connection, source_id: str, key: str) -> None:
+        """Within one export origin_key group, a row whose measured fields and device equal an earlier (smaller id)
+        active row repeats it: repeat_of = the first such row. Recomputed for the whole (small) group on any change."""
+        rows = c.execute('SELECT id, ' + ', '.join(self.REPEAT_FIELDS) + ", json_extract(raw_json, '$.device') "
+                         'FROM observations WHERE origin_key=? AND source_id=? AND deleted=0 ORDER BY id',
+                         (key, source_id)).fetchall()
+        first: dict[tuple, str] = {}
+        for oid, *fields in rows:
+            original = first.setdefault(tuple(fields), oid)
+            c.execute('UPDATE observations SET repeat_of=? WHERE id=?', (None if original == oid else original, oid))
+        c.execute('UPDATE observations SET repeat_of=NULL WHERE origin_key=? AND source_id=? AND deleted=1',
+                  (key, source_id))
 
     def _apply_catalog(self, c: sqlite3.Connection, source_id: str, delta: dict, shrink: set) -> None:
         """Maintain observation_catalog in O(page): count deltas are exact and the range only widens. A pair that
