@@ -38,7 +38,7 @@ trust_fake_ip_dns = false
 
 [model]
 enabled = false
-backend = "none"          # codex_cli | openai_api | none
+backend = "none"          # codex_cli | none
 model_id = ""
 daily_call_cap = 12
 

@@ -5,6 +5,31 @@ import Darwin
 import Glibc
 #endif
 
+/// The file operations outbox durability rests on; injectable so tests can fail each one.
+public protocol OutboxFiles: Sendable {
+    func write(_ data: Data, to url: URL) throws
+    /// fsync a file or directory.
+    func sync(_ url: URL) throws
+    func move(_ from: URL, to: URL) throws
+    func remove(_ url: URL) throws
+}
+
+public struct POSIXFiles: OutboxFiles {
+    public init() {}
+    public func write(_ data: Data, to url: URL) throws { try data.write(to: url) }
+    public func sync(_ url: URL) throws {
+        let fd = open(url.path, O_RDONLY)
+        guard fd >= 0 else { throw Self.posixError() }
+        defer { close(fd) }
+        guard fsync(fd) == 0 else { throw Self.posixError() }
+    }
+    public func move(_ from: URL, to: URL) throws {
+        guard rename(from.path, to.path) == 0 else { throw Self.posixError() }
+    }
+    public func remove(_ url: URL) throws { try FileManager.default.removeItem(at: url) }
+    private static func posixError() -> Error { NSError(domain: NSPOSIXErrorDomain, code: Int(errno)) }
+}
+
 public enum OutboxState: String, Codable, Sendable { case pending, acked, conflict }
 
 public struct OutboxEntry: Codable, Sendable {
@@ -59,12 +84,14 @@ public enum OutboxError: Error, Equatable {
 
 public actor OutboxStore {
     private let directory: URL
+    private let files: any OutboxFiles
     private let encoder: JSONEncoder
     private let decoder = JSONDecoder()
     private var index: OutboxIndex
 
-    public init(directory: URL) throws {
+    public init(directory: URL, files: any OutboxFiles = POSIXFiles()) throws {
         self.directory = directory
+        self.files = files
         encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.sortedKeys]
@@ -74,16 +101,18 @@ public actor OutboxStore {
         try Self.protect(directory)
         #endif
         let indexURL = directory.appendingPathComponent("index.json")
-        if let data = try? Data(contentsOf: indexURL) { index = try decoder.decode(OutboxIndex.self, from: data) }
-        else {
+        // Only a missing index starts fresh; an unreadable one fails open rather than forgetting acknowledged state.
+        if FileManager.default.fileExists(atPath: indexURL.path) {
+            index = try decoder.decode(OutboxIndex.self, from: Data(contentsOf: indexURL))
+        } else {
             index = OutboxIndex()
-            try Self.atomicWrite(try encoder.encode(index), to: indexURL)
+            try Self.atomicWrite(try encoder.encode(index), to: indexURL, files: files)
             #if os(iOS)
             try Self.protect(indexURL)
             #endif
         }
-        try Self.recoverResyncJournal(in: directory, encoder: encoder, decoder: decoder)
-        try Self.recoverAcknowledgedEntries(in: directory, index: index, decoder: decoder)
+        try Self.recoverResyncJournal(in: directory, files: files, encoder: encoder, decoder: decoder)
+        try Self.recoverAcknowledgedEntries(in: directory, files: files, index: index, decoder: decoder)
     }
 
     public func checkpoints() -> [String: StreamCheckpoint] { index.streams }
@@ -92,10 +121,13 @@ public actor OutboxStore {
     public func initialHistory(for stream: String) -> (complete: Bool, startEpoch: Double?) {
         let checkpoint = index.streams[stream] ?? StreamCheckpoint()
         if checkpoint.initialHistoryComplete { return (true, checkpoint.initialHistoryStartEpoch) }
-        if let first = (try? allEntries(stream: stream))?.filter({ $0.state != .acked }).min(by: { $0.sequence < $1.sequence }) {
-            if case .number(let epoch)? = first.batch.coverage["initial_history_start_epoch"] { return (false, epoch) }
+        let pending = ((try? allEntries(stream: stream)) ?? []).filter { $0.state != .acked }
+        // A queued page that finished the history window counts: its anchor is the one the next query resumes from.
+        let complete = pending.contains { $0.batch.coverage["initial_history_complete"] == .bool(true) }
+        if let first = pending.min(by: { $0.sequence < $1.sequence }) {
+            if case .number(let epoch)? = first.batch.coverage["initial_history_start_epoch"] { return (complete, epoch) }
             if case .number(let days)? = first.batch.coverage["initial_history_days"] {
-                return (false, Date().addingTimeInterval(-days * 86_400).timeIntervalSince1970)
+                return (complete, Date().addingTimeInterval(-days * 86_400).timeIntervalSince1970)
             }
         }
         return (false, checkpoint.initialHistoryStartEpoch)
@@ -121,7 +153,7 @@ public actor OutboxStore {
         let url = entryURL(batchID: batch.batchID)
         guard !FileManager.default.fileExists(atPath: url.path) else { throw OutboxError.conflictingBatchID }
         // The payload and corresponding anchor are durable in the same outbox record.
-        try Self.atomicWrite(try encoder.encode(entry), to: url)
+        try Self.atomicWrite(try encoder.encode(entry), to: url, files: files)
         #if os(iOS)
         try Self.protect(url)
         #endif
@@ -179,10 +211,13 @@ public actor OutboxStore {
         checkpoint.lastAckedAt = entry.batch.queryCompletedAt
         if case .bool(true)? = entry.batch.coverage["initial_history_complete"] { checkpoint.initialHistoryComplete = true }
         if case .number(let value)? = entry.batch.coverage["initial_history_start_epoch"] { checkpoint.initialHistoryStartEpoch = value }
-        index.streams[entry.stream] = checkpoint
-        try persistIndex()
-        try FileManager.default.removeItem(at: entryURL(batchID: batchID))
-        syncDirectory()
+        var next = index
+        next.streams[entry.stream] = checkpoint
+        try persist(next)
+        // The ACK is durable from here; if removal fails, reopen deletes the acknowledged page.
+        index = next
+        try files.remove(entryURL(batchID: batchID))
+        try files.sync(directory)
     }
 
     public func resync(stream: String, expectedSequence: Int, expectedPreviousBatchID: String?) throws {
@@ -195,7 +230,7 @@ public actor OutboxStore {
             throw OutboxError.sequenceGapCannotResync
         }
         let journalURL = directory.appendingPathComponent("resync-journal.json")
-        try Self.atomicWrite(try encoder.encode(OutboxResyncJournal(entries: entries)), to: journalURL)
+        try Self.atomicWrite(try encoder.encode(OutboxResyncJournal(entries: entries)), to: journalURL, files: files)
         #if os(iOS)
         try Self.protect(journalURL)
         #endif
@@ -208,21 +243,21 @@ public actor OutboxStore {
             entry.nextAttemptAt = nil
             try save(entry)
         }
-        try FileManager.default.removeItem(at: journalURL)
-        syncDirectory()
+        try files.remove(journalURL)
+        try files.sync(directory)
     }
 
     public func checkpoint(for stream: String) -> StreamCheckpoint { index.streams[stream] ?? StreamCheckpoint() }
 
     private func load(batchID: String) throws -> OutboxEntry {
         let url = entryURL(batchID: batchID)
-        guard let data = try? Data(contentsOf: url) else { throw OutboxError.missingEntry(batchID) }
-        return try decoder.decode(OutboxEntry.self, from: data)
+        guard FileManager.default.fileExists(atPath: url.path) else { throw OutboxError.missingEntry(batchID) }
+        return try decoder.decode(OutboxEntry.self, from: Data(contentsOf: url))
     }
 
     private func save(_ entry: OutboxEntry) throws {
         let url = entryURL(batchID: entry.batch.batchID)
-        try Self.atomicWrite(try encoder.encode(entry), to: url)
+        try Self.atomicWrite(try encoder.encode(entry), to: url, files: files)
         #if os(iOS)
         try Self.protect(url)
         #endif
@@ -237,58 +272,48 @@ public actor OutboxStore {
 
     private func entryURL(batchID: String) -> URL { directory.appendingPathComponent("batch-\(batchID).json") }
 
-    private func persistIndex() throws {
+    private func persist(_ index: OutboxIndex) throws {
         let url = directory.appendingPathComponent("index.json")
-        try Self.atomicWrite(try encoder.encode(index), to: url)
+        try Self.atomicWrite(try encoder.encode(index), to: url, files: files)
         #if os(iOS)
         try Self.protect(url)
         #endif
     }
 
-    private func syncDirectory() { Self.syncDirectory(directory) }
-
-    private static func recoverResyncJournal(in directory: URL, encoder: JSONEncoder, decoder: JSONDecoder) throws {
+    private static func recoverResyncJournal(in directory: URL, files: any OutboxFiles, encoder: JSONEncoder, decoder: JSONDecoder) throws {
         let url = directory.appendingPathComponent("resync-journal.json")
         guard FileManager.default.fileExists(atPath: url.path) else { return }
         let journal = try decoder.decode(OutboxResyncJournal.self, from: Data(contentsOf: url))
         for entry in journal.entries {
-            try atomicWrite(try encoder.encode(entry), to: directory.appendingPathComponent("batch-\(entry.batch.batchID).json"))
+            try atomicWrite(try encoder.encode(entry), to: directory.appendingPathComponent("batch-\(entry.batch.batchID).json"), files: files)
         }
-        try FileManager.default.removeItem(at: url)
-        syncDirectory(directory)
+        try files.remove(url)
+        try files.sync(directory)
     }
 
-    private static func recoverAcknowledgedEntries(in directory: URL, index: OutboxIndex, decoder: JSONDecoder) throws {
+    private static func recoverAcknowledgedEntries(in directory: URL, files: any OutboxFiles, index: OutboxIndex, decoder: JSONDecoder) throws {
         for file in try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
             where file.lastPathComponent.hasPrefix("batch-") && file.pathExtension == "json" {
             let entry = try decoder.decode(OutboxEntry.self, from: Data(contentsOf: file))
             guard let checkpoint = index.streams[entry.stream],
                   entry.sequence < checkpoint.lastAckedSequence ||
                     (entry.sequence == checkpoint.lastAckedSequence && entry.batch.batchID == checkpoint.lastAckedBatchID) else { continue }
-            try FileManager.default.removeItem(at: file)
+            try files.remove(file)
         }
-        syncDirectory(directory)
+        try files.sync(directory)
     }
 
-    private static func syncDirectory(_ directory: URL) {
-        #if canImport(Darwin) || canImport(Glibc)
-        let fd = open(directory.path, O_RDONLY)
-        if fd >= 0 { _ = fsync(fd); _ = close(fd) }
-        #endif
-    }
-
-    private static func atomicWrite(_ data: Data, to destination: URL) throws {
+    private static func atomicWrite(_ data: Data, to destination: URL, files: any OutboxFiles) throws {
         let temporary = destination.deletingLastPathComponent().appendingPathComponent(".\(UUID().uuidString).tmp")
-        try data.write(to: temporary)
-        #if canImport(Darwin) || canImport(Glibc)
-        let fd = open(temporary.path, O_RDONLY)
-        if fd >= 0 { _ = fsync(fd); _ = close(fd) }
-        #endif
-        guard rename(temporary.path, destination.path) == 0 else {
-            try? FileManager.default.removeItem(at: temporary)
-            throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+        do {
+            try files.write(data, to: temporary)
+            try files.sync(temporary)
+            try files.move(temporary, to: destination)
+        } catch {
+            try? files.remove(temporary)
+            throw error
         }
-        syncDirectory(destination.deletingLastPathComponent())
+        try files.sync(destination.deletingLastPathComponent())
     }
 
     #if os(iOS)

@@ -1,4 +1,4 @@
-"""Derived page text from a saved original. Runs in a resource-limited child process with no network use.
+"""Derived page text from a saved original, parsed in a resource-limited child process with a minimal environment.
 
 The original is already committed before this runs; failure here only changes extraction status.
 """
@@ -9,12 +9,14 @@ import os
 import resource
 import subprocess
 import sys
+from pathlib import Path
 
 from .store import Store, StoreError
 
 TIMEOUT_S = 30
 MEMORY_BYTES = 1024 * 1024 * 1024
 MAX_PAGES = 500
+SRC = str(Path(__file__).resolve().parents[1])
 
 
 def _limits() -> None:
@@ -26,7 +28,11 @@ def _limits() -> None:
 
 
 def _child(path: str) -> None:
-    """Entry point inside the child: print {"pages": [...]} for a PDF."""
+    """Entry point inside the child: set limits first, then print {"pages": [...]} for a PDF.
+
+    Limits are applied here, after exec, not via preexec_fn (unsafe to fork-then-run Python in a threaded parent).
+    """
+    _limits()
     from pypdf import PdfReader
     reader = PdfReader(path)
     pages = []
@@ -49,9 +55,10 @@ def extract(store: Store, sha: str) -> dict:
         return store.set_extraction(sha, status='not_applicable', method=None, pages=[],
                                     error_code='visual_original_model_reads_directly')
     try:
-        proc = subprocess.run([sys.executable, '-c', 'import sys; from phctx.extract import _child; _child(sys.argv[1])',
-                               str(store.blobs / sha)], capture_output=True, text=True, timeout=TIMEOUT_S + 5,
-                              preexec_fn=_limits, env={**os.environ, 'no_proxy': '*', 'NO_PROXY': '*'})
+        env = {'PATH': '/usr/bin:/bin', 'PYTHONPATH': SRC, 'HOME': os.environ.get('HOME', '/')}
+        proc = subprocess.run([sys.executable, '-I', '-c', 'import sys; sys.path.insert(0, sys.argv[2]); '
+                               'from phctx.extract import _child; _child(sys.argv[1])', str(store.blobs / sha), SRC],
+                              capture_output=True, text=True, timeout=TIMEOUT_S + 5, env=env)
     except subprocess.TimeoutExpired:
         return store.set_extraction(sha, status='failed', method='pdf_text', error_code='timeout')
     if proc.returncode != 0:

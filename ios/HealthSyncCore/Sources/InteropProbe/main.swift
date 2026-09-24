@@ -60,8 +60,12 @@ struct InteropProbe {
         let completedAt = ISO8601OffsetDateFormatter().string(from: Date(), timeZone: TimeZone(secondsFromGMT: 0)!)
         let allowedA = sample(id: UUID().uuidString, metric: streamA, name: "Synthetic Watch", value: 61)
         let blockedOura = sample(id: UUID().uuidString, metric: streamA, name: "Oura Synthetic", value: 999)
-        let filteredA = filter([allowedA, blockedOura])
-        guard filteredA.filtered == 1, filteredA.samples == [allowedA] else {
+        let blockedDevice = sample(id: UUID().uuidString, metric: streamA, name: "Synthetic Ring", value: 998,
+                                   device: ["manufacturer": .string("Oura Synthetic Oy")])
+        let blockedMetadata = sample(id: UUID().uuidString, metric: streamA, name: "Synthetic Ring", value: 997,
+                                     metadata: ["synced_from": .string("oura synthetic")])
+        let filteredA = filter([allowedA, blockedOura, blockedDevice, blockedMetadata])
+        guard filteredA.filtered == 3, filteredA.samples == [allowedA] else {
             throw ProbeError.restrictedFilterMismatch
         }
         let first = try await store.enqueue(installationID: installationID, stream: streamA, nextAnchor: Data([1]),
@@ -77,8 +81,11 @@ struct InteropProbe {
                                                   samples: filter([sample(id: UUID().uuidString, metric: streamB,
                                                                           name: "Synthetic Watch", value: 1)]).samples,
                                                   deletedIDs: [], coverage: ["interop_synthetic": .bool(true)])
-        guard !first.body.contains(Data("Oura Synthetic".utf8)) else { throw ProbeError.restrictedSampleQueued }
-        print("PASS: restricted-source sample removed before durable outbox")
+        let written = try FileManager.default.contentsOfDirectory(at: outboxURL, includingPropertiesForKeys: nil)
+            .map { try Data(contentsOf: $0) }
+        guard !written.contains(where: { String(decoding: $0, as: UTF8.self).range(of: "oura", options: .caseInsensitive) != nil })
+        else { throw ProbeError.restrictedSampleQueued }
+        print("PASS: source-name, device-only and metadata-only restricted samples removed before durable outbox")
 
         let engine = SyncEngine(store: store, uploader: uploader, token: { pair.deviceToken })
         await engine.drain()
@@ -104,10 +111,11 @@ struct InteropProbe {
         print("PASS: authenticated status reports per-stream sequences")
     }
 
-    private static func sample(id: String, metric: String, name: String, value: Double) -> HealthSample {
+    private static func sample(id: String, metric: String, name: String, value: Double,
+                               device: [String: JSONValue]? = nil, metadata: [String: JSONValue]? = nil) -> HealthSample {
         HealthSample(nativeID: id, metric: metric, startAt: "2026-09-23T10:00:00-05:00",
                      endAt: "2026-09-23T10:00:01-05:00", timezone: "America/Chicago", valueNum: value,
-                     unit: "count", sourceBundleID: "synthetic.test", sourceName: name)
+                     unit: "count", sourceBundleID: "synthetic.test", sourceName: name, device: device, metadata: metadata)
     }
 
     private static func filter(_ samples: [HealthSample]) -> (samples: [HealthSample], filtered: Int) {

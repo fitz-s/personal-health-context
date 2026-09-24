@@ -1,9 +1,10 @@
 """Forward-only schema migrations. Each step runs inside the caller's IMMEDIATE transaction."""
 from __future__ import annotations
 
+import json
 import sqlite3
 
-TARGET = 4
+TARGET = 6
 
 
 def statements(sql: str):
@@ -146,7 +147,74 @@ CREATE VIEW canonical_observations AS SELECT * FROM observations WHERE deleted=0
 ''')
 
 
-STEPS = {2: _v2, 3: _v3, 4: _v4}
+def _v5(c: sqlite3.Connection) -> None:
+    # superseded_by_live was set only when the live row arrived second, and the v4 backfill ignored tombstones.
+    # Supersession is now its own fact: once any live row (deleted or not) carried an origin_key, the export copy with
+    # that key is never canonical, in either arrival order. superseded_by_live stays as an unused column.
+    # Catalog extrema and source latest times left stale by endpoint shrinks are rebuilt once from ground truth.
+    # Shadow-mode candidates get their own table so they never reach the outbox, dedup or attention budget.
+    run(c, '''
+CREATE TABLE supersessions(origin_key TEXT PRIMARY KEY, live_observation_id TEXT NOT NULL);
+INSERT OR IGNORE INTO supersessions SELECT origin_key, id FROM observations
+ WHERE source_id LIKE 'apple_health:%' AND origin_key IS NOT NULL ORDER BY updated_at, id;
+DROP VIEW IF EXISTS canonical_observations;
+CREATE VIEW canonical_observations AS SELECT * FROM observations WHERE deleted=0 AND NOT (
+ source_id='apple_health_export' AND origin_key IS NOT NULL
+ AND origin_key IN (SELECT origin_key FROM supersessions));
+CREATE INDEX IF NOT EXISTS obs_group_end ON observations(metric, source_id, end_at);
+DELETE FROM observation_catalog;
+INSERT INTO observation_catalog
+ SELECT source_id, metric, coalesce(unit, ''), count(*), min(start_at), max(end_at)
+ FROM observations WHERE deleted=0 GROUP BY source_id, metric, coalesce(unit, '');
+UPDATE sources SET latest_sample_at=(SELECT max(end_at) FROM observations o WHERE o.source_id=sources.id AND deleted=0);
+CREATE TABLE shadow_insights(
+ id TEXT PRIMARY KEY, question_id TEXT, payload_json TEXT NOT NULL, evidence_versions_json TEXT NOT NULL,
+ would_queue INTEGER NOT NULL CHECK(would_queue IN(0,1)), reason TEXT, created_at TEXT NOT NULL
+);
+''')
+
+
+def _v6(c: sqlite3.Connection) -> None:
+    # The equivalence-key formula changed (normalization v1: unit, category strings, workout [type, seconds], whole
+    # seconds). A stored key is only meaningful under the formula that made it, so every key is recomputed and
+    # supersessions rebuilt from the recomputed live keys (tombstoned live rows keep authority: their stored fields
+    # still yield the key). Legacy shadow candidates written into `insights` move to shadow_insights. cost_usd
+    # becomes nullable so an unmeasured cost is recorded as unknown, not zero.
+    from .apple_export import origin_key_of_row
+    # Attribute untagged (pre-v4) export rows to their export: only when every export import this database ever ran
+    # was the same archive is the attribution certain; otherwise leave them unattributed (never retired by guess).
+    # Every later import tags its rows, so "untagged" names exactly this set from here on.
+    shas = [r[0] for r in c.execute("SELECT DISTINCT input_sha256 FROM import_runs WHERE kind='apple_export'")]
+    if len(shas) == 1:
+        c.execute("INSERT OR REPLACE INTO meta VALUES('export_legacy_owner', ?)", (shas[0][:16],))
+    rows = c.execute("SELECT id, metric, start_at, end_at, value_num, value_text, unit, raw_json FROM observations "
+                     "WHERE metric != 'tombstone'")
+    batch = []
+    for oid, metric, start, end, vn, vt, unit, raw in rows:
+        batch.append((origin_key_of_row(metric, start, end, vn, vt, unit, raw), oid))
+    for i in range(0, len(batch), 20000):
+        c.executemany('UPDATE observations SET origin_key=? WHERE id=?', batch[i:i + 20000])
+    run(c, '''
+DELETE FROM supersessions;
+INSERT OR IGNORE INTO supersessions SELECT origin_key, id FROM observations
+ WHERE source_id LIKE 'apple_health:%' AND origin_key IS NOT NULL ORDER BY updated_at, id;
+INSERT OR IGNORE INTO shadow_insights(id, question_id, payload_json, evidence_versions_json, would_queue, reason, created_at)
+ SELECT id, question_id, payload_json, evidence_versions_json, 1, 'migrated_from_insights_v5', created_at
+ FROM insights WHERE json_extract(payload_json, '$.shadow') = 1;
+DELETE FROM insights WHERE json_extract(payload_json, '$.shadow') = 1;
+CREATE TABLE model_calls_v6(
+ id TEXT PRIMARY KEY, job_id TEXT, backend TEXT NOT NULL, model_id TEXT NOT NULL,
+ prompt_sha256 TEXT NOT NULL, started_at TEXT NOT NULL, finished_at TEXT, status TEXT,
+ cost_usd REAL, error_code TEXT
+);
+INSERT INTO model_calls_v6 SELECT id, job_id, backend, model_id, prompt_sha256, started_at, finished_at, status,
+ NULL, error_code FROM model_calls;
+DROP TABLE model_calls;
+ALTER TABLE model_calls_v6 RENAME TO model_calls;
+''')
+
+
+STEPS = {2: _v2, 3: _v3, 4: _v4, 5: _v5, 6: _v6}
 
 
 def apply(c: sqlite3.Connection, current: int, now: str) -> int:

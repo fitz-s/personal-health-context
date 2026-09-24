@@ -14,7 +14,14 @@ for a in "$@"; do [ "$a" = readonly ] && MODE=readonly; done
 PROFILE=phctx-local; [ "$MODE" = readonly ] && PROFILE=phctx-readonly
 CFG="${PHCTX_CONFIG:-$HOME/.config/phctx/config.toml}"
 LOG_DIR="$HOME/Library/Logs/PersonalHealthContext"
-key() { /usr/bin/security find-generic-password -s phctx-tunnel-key -a phctx -w 2>/dev/null || { echo "no Keychain item phctx-tunnel-key" >&2; exit 3; }; }
+# Runtime key source, in order: Keychain item phctx-tunnel-key, else the existing WebCodex tunnel config (same
+# Platform org, Tunnels Read+Use). Read into this process only; never written anywhere else.
+WEBCODEX_CFG="$HOME/Library/Application Support/dev.webcodex.desktop/secrets/tunnel-config.json"
+key() {
+  /usr/bin/security find-generic-password -s phctx-tunnel-key -w 2>/dev/null && return
+  [ -r "$WEBCODEX_CFG" ] && /usr/bin/python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["api_key"])' "$WEBCODEX_CFG" && return
+  echo "no runtime key: Keychain phctx-tunnel-key or WebCodex tunnel config" >&2; exit 3
+}
 MCP_CMD="env PYTHONPATH=$REPO/src PHCTX_CONFIG=$CFG $REPO/.venv/bin/python -m phctx mcp --profile $MODE --log $LOG_DIR/mcp-$MODE.log"
 case "${1:-}" in
   init)

@@ -4,8 +4,7 @@ Backends:
 - `none`       — no model configured: the worker still schedules and records, but never claims reasoning ran.
 - `codex_cli`  — the user's own authorized Codex CLI login (ChatGPT account), strong model, tools = this
                  project's MCP server over stdio in the READ-ONLY profile. No new paid service.
-- `openai_api` — Responses API with a Keychain key; only when the user has provisioned one.
-- `scripted`   — deterministic test double for the scheduling tests (never used in production config).
+- `scripted`   — deterministic test double passed in code (config.load rejects it as a production backend).
 
 Every backend returns a candidate dict matching contracts/insight_candidate.schema.json or raises ModelError.
 """
@@ -62,14 +61,12 @@ CODEX_FEATURES_OFF = ['shell_tool', 'browser_use', 'browser_use_external', 'comp
                       'remote_plugin', 'skill_search']
 
 
-def _codex_home(mcp_python: str, config_path: str | None, profile: str) -> str:
-    """Isolated CODEX_HOME: only the user's existing auth plus this project's MCP server; no other plugins."""
-    home = tempfile.mkdtemp(prefix='phctx-codex-')
+def _codex_home(home: str, mcp_python: str, config_path: str | None, profile: str) -> None:
+    """Isolated CODEX_HOME: a SYMLINK to the user's existing auth (never a copy) plus this project's MCP server."""
     auth = Path(os.environ.get('PHCTX_CODEX_AUTH', '~/.codex/auth.json')).expanduser()
-    if not auth.exists():
+    if not auth.is_file():
         raise ModelError('codex_auth_missing')
-    shutil.copyfile(auth, Path(home) / 'auth.json')
-    os.chmod(Path(home) / 'auth.json', 0o600)
+    os.symlink(auth.resolve(), Path(home) / 'auth.json')
     server = '' if config_path is None else (
         '[mcp_servers.phctx]\n'
         # Stands in for the user approving the host's write confirmation (ChatGPT asks before write tools);
@@ -82,59 +79,66 @@ def _codex_home(mcp_python: str, config_path: str | None, profile: str) -> str:
     (Path(home) / 'config.toml').write_text(
         'web_search = "disabled"\n' + server +
         '[features]\n' + ''.join(f'{f} = false\n' for f in CODEX_FEATURES_OFF))
-    return home
 
 
 def run_codex(prompt: str, *, model_id: str, config_path: str | None, profile: str = 'readonly',
               output_schema: dict | None = None, timeout: int = 900, cwd: str | None = None,
               developer_instructions: str | None = None, images: list[str] | None = None,
               reasoning_effort: str | None = None, result_cap: int = 4000) -> tuple[str, list[dict]]:
-    """Run one Codex exec turn against the phctx MCP server. Returns (final_message, tool_trace)."""
+    """Run one Codex exec turn against the phctx MCP server. Returns (final_message, tool_trace).
+
+    `cwd` is only Codex's working directory; the final message, schema and CODEX_HOME live in owned private
+    temp dirs that are removed on every exit path. The final message is returned in memory only.
+    """
     exe = shutil.which('codex') or os.path.expanduser('~/.npm-global/bin/codex')
     if not Path(exe).exists():
         raise ModelError('codex_cli_missing')
-    home = _codex_home(str(ROOT / '.venv' / 'bin' / 'python'), config_path, profile)
-    work = cwd or tempfile.mkdtemp(prefix='phctx-codex-work-')
-    last = Path(work) / 'last_message.txt'
-    cmd = [exe, 'exec', '--skip-git-repo-check', '--ephemeral', '-s', 'read-only', '-m', model_id, '--json',
-           '-C', work, '-o', str(last)]
-    if reasoning_effort:
-        cmd += ['-c', f'model_reasoning_effort="{reasoning_effort}"']
-    if developer_instructions:
-        cmd += ['-c', 'developer_instructions=' + json.dumps(developer_instructions)]
-    for img in images or []:
-        cmd += ['-i', img]
-    if output_schema is not None:
-        sp = Path(work) / 'schema.json'
-        sp.write_text(json.dumps(output_schema))
-        cmd += ['--output-schema', str(sp)]
-    cmd += ['--', '-']  # prompt on stdin (never in argv/ps); '--' stops variadic -i from eating it
+    home = tempfile.mkdtemp(prefix='phctx-codex-')
+    own = tempfile.mkdtemp(prefix='phctx-codex-work-')
     try:
-        proc = subprocess.run(cmd, input=prompt, capture_output=True, text=True, timeout=timeout,
-                              env={**os.environ, 'CODEX_HOME': home})
-    except subprocess.TimeoutExpired as e:
-        raise ModelError('model_timeout') from e
+        _codex_home(home, str(ROOT / '.venv' / 'bin' / 'python'), config_path, profile)
+        last = Path(own) / 'last_message.txt'
+        cmd = [exe, 'exec', '--skip-git-repo-check', '--ephemeral', '-s', 'read-only', '-m', model_id, '--json',
+               '-C', cwd or own, '-o', str(last)]
+        if reasoning_effort:
+            cmd += ['-c', f'model_reasoning_effort="{reasoning_effort}"']
+        if developer_instructions:
+            cmd += ['-c', 'developer_instructions=' + json.dumps(developer_instructions)]
+        for img in images or []:
+            cmd += ['-i', img]
+        if output_schema is not None:
+            sp = Path(own) / 'schema.json'
+            sp.write_text(json.dumps(output_schema))
+            cmd += ['--output-schema', str(sp)]
+        cmd += ['--', '-']  # prompt on stdin (never in argv/ps); '--' stops variadic -i from eating it
+        try:
+            proc = subprocess.run(cmd, input=prompt, capture_output=True, text=True, timeout=timeout,
+                                  env={**os.environ, 'CODEX_HOME': home})
+        except subprocess.TimeoutExpired as e:
+            raise ModelError('model_timeout') from e
+        trace = []
+        for line in proc.stdout.splitlines():
+            try:
+                ev = json.loads(line)
+            except ValueError:
+                continue
+            item = ev.get('item') or {}
+            if ev.get('type') == 'item.completed' and item.get('type') == 'mcp_tool_call':
+                res = item.get('result') or {}
+                text = ''.join(c.get('text', '') for c in res.get('content', []) if isinstance(c, dict))
+                trace.append({'tool': item.get('tool'), 'arguments': item.get('arguments'),
+                              'is_error': bool(item.get('error')) or '"error":' in text[:200],
+                              'result_text': text[:result_cap]})
+            elif ev.get('type') == 'item.completed' and item.get('type') not in {'agent_message', 'reasoning', None}:
+                trace.append({'other_item': item.get('type'), 'detail': str(item)[:300]})
+            if ev.get('type') in {'error', 'turn.failed'}:
+                trace.append({'event': ev.get('type'), 'detail': str(ev)[:500]})
+        if proc.returncode != 0 or not last.exists():
+            raise ModelError('model_call_failed')
+        return last.read_text(), trace
     finally:
         shutil.rmtree(home, ignore_errors=True)
-    trace = []
-    for line in proc.stdout.splitlines():
-        try:
-            ev = json.loads(line)
-        except ValueError:
-            continue
-        item = ev.get('item') or {}
-        if ev.get('type') == 'item.completed' and item.get('type') == 'mcp_tool_call':
-            res = item.get('result') or {}
-            text = ''.join(c.get('text', '') for c in res.get('content', []) if isinstance(c, dict))
-            trace.append({'tool': item.get('tool'), 'arguments': item.get('arguments'),
-                          'is_error': bool(item.get('error')) or '"error":' in text[:200], 'result_text': text[:result_cap]})
-        elif ev.get('type') == 'item.completed' and item.get('type') not in {'agent_message', 'reasoning', None}:
-            trace.append({'other_item': item.get('type'), 'detail': str(item)[:300]})
-        if ev.get('type') in {'error', 'turn.failed'}:
-            trace.append({'event': ev.get('type'), 'detail': str(ev)[:500]})
-    if proc.returncode != 0 or not last.exists():
-        raise ModelError('model_call_failed')
-    return last.read_text(), trace
+        shutil.rmtree(own, ignore_errors=True)
 
 
 # Strict-mode structured output needs every property listed as required and nullable where optional.
@@ -180,6 +184,4 @@ def investigate(backend: str, model_id: str, task: str, *, config_path: str,
         except ValueError as e:
             raise ModelError('candidate_not_json') from e
         return Call('codex_cli', model_id, digest, validate_candidate(cand), trace)
-    if backend == 'openai_api':
-        raise ModelError('openai_api_not_provisioned')
     raise ModelError('model_disabled')

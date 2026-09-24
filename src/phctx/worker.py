@@ -115,14 +115,23 @@ def plan(store: Store, cfg: Config) -> dict:
                                                          'id': ch['entity_id'], 'detail': detail})
         enqueued = []
         now = utcnow()
+        question = "type='revisit' AND json_extract(payload_json, '$.question_id')=?"
         for qid, evid in hits.items():
+            # One open job per question: new evidence joins it (a running job re-queues on completion, see execute).
+            open_job = c.execute(f"SELECT id, dedupe_key, payload_json FROM jobs WHERE {question} "
+                                 "AND state IN('queued','running') LIMIT 1", (qid,)).fetchone()
+            if open_job:
+                p = json.loads(open_job['payload_json'])
+                p['evidence'] = (p['evidence'] + evid)[-50:]
+                c.execute('UPDATE jobs SET payload_json=?, updated_at=? WHERE id=?', (dump(p), now, open_job['id']))
+                enqueued.append(open_job['dedupe_key'])
+                continue
             key = 'revisit:' + qid + ':' + hashlib.sha256(dump([e['seq'] for e in evid]).encode()).hexdigest()[:16]
-            # Minimum semantic interval per question: later evidence joins the next window.
-            recent = c.execute("SELECT max(created_at) FROM jobs WHERE type='revisit' AND json_extract(payload_json,"
-                               "'$.question_id')=?", (qid,)).fetchone()[0]
+            # Minimum semantic interval per question, measured from the last executed investigation.
+            last = c.execute(f"SELECT max(updated_at) FROM jobs WHERE {question} AND state='done'", (qid,)).fetchone()[0]
             run_at = now
-            if recent:
-                earliest = (datetime.fromisoformat(recent) + timedelta(seconds=cfg.minimum_semantic_interval_seconds))
+            if last:
+                earliest = datetime.fromisoformat(last) + timedelta(seconds=cfg.minimum_semantic_interval_seconds)
                 run_at = max(now, earliest.isoformat(timespec='microseconds'))
             c.execute('INSERT OR IGNORE INTO jobs(id,type,dedupe_key,state,payload_json,next_run_at,created_at,'
                       "updated_at) VALUES(?,?,?,'queued',?,?,?,?)",
@@ -179,7 +188,7 @@ def execute(store: Store, cfg: Config, job: dict, owner: str, config_path: str,
         if calls_today(store) >= cfg.daily_call_cap:
             raise model.ModelError('budget_exhausted')
         with store.transaction() as c:
-            c.execute('INSERT INTO model_calls VALUES(?,?,?,?,?,?,NULL,?,0,NULL)',
+            c.execute('INSERT INTO model_calls VALUES(?,?,?,?,?,?,NULL,?,NULL,NULL)',
                       (call_id, job['id'], backend, cfg.model_id or backend, prompt_sha, started, 'running'))
         result = model.investigate(backend, cfg.model_id, task_text(store, job), config_path=config_path,
                                    scripted=scripted)
@@ -190,24 +199,50 @@ def execute(store: Store, cfg: Config, job: dict, owner: str, config_path: str,
         with store.transaction() as c:
             c.execute("UPDATE model_calls SET finished_at=?, status='failed', error_code=? WHERE id=?",
                       (utcnow(), e.code, call_id))
-            c.execute('UPDATE jobs SET state=?, attempts=?, next_run_at=?, last_error_code=?, lease_owner=NULL, '
-                      'lease_expires_at=NULL, updated_at=? WHERE id=?',
-                      ('failed' if final else 'queued', attempts if e.code != 'model_disabled' else job['attempts'],
-                       utc_in(delay), e.code, utcnow(), job['id']))
+            if not c.execute('UPDATE jobs SET state=?, attempts=?, next_run_at=?, last_error_code=?, lease_owner=NULL, '
+                             'lease_expires_at=NULL, updated_at=? WHERE id=? AND lease_owner=?',
+                             ('failed' if final else 'queued',
+                              attempts if e.code != 'model_disabled' else job['attempts'],
+                              utc_in(delay), e.code, utcnow(), job['id'], owner)).rowcount:
+                return {'job': job['dedupe_key'], 'outcome': 'lease_lost'}
         return {'job': job['dedupe_key'], 'outcome': 'deferred', 'error': e.code}
-    cand = result.candidate
-    if cfg.worker_mode == 'shadow' and cand['decision'] == 'surface':
-        cand = {**cand, 'shadow': True}
-    gate: dict
-    try:
-        gate = store.queue_insight(request_id=f'worker:{job["id"]}', candidate=cand)
-    except StoreError as e:
-        gate = {'queued': False, 'reason': 'gate_rejected:' + e.code}
     with store.transaction() as c:
         c.execute("UPDATE model_calls SET finished_at=?, status='done', model_id=? WHERE id=?",
                   (utcnow(), result.model_id, call_id))
-        c.execute("UPDATE jobs SET state='done', attempts=attempts+1, lease_owner=NULL, lease_expires_at=NULL, "
-                  'last_error_code=NULL, updated_at=? WHERE id=?', (utcnow(), job['id']))
+
+    def finish(c) -> None:
+        """Complete only while this worker still owns the job. Evidence merged in during the run re-queues it, due
+        one minimum interval after this execution."""
+        now = utcnow()
+        if not c.execute("UPDATE jobs SET state=CASE WHEN payload_json=? THEN 'done' ELSE 'queued' END, next_run_at=?, "
+                         'attempts=attempts+1, lease_owner=NULL, lease_expires_at=NULL, last_error_code=NULL, '
+                         'updated_at=? WHERE id=? AND lease_owner=?',
+                         (job['payload_json'], utc_in(cfg.minimum_semantic_interval_seconds), now, job['id'],
+                          owner)).rowcount:
+            raise StoreError('lease_lost', 'Another worker owns this job; its result is dropped.')
+    cand = result.candidate
+    gate, done = {'queued': False, 'reason': 'silence'}, False
+    try:
+        if cand['decision'] == 'surface':
+            # Shadow candidates go to shadow_insights only: never the outbox, dedup or attention budget.
+            queue = store.queue_shadow if cfg.worker_mode == 'shadow' else store.queue_insight
+            try:
+                # attempts advances in the same transaction, so a re-run of a re-queued job is a new request; the
+                # owner makes a stale owner's replay miss the receipt and hit the fence instead.
+                gate, done = queue(request_id=f'worker:{job["id"]}:{job["attempts"]}:{owner}', candidate=cand,
+                                   fence=finish), True
+            except StoreError as e:
+                if e.code == 'lease_lost':
+                    raise
+                gate = {'queued': False, 'reason': 'gate_rejected:' + e.code}
+        if not done:
+            with store.transaction() as c:
+                finish(c)
+    except StoreError as e:
+        if e.code != 'lease_lost':
+            raise
+        log.info('lease_lost job=%s', job['id'])
+        return {'job': job['dedupe_key'], 'outcome': 'lease_lost'}
     return {'job': job['dedupe_key'], 'outcome': cand['decision'], 'gate': gate, 'tool_calls': len(result.trace)}
 
 
@@ -242,7 +277,7 @@ def run_once(cfg: Config, config_path: str | None = None, scripted=None) -> dict
                       'surfaced=? WHERE id=?', (utcnow(), outcome, summary['plan']['changes'], len(due), calls,
                                                surfaced, run_id))
         summary['outcome'] = outcome
-        if surfaced and cfg.macos_notification_enabled and cfg.worker_mode != 'shadow':
+        if surfaced and cfg.macos_notification_enabled:  # shadow candidates are never `queued`
             notify()
         return summary
     except Exception as e:
@@ -278,7 +313,7 @@ def status(cfg: Config) -> dict:
                                            'ORDER BY started_at DESC LIMIT 5')]
         first = c.execute('SELECT min(started_at) FROM worker_runs').fetchone()[0]
         jobs = {r[0]: r[1] for r in c.execute('SELECT state, count(*) FROM jobs GROUP BY state')}
-        shadow = c.execute("SELECT count(*) FROM insights WHERE json_extract(payload_json,'$.shadow')=1").fetchone()[0]
+        shadow = c.execute('SELECT count(*) FROM shadow_insights').fetchone()[0]
     observed = None
     if first:
         observed = round((_now() - datetime.fromisoformat(first)).total_seconds() / 86400, 2)

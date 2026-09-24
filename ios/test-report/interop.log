@@ -1,5 +1,5 @@
 Synthetic Swift ↔ Python ingest interoperability probe
-Date: 2026-09-23 07:08:20 CDT
+Date: 2026-09-23 23:56:13 CDT
 Scope: disposable synthetic store, loopback TLS server, temporary outbox under ios/test-report
 server startup exit code: 0
 
@@ -7,25 +7,35 @@ Command: swift build --package-path /Users/leofitz/personal-health-context/ios/H
 [0/1] Planning build
 Building for debugging...
 [0/3] Write swift-version--1AB21518FC5DEDBE.txt
-Build of product 'InteropProbe' complete! (0.18s)
+Build of product 'InteropProbe' complete! (0.21s)
 InteropProbe build exit code: 0
 
-Command: PHCTX_INTEROP=1 swift run --package-path /Users/leofitz/personal-health-context/ios/HealthSyncCore InteropProbe 127.0.0.1 53646 <pinned-cert> <one-time-code>
+Command: PHCTX_INTEROP=1 swift run --package-path /Users/leofitz/personal-health-context/ios/HealthSyncCore InteropProbe 127.0.0.1 60634 <pinned-cert> <one-time-code>
 [0/1] Planning build
 Building for debugging...
 [0/3] Write swift-version--1AB21518FC5DEDBE.txt
-Build of product 'InteropProbe' complete! (0.18s)
+Build of product 'InteropProbe' complete! (0.16s)
+InteropProbe failed: outbox still has pending entries after drain
 PASS: wrong certificate pin rejected before pairing
 PASS: wrong pin generated no accepted pairing request; valid pairing succeeded
 PASS: pairing and tolerant PairResponse decoding
-PASS: restricted-source sample removed before durable outbox
-PASS: two ordered batches on one stream and one batch on second stream committed
-PASS: identical raw outbox body replay returns committed ACK
-PASS: authenticated status reports per-stream sequences
-InteropProbe run exit code: 0
-
-Command: query synthetic SQLite observations and committed receipt counts
-{"active_observations": 3, "batch_receipts": 3, "oura_observations": 0, "server_filtered_restricted_counts": [0, 0, 0]}
-Synthetic database assertion exit code: 0
-
-Overall interop exit code: 0
+PASS: source-name, device-only and metadata-only restricted samples removed before durable outbox
+InteropProbe run exit code: 1
+ingest_error
+Traceback (most recent call last):
+  File "/Users/leofitz/personal-health-context/src/phctx/ingest.py", line 252, in do_POST
+    self.reply(200, accept_batch(store, d, self.body()))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/leofitz/personal-health-context/src/phctx/ingest.py", line 120, in accept_batch
+    x['origin_key'] = origin_key(s['metric'], s['start_at'], s['end_at'], s.get('value_num'),
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: origin_key() got an unexpected keyword argument 'unit'
+ingest_error
+Traceback (most recent call last):
+  File "/Users/leofitz/personal-health-context/src/phctx/ingest.py", line 252, in do_POST
+    self.reply(200, accept_batch(store, d, self.body()))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/leofitz/personal-health-context/src/phctx/ingest.py", line 120, in accept_batch
+    x['origin_key'] = origin_key(s['metric'], s['start_at'], s['end_at'], s.get('value_num'),
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: origin_key() got an unexpected keyword argument 'unit'

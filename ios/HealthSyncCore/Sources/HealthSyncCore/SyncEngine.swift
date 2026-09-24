@@ -14,9 +14,11 @@ public actor SyncEngine {
     }
 
     public func drain(now: Date = Date()) async {
-        guard !isDraining, !requiresRepair, let token = await token() else { return }
+        // Reserve before the first suspension: actor reentrancy lets a second drain in during `await token()`.
+        guard !isDraining, !requiresRepair else { return }
         isDraining = true
         defer { isDraining = false }
+        guard let token = await token() else { return }
         guard let entries = try? await store.entries() else { return }
         for stream in Set(entries.map(\.stream)).sorted() {
             while !requiresRepair, let entry = try? await store.nextEntry(stream: stream) {

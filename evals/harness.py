@@ -172,16 +172,14 @@ def background(case: dict, store: Store, ctx: dict, cfgp: Path, model_id: str, w
     if ctx.get('new_obs'):
         fixtures.watch(store, ctx['new_obs'])
     t0 = time.time()
-    real = model.investigate
-    if ctx.get('model_failure'):
-        def failing(*a, **k):
+    scripted = None
+    if ctx.get('model_failure'):  # per-case failing backend; never patches the shared model module
+        cfg.model_backend = 'scripted'
+
+        def scripted(task: str) -> dict:
             raise model.ModelError(ctx['model_failure'])
-        model.investigate = failing
-    try:
-        _prime_watermark(store, ctx)
-        summary = worker.run_once(cfg, config_path=str(cfgp))
-    finally:
-        model.investigate = real
+    _prime_watermark(store, ctx)
+    summary = worker.run_once(cfg, config_path=str(cfgp), scripted=scripted)
     return {'mode': 'background', 'summary': summary, 'final': json.dumps(summary, ensure_ascii=False)[:6000],
             'trace': [], 'error': summary.get('error'), 'seconds': round(time.time() - t0, 1)}
 
@@ -281,20 +279,24 @@ def auto_checks(case: dict, ctx: dict, before: dict, after: dict, run: dict) -> 
     if run['mode'] == 'background':
         s = run['summary']
         jobs = s.get('jobs', [])
-        queued = [j for j in jobs if j.get('gate', {}).get('queued')]
+        # Accepted = the gate queued it (live) or would have (shadow). A model 'surface' the gate refused is not.
+        queued = [j for j in jobs if j.get('gate', {}).get('queued') or j.get('gate', {}).get('would_queue')]
+        silent = sum(j.get('outcome') == 'silence' for j in jobs)
+        blocked = sum(j.get('outcome') == 'surface' and j not in queued for j in jobs)
+        why = f'jobs={len(jobs)} queued={len(queued)} model_silence={silent} gate_blocked={blocked}'
         add('worker_ran', s.get('outcome') in {'idle', 'ran'} or ctx.get('model_failure'), str(s.get('outcome')))
         if sc in {'ordinary_no_change', 'question_new_irrelevant_data', 'question_closed', 'gap_without_decision_value'}:
-            add('no_model_call_or_silence', not queued, f'jobs={len(jobs)} queued={len(queued)}')
+            add('no_model_call_or_silence', not queued, why)
         if sc in {'small_noisy_change', 'already_surfaced_evidence', 'quiet_cooldown', 'source_offline',
                   'off_with_pending', 'superseded_evidence'}:
-            add('no_new_surface', not queued, f'queued={len(queued)}')
+            add('no_new_surface', not queued, why)
         if sc in {'api_budget_exhausted', 'missing_research_tool'}:
             add('deferred_not_done', any(j['outcome'] == 'deferred' for j in jobs) and not queued,
                 json.dumps(jobs)[:300])
             add('no_insight_created', len(after['insights']) == len(before['insights']))
         if sc in {'question_new_matched_assessment', 'old_analysis_contradicted', 'useful_unasked_measurement_gap'}:
-            add('surfaced', bool(queued) or any(j['outcome'] == 'surface' for j in jobs),
-                json.dumps([{k: j.get(k) for k in ('outcome', 'gate')} for j in jobs], ensure_ascii=False)[:400])
+            add('surfaced', bool(queued), why + ' ' + json.dumps(
+                [{k: j.get(k) for k in ('outcome', 'gate')} for j in jobs], ensure_ascii=False)[:400])
     return out
 
 
@@ -381,7 +383,8 @@ def run_case(case: dict, out_dir: Path, model_id: str, judge_model: str, run_no:
                'reason': (verdict.get('reason') or '')[:1500], 'violated_forbidden': verdict.get('violated_forbidden'),
                'auto_checks': checks, 'mode': run['mode'], 'model_id': model_id, 'judge_model': judge_model,
                'seconds': run['seconds'], 'tool_calls': [t.get('tool') for t in run['trace'] if t.get('tool')],
-               'error': run.get('error')}
+               'error': run.get('error'), 'prompt_sha256': hashlib.sha256(
+                   (model.background_prompt() if bg else FOREGROUND).encode()).hexdigest()}
         evidence = out_dir / 'traces' / f'{case["id"]}_run{run_no}.json'
         evidence.parent.mkdir(parents=True, exist_ok=True)
         evidence.write_text(json.dumps({'record': rec, 'run': run, 'diff': diff, 'judge': verdict},
@@ -406,7 +409,7 @@ def main() -> int:
     p.add_argument('--judge-model', default='gpt-5.6-sol')
     p.add_argument('--split', choices=['dev', 'holdout', 'all'], default='dev')
     p.add_argument('--cases', help='comma-separated ids')
-    p.add_argument('--repeat-critical', type=int, default=1, help='runs for silence/security/oura critical cases')
+    p.add_argument('--repeat-critical', type=int, default=3, help='runs per critical case (summarize requires 3)')
     p.add_argument('--workers', type=int, default=4)
     a = p.parse_args()
     a.out.mkdir(parents=True, exist_ok=True)
@@ -416,9 +419,7 @@ def main() -> int:
         cases = [c for c in CASES if c['id'] in want]
     jobs = []
     for c in cases:
-        reps = a.repeat_critical if (c['severity'] == 'critical' and c['category'] in {'silence', 'security'}
-                                     or 'oura' in c['fixture'].get('scenario', '')
-                                     or 'false_saved' in c['forbidden_behaviors']) else 1
+        reps = a.repeat_critical if c['severity'] == 'critical' else 1
         jobs += [(c, i + 1) for i in range(reps)]
     meta = {'started_at': datetime.now(timezone.utc).isoformat(), 'model': a.model, 'judge_model': a.judge_model,
             'backend': 'codex_cli (user ChatGPT account), phctx MCP stdio, shell/web disabled',

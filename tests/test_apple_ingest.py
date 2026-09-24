@@ -111,7 +111,8 @@ class AppleExportTests(unittest.TestCase):
                       timezone='America/Chicago', value_num=72.5, value_text=None, unit='kg',
                       source_name='Apple Watch', source_bundle_id='SYNTHETIC.healthkit', device={}, metadata={})
         sample['origin_key'] = apple_export.origin_key(sample['metric'], sample['start_at'], sample['end_at'],
-                                                       sample['value_num'], sample['value_text'], sample['source_name'])
+                                                       sample['value_num'], sample['value_text'], sample['unit'],
+                                                       sample['source_name'])
         self.store.ingest_batch(request_id='SYNTHETIC-live-sample', source_id='apple_health:synthetic-install',
                                 samples=[sample], deleted_ids=[], cursor='SYNTHETIC live cursor')
         with self.store.connect() as c:

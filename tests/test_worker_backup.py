@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 from phctx import backup, model, worker
 from phctx.config import Config
@@ -91,7 +92,7 @@ class WorkerBackupTests(unittest.TestCase):
         self.assertEqual(row['last_error_code'], 'model_disabled')
         self.assertEqual(self.count('SELECT count(*) FROM insights'), 0)
 
-    def test_scripted_surface_candidate_is_queued_in_shadow_mode(self):
+    def test_shadow_surface_candidate_is_auditable_but_hidden_and_outside_budget(self):
         self.cfg.model_enabled = True
         self.cfg.model_backend = 'scripted'
         self.cfg.model_id = 'SYNTHETIC-scripted'
@@ -99,11 +100,143 @@ class WorkerBackupTests(unittest.TestCase):
         record_id = self.record(text='SYNTHETIC posture assessment added')['record_id']
         result = worker.run_once(self.cfg, scripted=lambda task: self.candidate(question_id, record_id))
         self.assertEqual(len(result['jobs']), 1)
-        self.assertTrue(result['jobs'][0]['gate']['queued'])
-        pending = self.store.pending_insights()['insights']
-        self.assertEqual(len(pending), 1)
-        self.assertTrue(pending[0]['payload']['shadow'])
-        self.assertEqual(pending[0]['payload']['evidence_ids'], [record_id])
+        gate = result['jobs'][0]['gate']
+        self.assertFalse(gate['queued'])
+        self.assertTrue(gate['would_queue'])  # counterfactual: an active worker would have surfaced it
+        self.assertEqual(self.count('SELECT count(*) FROM insights'), 0)
+        self.assertEqual(self.store.pending_insights()['insights'], [])
+        self.assertEqual(self.store.bootstrap()['pending']['insights'], [])
+        with self.store.connect() as c:
+            shadow = c.execute('SELECT question_id, payload_json, would_queue FROM shadow_insights').fetchall()
+        self.assertEqual(len(shadow), 1)
+        self.assertEqual((shadow[0]['question_id'], shadow[0]['would_queue']), (question_id, 1))
+        self.assertEqual(json.loads(shadow[0]['payload_json'])['evidence_ids'], [record_id])
+        self.assertEqual(worker.status(self.cfg)['shadow_candidates'], 1)
+        # The shadow row neither deduplicates nor spends the attention budget of a real insight.
+        real = self.store.queue_insight(request_id=self.request(), candidate=self.candidate(question_id, record_id))
+        self.assertTrue(real['queued'])
+
+    def _at(self, minutes):
+        return (datetime(2026, 9, 20, 17, tzinfo=timezone.utc) + timedelta(minutes=minutes)).isoformat(
+            timespec='microseconds')
+
+    def test_changes_every_fifteen_minutes_coalesce_instead_of_a_job_train(self):
+        question_id = self.question()
+        for minute in (0, 15, 30, 45):
+            self.record(text=f'SYNTHETIC posture note {minute}')
+            with patch('phctx.worker.utcnow', return_value=self._at(minute)):
+                worker.plan(self.store, self.cfg)
+        with self.store.connect() as c:
+            jobs = c.execute("SELECT id, payload_json, next_run_at FROM jobs WHERE type='revisit'").fetchall()
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(len(json.loads(jobs[0]['payload_json'])['evidence']), 4)
+        self.assertEqual(jobs[0]['next_run_at'], self._at(0))
+        # Once it executed, the next job waits the minimum interval from that execution, and absorbs later changes.
+        with self.store.transaction() as c:
+            c.execute("UPDATE jobs SET state='done', updated_at=? WHERE id=?", (self._at(50), jobs[0]['id']))
+        for minute in (60, 75, 90):
+            self.record(text=f'SYNTHETIC posture note {minute}')
+            with patch('phctx.worker.utcnow', return_value=self._at(minute)):
+                worker.plan(self.store, self.cfg)
+        with self.store.connect() as c:
+            queued = c.execute("SELECT payload_json, next_run_at FROM jobs WHERE type='revisit' AND state='queued'"
+                               ).fetchall()
+        self.assertEqual(len(queued), 1)
+        self.assertEqual(len(json.loads(queued[0]['payload_json'])['evidence']), 3)
+        self.assertEqual(queued[0]['next_run_at'], self._at(50 + self.cfg.minimum_semantic_interval_seconds // 60))
+        self.assertEqual(json.loads(queued[0]['payload_json'])['question_id'], question_id)
+
+    def test_evidence_merged_during_a_run_requeues_and_the_rerun_completes(self):
+        self.cfg.model_enabled = True
+        self.cfg.model_backend = 'scripted'
+        self.cfg.worker_mode = 'active'
+        question_id = self.question()
+        record_id = self.record(text='SYNTHETIC posture assessment added')['record_id']
+        worker.plan(self.store, self.cfg)
+
+        def model_with_new_evidence(task):
+            self.record(text='SYNTHETIC posture follow-up')
+            worker.plan(self.store, self.cfg)
+            return self.candidate(question_id, record_id)
+        first = worker.run_once(self.cfg, scripted=model_with_new_evidence)
+        self.assertTrue(first['jobs'][0]['gate']['queued'])
+        with self.store.transaction() as c:
+            row = c.execute("SELECT state, payload_json FROM jobs WHERE type='revisit'").fetchone()
+            self.assertEqual(row['state'], 'queued')
+            self.assertEqual(len(json.loads(row['payload_json'])['evidence']), 2)
+            c.execute("UPDATE jobs SET next_run_at=? WHERE type='revisit'", (utcnow(),))
+        second = worker.run_once(self.cfg, scripted=lambda task: self.candidate(question_id, record_id))
+        self.assertEqual(second['jobs'][0]['gate']['reason'], 'duplicate')
+        self.assertEqual(self.count("SELECT state FROM jobs WHERE type='revisit'"), 'done')
+
+    def test_expired_lease_owner_cannot_complete_or_queue_after_takeover(self):
+        self.cfg.model_enabled = True
+        self.cfg.model_backend = 'scripted'
+        self.cfg.worker_mode = 'active'
+        question_id = self.question()
+        record_id = self.record(text='SYNTHETIC posture assessment added')['record_id']
+        worker.plan(self.store, self.cfg)
+        with self.store.transaction() as c:
+            c.execute("UPDATE jobs SET state='running', lease_owner='SYNTHETIC-old-owner', lease_expires_at=? "
+                      "WHERE type='revisit'", (utcnow(),))
+            job = dict(c.execute("SELECT * FROM jobs WHERE type='revisit'").fetchone())
+
+        def slow_model(task):  # the old lease expires mid-call and another worker claims the job
+            with self.store.transaction() as c:
+                c.execute("UPDATE jobs SET lease_owner='SYNTHETIC-new-owner', lease_expires_at=? WHERE id=?",
+                          (self._at(10 ** 6), job['id']))
+            return self.candidate(question_id, record_id)
+        out = worker.execute(self.store, self.cfg, job, 'SYNTHETIC-old-owner', '', slow_model)
+        self.assertEqual(out['outcome'], 'lease_lost')
+        self.assertEqual(self.count('SELECT count(*) FROM insights'), 0)
+        with self.store.connect() as c:
+            row = c.execute("SELECT state, lease_owner, attempts FROM jobs WHERE type='revisit'").fetchone()
+        self.assertEqual(tuple(row), ('running', 'SYNTHETIC-new-owner', 0))
+        # The same fence holds on the deferral path.
+        self.cfg.model_enabled = False
+        out = worker.execute(self.store, self.cfg, job, 'SYNTHETIC-old-owner', '')
+        self.assertEqual(out['outcome'], 'lease_lost')
+        self.assertEqual(self.count("SELECT state FROM jobs WHERE type='revisit'"), 'running')
+
+    def test_default_backup_dir_follows_the_root(self):
+        self.assertEqual(Config(root=self.base / 'x' / 'data').backup_dir, self.base / 'x' / 'backups')
+
+    def test_two_backups_in_the_same_second_both_succeed(self):
+        from unittest.mock import patch as _patch
+        from phctx import backup as bk
+        fixed = datetime(2026, 9, 24, 2, 12, 16, tzinfo=timezone.utc)
+        stamps = iter([fixed, fixed.replace(microsecond=1)])
+
+        class Clock(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return next(stamps)
+        with _patch.object(bk, 'datetime', Clock):
+            a, b = bk.backup(self.cfg), bk.backup(self.cfg)
+        self.assertNotEqual(a['snapshot']['path'], b['snapshot']['path'])
+
+    def test_stale_owner_replay_cannot_reuse_new_owner_receipt(self):
+        self.cfg.model_enabled = True
+        self.cfg.model_backend = 'scripted'
+        self.cfg.worker_mode = 'active'
+        question_id = self.question()
+        record_id = self.record(text='SYNTHETIC posture assessment added')['record_id']
+        worker.plan(self.store, self.cfg)
+        with self.store.transaction() as c:
+            c.execute("UPDATE jobs SET state='running', lease_owner='SYNTHETIC-old', lease_expires_at=? "
+                      "WHERE type='revisit'", (utcnow(),))
+            job = dict(c.execute("SELECT * FROM jobs WHERE type='revisit'").fetchone())
+
+        def slow_model(task):  # the new owner finishes the same attempt with the same candidate first
+            with self.store.transaction() as c:
+                c.execute("UPDATE jobs SET lease_owner='SYNTHETIC-new' WHERE id=?", (job['id'],))
+            done = worker.execute(self.store, self.cfg, {**job, 'lease_owner': 'SYNTHETIC-new'}, 'SYNTHETIC-new', '',
+                                  lambda t: self.candidate(question_id, record_id))
+            self.assertTrue(done['gate']['queued'])
+            return self.candidate(question_id, record_id)
+        out = worker.execute(self.store, self.cfg, job, 'SYNTHETIC-old', '', slow_model)
+        self.assertEqual(out['outcome'], 'lease_lost')
+        self.assertEqual(self.count('SELECT count(*) FROM insights'), 1)
 
     def test_scripted_silence_completes_job_and_second_run_has_no_new_call(self):
         self.cfg.model_enabled = True

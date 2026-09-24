@@ -262,6 +262,8 @@ print(json.dumps({'schema_version': s.status()['schema_version'], 'snapshot': st
         self.assertTrue((destination / 'observations.csv').is_file())
         self.assertEqual((destination / 'originals' / attachment['object_sha256']).read_bytes(), original)
         self.assertTrue((destination / 'DATA_DICTIONARY.md').is_file())
+        shipped = Path(__file__).resolve().parents[1] / 'delivery' / 'DATA_DICTIONARY.md'
+        self.assertEqual((destination / 'DATA_DICTIONARY.md').read_text(), shipped.read_text())
         self.assertEqual(result['counts'], {'records': 2, 'observations': 1, 'originals': 1})
 
     def test_concurrent_same_request_id_commits_one_record(self):

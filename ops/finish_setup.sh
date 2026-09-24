@@ -10,10 +10,10 @@ TUNNEL_ID="${PHCTX_TUNNEL_ID:-$(cat "$HOME/.config/phctx/tunnel_id" 2>/dev/null)
 what="${1:-all}"
 
 if [ "$what" = tunnel ] || [ "$what" = all ]; then
-  if ! /usr/bin/security find-generic-password -s phctx-tunnel-key -a phctx >/dev/null 2>&1; then
+  if ! /usr/bin/security find-generic-password -s phctx-tunnel-key >/dev/null 2>&1; then
     echo "Create a key at https://platform.openai.com/settings/organization/api-keys (Tunnels: Read + Use)."
     echo "Paste it at the prompt (input hidden):"
-    /usr/bin/security add-generic-password -s phctx-tunnel-key -a phctx -w
+    /usr/bin/security add-generic-password -s phctx-tunnel-key -a "$USER" -U -w
   fi
   "$REPO/ops/tunnel.sh" init "$TUNNEL_ID"
   "$REPO/ops/tunnel.sh" install

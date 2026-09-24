@@ -78,6 +78,8 @@ public final class AnchoredSyncCoordinator: @unchecked Sendable {
             }
             Task {
                 await self.engine.drain()
+                // A page refused while the outbox was full kept its anchor; re-query now that uploads made room.
+                for type in self.supportedTypes() { self.fetchPage(type: type, stream: type.identifier, completion: {}) }
                 self.lock.lock(); self.backgroundTasks.removeValue(forKey: identifier); self.lock.unlock()
                 refresh.setTaskCompleted(success: true)
             }
@@ -133,7 +135,8 @@ public final class AnchoredSyncCoordinator: @unchecked Sendable {
             let lowerBound = history.startEpoch.map { Date(timeIntervalSince1970: $0) } ??
                 Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
             let predicate = history.complete ? nil : HKQuery.predicateForSamples(withStart: lowerBound, end: nil)
-            let query = HKAnchoredObjectQuery(type: type, predicate: predicate, anchor: anchor, limit: 500) { [weak self] _, samples, deleted, newAnchor, error in
+            let query = HKAnchoredObjectQuery(type: type, predicate: predicate, anchor: anchor,
+                                              limit: PageDecision.limit) { [weak self] _, samples, deleted, newAnchor, error in
                 guard let self else { completion(); return }
                 guard error == nil, let newAnchor else { completion(); return }
                 Task {
@@ -144,16 +147,18 @@ public final class AnchoredSyncCoordinator: @unchecked Sendable {
                         let deletedIDs = (deleted ?? []).map { $0.uuid.uuidString }
                         let anchorData = try NSKeyedArchiver.archivedData(withRootObject: newAnchor, requiringSecureCoding: true)
                         let timestamp = ISO8601OffsetDateFormatter().string(from: Date())
-                        let complete = history.complete || (converted.count < 500 && deletedIDs.count < 500)
-                        if !complete { self.markPageLimitReached(stream) }
+                        let page = PageDecision(historyWasComplete: history.complete, samples: samples?.count ?? 0,
+                                                deleted: deletedIDs.count)
                         _ = try await self.outbox.enqueue(installationID: self.installationID, stream: stream,
                                                           nextAnchor: anchorData, queryCompletedAt: timestamp,
                                                           samples: allowed, deletedIDs: deletedIDs,
                                                           coverage: ["filtered_restricted": .number(Double(filter.filteredCount)),
                                                                      "initial_history_days": .number(30),
                                                                      "initial_history_start_epoch": .number(history.startEpoch ?? lowerBound.timeIntervalSince1970),
-                                                                     "initial_history_complete": .bool(complete),
-                                                                     "limited_to_page_size": .bool(!complete)])
+                                                                     "initial_history_complete": .bool(page.historyComplete),
+                                                                     "limited_to_page_size": .bool(page.queryAgain)])
+                        // Only a durably queued full page continues; a failed enqueue waits for the next trigger.
+                        if page.queryAgain { self.markPageLimitReached(stream) }
                         completion()
                         await self.engine.drain()
                     } catch { completion() }
@@ -163,18 +168,7 @@ public final class AnchoredSyncCoordinator: @unchecked Sendable {
         }
     }
 
-    private func supportedTypes() -> [HKSampleType] {
-        var types: [HKSampleType] = []
-        if let sleep = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) { types.append(sleep) }
-        let ids: [HKQuantityTypeIdentifier] = [
-            .stepCount, .activeEnergyBurned, .appleExerciseTime, .heartRate, .restingHeartRate,
-            .heartRateVariabilitySDNN, .respiratoryRate, .oxygenSaturation, .vo2Max, .bodyMass,
-            .bodyFatPercentage, .leanBodyMass
-        ]
-        types += ids.compactMap { HKObjectType.quantityType(forIdentifier: $0) }
-        types.append(HKObjectType.workoutType())
-        return types
-    }
+    private func supportedTypes() -> [HKSampleType] { HealthTypes.requested }
 
     private func mapSample(_ object: HKSample) -> HealthSample? {
         let source = object.sourceRevision.source
@@ -196,80 +190,36 @@ public final class AnchoredSyncCoordinator: @unchecked Sendable {
         var number: Double?
         var text: String?
         var unit: String?
-        var metadata: [String: JSONValue] = [:]
+        // HealthKit metadata travels whole: the restricted-provenance filter must see every key and value.
+        var metadata: [String: JSONValue] = (object.metadata ?? [:]).mapValues { value in
+            switch value {
+            case let text as String: return .string(text)
+            case let flag as Bool: return .bool(flag)
+            case let number as NSNumber: return .number(number.doubleValue)
+            case let date as Date: return .string(formatter.string(from: date, timeZone: sampleTimeZone))
+            default: return .string(String(describing: value))
+            }
+        }
         if let quantity = object as? HKQuantitySample {
-            let (unitString, hkUnit) = quantityUnit(for: quantity.quantityType)
-            unit = unitString
-            number = quantity.quantity.doubleValue(for: hkUnit)
+            // Only requested types reach here; each has a contract unit string HKUnit parses.
+            guard let name = Normalization.unit(forQuantity: quantity.quantityType.identifier) else { return nil }
+            unit = name
+            number = quantity.quantity.doubleValue(for: HKUnit(from: name))
         } else if let category = object as? HKCategorySample {
-            number = Double(category.value)
-            text = categoryName(category.value, type: category.categoryType)
+            (number, text, unit) = Normalization.category(type: category.categoryType.identifier, value: category.value)
         } else if let workout = object as? HKWorkout {
-            number = workout.duration
-            unit = "s"
-            metadata["activity_type"] = .string(workoutActivityName(workout.workoutActivityType))
+            let wire = Normalization.workout(activity: workout.workoutActivityType.rawValue, duration: workout.duration)
+            (number, text, unit) = (wire.num, wire.text, wire.unit)
+            metadata["activity_type"] = .string(wire.text)
             if let energy = workout.totalEnergyBurned { metadata["total_energy_kcal"] = .number(energy.doubleValue(for: .kilocalorie())) }
             if let distance = workout.totalDistance { metadata["total_distance_m"] = .number(distance.doubleValue(for: .meter())) }
-        }
-        if object is HKWorkout {
-            unit = "s"
-        } else if unit == nil {
-            unit = ""
+        } else {
+            return nil
         }
         return HealthSample(nativeID: object.uuid.uuidString, metric: object.sampleType.identifier,
                             startAt: formatter.string(from: object.startDate, timeZone: sampleTimeZone),
                             endAt: formatter.string(from: object.endDate, timeZone: sampleTimeZone), timezone: timezone,
                             valueNum: number, valueText: text, unit: unit, sourceBundleID: source.bundleIdentifier,
                             sourceName: source.name, device: device, metadata: metadata.isEmpty ? nil : metadata)
-    }
-
-    private func quantityUnit(for type: HKQuantityType) -> (String, HKUnit) {
-        switch HKQuantityTypeIdentifier(rawValue: type.identifier) {
-        case .stepCount: return (HKUnit.count().unitString, HKUnit.count())
-        case .activeEnergyBurned: return (HKUnit.kilocalorie().unitString, HKUnit.kilocalorie())
-        case .appleExerciseTime: return (HKUnit.minute().unitString, HKUnit.minute())
-        case .heartRate, .restingHeartRate:
-            let unit = HKUnit.count().unitDivided(by: HKUnit.minute()); return (unit.unitString, unit)
-        case .heartRateVariabilitySDNN: return (HKUnit.secondUnit(with: .milli).unitString, .secondUnit(with: .milli))
-        case .respiratoryRate:
-            let unit = HKUnit.count().unitDivided(by: HKUnit.minute()); return (unit.unitString, unit)
-        case .oxygenSaturation: return (HKUnit.percent().unitString, HKUnit.percent())
-        case .vo2Max:
-            let unit = HKUnit.literUnit(with: .milli).unitDivided(by: HKUnit.gramUnit(with: .kilo).unitMultiplied(by: HKUnit.minute()))
-            return (unit.unitString, unit)
-        case .bodyMass, .leanBodyMass:
-            let unit = HKUnit.gramUnit(with: .kilo); return (unit.unitString, unit)
-        case .bodyFatPercentage: return (HKUnit.percent().unitString, HKUnit.percent())
-        default: return (HKUnit.count().unitString, .count())
-        }
-    }
-
-    private func workoutActivityName(_ type: HKWorkoutActivityType) -> String {
-        switch type {
-        case .running: return "running"
-        case .walking: return "walking"
-        case .cycling: return "cycling"
-        case .swimming: return "swimming"
-        case .hiking: return "hiking"
-        case .traditionalStrengthTraining: return "traditionalStrengthTraining"
-        case .functionalStrengthTraining: return "functionalStrengthTraining"
-        case .yoga: return "yoga"
-        case .highIntensityIntervalTraining: return "highIntensityIntervalTraining"
-        case .other: return "other"
-        default: return "activity_\(type.rawValue)"
-        }
-    }
-
-    private func categoryName(_ value: Int, type: HKCategoryType) -> String {
-        guard type.identifier == HKCategoryTypeIdentifier.sleepAnalysis.rawValue else { return "value_\(value)" }
-        switch HKCategoryValueSleepAnalysis(rawValue: value) {
-        case .inBed: return "inBed"
-        case .asleepUnspecified: return "asleepUnspecified"
-        case .awake: return "awake"
-        case .asleepCore: return "asleepCore"
-        case .asleepDeep: return "asleepDeep"
-        case .asleepREM: return "asleepREM"
-        default: return "unknown"
-        }
     }
 }

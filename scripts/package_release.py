@@ -15,6 +15,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'src'))
+from phctx import __version__  # noqa: E402
 EXCLUDE_DIRS = {'.venv', '.git', '__pycache__', 'traces', 'package_ref', '.build', 'dist'}
 EXCLUDE_FILES = {'tunnel-client', 'cloudflared'}  # large third-party binaries: fetched + checksum-verified by docs
 SECRET = [re.compile(p) for p in [
@@ -71,7 +73,7 @@ def main() -> int:
     dist = ROOT / 'dist'
     dist.mkdir(exist_ok=True)
     rev = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], cwd=ROOT, capture_output=True, text=True).stdout.strip()
-    arc = dist / f'personal-health-context-0.3.0-{rev or "worktree"}.tar.gz'
+    arc = dist / f'personal-health-context-{__version__}-{rev or "worktree"}.tar.gz'
     with tarfile.open(arc, 'w:gz') as tar:
         for p in files():
             tar.add(p, arcname=f'personal-health-context/{p.relative_to(ROOT)}')

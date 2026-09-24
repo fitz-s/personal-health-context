@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 from . import __version__
-from .config import load
+from .config import ConfigError, load
 from .store import Store, StoreError
 
 
@@ -96,12 +96,19 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument('snapshot', type=Path)
     r.add_argument('--new-root', type=Path, required=True)
     r.add_argument('--passphrase-keychain')
+    rp = sub.add_parser('restore-premigration', help='build a NEW root from root/migrations/pre-v*.sqlite3')
+    rp.add_argument('sqlite', type=Path)
+    rp.add_argument('--new-root', type=Path, required=True)
     e = sub.add_parser('export')
     e.add_argument('dest', type=Path)
     sub.add_parser('verify')
     sub.add_parser('extract-pending')
     args = p.parse_args(argv)
-    cfg = load(args.config)
+    try:
+        cfg = load(args.config)
+    except ConfigError as e:
+        print(json.dumps({'error': 'config_invalid', 'message': str(e)}, ensure_ascii=False), file=sys.stderr)
+        return 2
     try:
         return dispatch(cfg, args)
     except StoreError as e:
@@ -131,10 +138,12 @@ def dispatch(cfg, args) -> int:
         return 0
     if c == 'pair-device':
         from . import ingest
+        from .config import KEYCHAIN
         s = store_of(cfg)
         hosts = ingest.lan_addresses()
         host = args.host or next((h for h in hosts if h != '127.0.0.1'), '127.0.0.1')
-        _, _, fp = ingest.ensure_cert(cfg.root.parent / 'ingest-tls', hosts + ([host] if host not in hosts else []))
+        _, _, fp = ingest.ensure_cert(cfg.root.parent / 'ingest-tls', hosts + ([host] if host not in hosts else []),
+                                      KEYCHAIN)
         code = ingest.new_pairing_code(s)
         out({'host': host, 'port': cfg.ingest_port, 'cert_sha256': fp, 'pairing_code': code, 'expires_minutes': 10,
              'pair_url': f'phctx://pair?host={host}&port={cfg.ingest_port}&cert={fp}&code={code}'})
@@ -147,10 +156,11 @@ def dispatch(cfg, args) -> int:
     if c == 'ingest-server':
         import logging
         from . import ingest
+        from .config import KEYCHAIN
         from .mcp_server import setup_logging
         setup_logging(None)
         s = store_of(cfg)
-        cert, key, fp = ingest.ensure_cert(cfg.root.parent / 'ingest-tls', ingest.lan_addresses())
+        cert, key, fp = ingest.ensure_cert(cfg.root.parent / 'ingest-tls', ingest.lan_addresses(), KEYCHAIN)
         srv = ingest.make_server(s, args.host or cfg.ingest_host, args.port or cfg.ingest_port, cert, key)
         logging.getLogger('phctx.ingest').info('listening port=%s cert_sha256=%s', srv.server_address[1], fp)
         srv.serve_forever()
@@ -169,6 +179,10 @@ def dispatch(cfg, args) -> int:
     if c == 'restore':
         from .backup import restore
         out(restore(cfg, args.snapshot, args.new_root, args.passphrase_keychain))
+        return 0
+    if c == 'restore-premigration':
+        from .backup import restore_premigration
+        out(restore_premigration(cfg, args.sqlite, args.new_root))
         return 0
     if c == 'export':
         out(store_of(cfg).export(args.dest))

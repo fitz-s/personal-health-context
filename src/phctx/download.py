@@ -8,8 +8,10 @@ from __future__ import annotations
 
 import http.client
 import ipaddress
+import re
 import socket
 import ssl
+import threading
 import time
 from dataclasses import dataclass
 from typing import Callable
@@ -44,9 +46,17 @@ def public_ip(ip: str, fake_ip_ok: bool = False) -> bool:
 
 
 def host_allowed(host: str, allowlist: list[str]) -> bool:
-    """Exact host or a listed parent domain written as '.example.com'."""
+    """Exact host, a listed parent domain written as '.example.com', or a 're:' full-match pattern.
+
+    Patterns exist for hosts that vary only by region (ChatGPT file storage uses several regional accounts);
+    they must be anchored and specific, never a bare shared-cloud suffix.
+    """
     host = host.lower().rstrip('.')
     for entry in allowlist:
+        if entry.startswith('re:'):
+            if re.fullmatch(entry[3:], host):
+                return True
+            continue
         entry = entry.lower().rstrip('.')
         if host == entry or (entry.startswith('.') and host.endswith(entry)):
             return True
@@ -61,22 +71,64 @@ class Downloaded:
     hops: int
 
 
+class _Timeout(Exception):
+    pass
+
+
+def _resolve(resolver: Resolver, host: str, port: int, seconds: float) -> list[str]:
+    """getaddrinfo has no timeout; run it in a daemon thread and stop waiting at the deadline."""
+    out: dict = {}
+
+    def run():
+        try:
+            out['ips'] = resolver(host, port)
+        except BaseException as e:  # noqa: BLE001 - re-raised in the caller's thread
+            out['error'] = e
+    t = threading.Thread(target=run, daemon=True)
+    t.start()
+    t.join(max(seconds, 0))
+    if t.is_alive():
+        raise _Timeout
+    if 'error' in out:
+        raise out['error']
+    return out['ips']
+
+
 class _PinnedHTTPS(http.client.HTTPSConnection):
-    def __init__(self, host: str, ip: str, port: int, timeout: float, context: ssl.SSLContext):
-        super().__init__(host, port, timeout=timeout, context=context)
-        self._ip = ip
+    """TCP to the validated IP; TLS still verifies the hostname. The whole exchange is cut at `deadline`."""
+
+    def __init__(self, host: str, ip: str, port: int, deadline: float, context: ssl.SSLContext):
+        super().__init__(host, port, timeout=max(deadline - time.monotonic(), 0.001), context=context)
+        self._ip, self._timer = ip, threading.Timer(max(deadline - time.monotonic(), 0), self._cut)
+        self._timer.daemon = True
+        self._timer.start()
+
+    def _cut(self) -> None:  # unblocks any pending read/connect: slow headers and slow chunks alike
+        s = self.sock
+        if s is not None:
+            try:
+                socket.socket.shutdown(s, socket.SHUT_RDWR)
+            except OSError:
+                pass
 
     def connect(self) -> None:
         sock = socket.create_connection((self._ip, self.port), self.timeout)
+        self.sock = sock
         self.sock = self._context.wrap_socket(sock, server_hostname=self.host)
+
+    def close(self) -> None:
+        self._timer.cancel()
+        super().close()
 
 
 def fetch(url: str, *, allowlist: list[str], max_bytes: int = 25 * 1024 * 1024, timeout: float = 20.0,
           max_hops: int = 3, resolver: Resolver = system_resolver, context: ssl.SSLContext | None = None,
           allow_nonpublic: bool = False, fake_ip_ok: bool = False) -> Downloaded:
-    """allow_nonpublic/context exist for the local test server only; production callers never set them."""
+    """`timeout` bounds the whole call (DNS, connect, TLS, headers, body, every redirect) on one monotonic clock.
+    allow_nonpublic/context exist for the local test server only; production callers never set them."""
     context = context or ssl.create_default_context()
-    deadline = time.monotonic() + timeout * 2
+    deadline = time.monotonic() + timeout
+    late = StoreError('file_download_failed', 'Download timed out; nothing was saved.')
     for hop in range(max_hops + 1):
         if not isinstance(url, str) or len(url) > 8192:
             raise StoreError('file_url_invalid', 'The file reference is not a usable URL.')
@@ -91,13 +143,15 @@ def fetch(url: str, *, allowlist: list[str], max_bytes: int = 25 * 1024 * 1024, 
             raise StoreError('file_host_not_allowlisted',
                              f'File host {host} is not on the verified allowlist; nothing was saved.')
         try:
-            ips = resolver(host, port)
+            ips = _resolve(resolver, host, port, deadline - time.monotonic())
+        except _Timeout:
+            raise late from None
         except OSError as e:
             raise StoreError('file_download_failed', 'Could not resolve the file host; nothing was saved.') from e
         if not ips or (not allow_nonpublic and not all(public_ip(ip, fake_ip_ok) for ip in ips)):
             raise StoreError('file_url_blocked', 'The file host resolves to a non-public address; refused.')
         path = (parts.path or '/') + (f'?{parts.query}' if parts.query else '')
-        conn = _PinnedHTTPS(host, ips[0], port, timeout, context)
+        conn = _PinnedHTTPS(host, ips[0], port, deadline, context)
         try:
             conn.request('GET', path, headers={'User-Agent': 'phctx-file-fetch/1', 'Accept': '*/*',
                                                'Accept-Encoding': 'identity'})
@@ -118,8 +172,6 @@ def fetch(url: str, *, allowlist: list[str], max_bytes: int = 25 * 1024 * 1024, 
                 raise StoreError('file_size', 'File exceeds the interactive size cap; nothing was saved.')
             chunks, total = [], 0
             while True:
-                if time.monotonic() > deadline:
-                    raise StoreError('file_download_failed', 'Download timed out; nothing was saved.')
                 chunk = resp.read(65536)
                 if not chunk:
                     break
@@ -127,12 +179,16 @@ def fetch(url: str, *, allowlist: list[str], max_bytes: int = 25 * 1024 * 1024, 
                 if total > max_bytes:
                     raise StoreError('file_size', 'File exceeds the interactive size cap; nothing was saved.')
                 chunks.append(chunk)
+            if time.monotonic() >= deadline:
+                raise late
             if declared and declared.isdigit() and int(declared) != total:
                 raise StoreError('file_download_failed', 'Truncated download; nothing was saved.')
             if not total:
                 raise StoreError('file_size', 'Empty file; nothing was saved.')
             return Downloaded(b''.join(chunks), host, resp.getheader('Content-Type'), hop)
         except (OSError, http.client.HTTPException, ssl.SSLError) as e:
+            if time.monotonic() >= deadline:
+                raise late from e
             raise StoreError('file_download_failed', 'File transfer failed; nothing was saved.') from e
         finally:
             conn.close()

@@ -172,7 +172,6 @@ public final class URLSessionUploader: NSObject, Uploader, URLSessionDelegate, @
               let certificates = SecTrustCopyCertificateChain(trust) as? [SecCertificate],
               let certificate = certificates.first else {
             completionHandler(.cancelAuthenticationChallenge, nil)
-            completionHandler(.cancelAuthenticationChallenge, nil)
             return
         }
         let der = SecCertificateCopyData(certificate) as Data

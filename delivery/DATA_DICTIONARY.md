@@ -1,4 +1,4 @@
-# Personal Health Context — data dictionary (schema v2)
+# Personal Health Context — data dictionary (schema v6)
 
 All times are stored as UTC ISO-8601 (`...+00:00`) with the original IANA timezone alongside.
 Windows are half-open `[start, end)`. Values keep their original unit; nothing is silently converted.
@@ -8,9 +8,11 @@ Windows are half-open `[start, end)`. Values keep their original unit; nothing i
 |---|---|
 | `records` | Every user/analysis record, including superseded revisions. Columns: id (`rec_*`), kind (event/routine/question/analysis/note/attachment/preference), occurred_at, timezone, text (original wording), payload_json (structured fields; `approximate`, `synthetic`, `state` for questions…), source_id, source_key, object_sha (original file), supersedes (older revision id), created_at. |
 | `active_records` | `records` minus superseded revisions. Use this for "current" facts. |
-| `observations` | Imported measurements, including tombstones. id (`obs_*`), source_id, native_id (HealthKit UUID or export fingerprint), metric (HealthKit identifier), start_at, end_at, timezone, value_num, value_text, unit, raw_json (all original fields), deleted (1 = removed at source), updated_at, source_name, bundle_id, origin_key. |
+| `observations` | Imported measurements, including tombstones. id (`obs_*`), source_id, native_id (HealthKit UUID or export fingerprint), metric (HealthKit identifier), start_at, end_at, timezone, value_num, value_text, unit, raw_json (all original fields), deleted (1 = removed at source), updated_at, source_name, bundle_id, origin_key (equivalence key, contracts/normalization.md: metric, whole-second UTC start/end, normalized value, unit, source name). native_id is source identity: export rows are `x2:` + a fingerprint of every attribute and child element (pre-v4 archives: `x:`). |
 | `active_observations` | observations with deleted=0. |
-| `canonical_observations` | active_observations minus XML-backfill rows that the live iPhone stream also delivered (same origin_key). Use for counting/averaging across backfill + live. Different devices are NOT deduplicated — check source_name/bundle_id before summing (watch vs phone steps overlap). |
+| `canonical_observations` | active_observations minus XML-backfill rows whose origin_key has a `supersessions` row (the live iPhone stream delivered the same sample, in either order; a live deletion keeps the backfill copy hidden). Use for counting/averaging across backfill + live. Different devices are NOT deduplicated — check source_name/bundle_id before summing (watch vs phone steps overlap). |
+| `supersessions` | origin_key → live observation id that makes the export copy non-canonical. |
+| `observation_catalog` | Per source/metric/unit: row count, first/last start_at. Maintained at ingest; the fast way to see what exists. |
 | `sources` | source id, label, policy (durable/ephemeral/blocked), state, last_attempt_at, last_success_at, latest_sample_at, cursor, coverage_json. latest_sample_at is not proof of complete coverage. |
 | `objects` | Immutable originals: sha256, size, detected mime, display filename, created_at. Bytes live in `objects/<sha256>`. |
 | `object_pages` | Derived text per page (1-based) of an original: object_sha, page, text, method (`pdf_text`, `utf8`, `model_vision:<model>`). Derived — the original stays authoritative. |
@@ -20,7 +22,7 @@ Windows are half-open `[start, end)`. Values keep their original unit; nothing i
 Evidence ID forms: `rec_<hex>`, `obs_<hex>`, `obj:<sha256>` or `obj:<sha256>#p<page>`.
 
 ## Not model-readable
-receipts (idempotency results), preferences (via bootstrap), insights (outbox), jobs/leases/worker_runs/model_calls (worker bookkeeping, no health text), devices/pairing_codes/sync_streams (device auth), import_runs, changes (change log), meta/migrations.
+receipts (idempotency results), preferences (via bootstrap), insights (outbox), shadow_insights (shadow-mode candidates: never surfaced, audit only), jobs/leases/worker_runs/model_calls (worker bookkeeping, no health text), devices/pairing_codes/sync_streams (device auth), import_runs, changes (change log), meta/migrations.
 
 ## Export format (`phctx export DIR`)
 records.jsonl (one decorated record per line), observations.csv, originals/<sha256> + originals_index.json, extracted_pages.jsonl, preferences.json, this file.

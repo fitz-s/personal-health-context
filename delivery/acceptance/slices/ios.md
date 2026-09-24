@@ -1,0 +1,10 @@
+YOUR FILES: everything under ios/. Build/test: cd ios/HealthSyncCore && swift build && swift test ; typecheck helper sources with ios/test-report/typecheck.sh ; interop with ios/test-report/run-interop.sh (uses the Python ingest server; another agent may be editing src/phctx/ingest.py concurrently — if interop fails because of their in-progress edit, re-run at the end and report).
+
+FIX:
+- F05 producer equivalence (contracts/normalization.md): category samples send value_text = the export.xml identifier string (explicit mapping for every category type you request, e.g. HKCategoryValueSleepAnalysisAsleepCore) and value_num = raw int; workouts send value_text = the XML activity type string (mapping for common types, fallback HKWorkoutActivityTypeOther), value_num = duration seconds, unit 's'; quantity units use the contract's unit strings. Put mappings in HealthSyncCore (platform-independent) with tests comparing against strings as they appear in export.xml.
+- F16 one provenance policy: RestrictedSourceFilter checks source name, bundle id, device name/manufacturer/model, and every metadata key/value (case-insensitive 'oura') before anything reaches the outbox; a test per marker.
+- F30 OutboxStore durability: propagate every file/rename/fsync/index-write failure; update in-memory checkpoint/index only after the durable write succeeded; tests with an injectable failing file layer, reopen, no unacknowledged page lost.
+- F31 SyncEngine: reserve the drain guard synchronously before the first suspension; release with defer; test simultaneous drains with a suspended token provider produce one upload sequence.
+- F32 Uploader: every auth-challenge path calls the completion handler exactly once; test with a counter across accepted/rejected/unexpected methods.
+- F33 paging: separate 'initial history complete' from 'current query returned a full page'; after bootstrap a full page triggers another query until a short page. Put the decision in a small platform-independent type in HealthSyncCore with tests for 501 and 1001 changes, and use it from AnchoredSyncCoordinator.
+- Update ios/STATUS.md with exactly what was built/tested.

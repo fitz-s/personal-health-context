@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Assemble delivery/release.json + capabilities.json from evidence files that already exist.
 
-Every PASS points at a file under delivery/ with its SHA-256. Statuses for checks that need the user's
-account/device stay BLOCKED/NOT_RUN with the reason. Then run scripts/release_gate.py yourself.
+Every PASS points at a file under delivery/ with its SHA-256 AND a run manifest (delivery/run-manifests/*.json,
+written by scripts/run_manifest.py) whose recorded tree hashes equal the current tree and whose evidence hash equals
+the file now. Otherwise the check is downgraded to NOT_RUN. Statuses for checks that need the user's account/device
+stay BLOCKED/NOT_RUN with the reason. Then run scripts/release_gate.py yourself.
 """
 from __future__ import annotations
 
@@ -15,21 +17,60 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 D = ROOT / 'delivery'
+sys.path[:0] = [str(ROOT / 'src'), str(ROOT / 'scripts')]
+from phctx import __version__  # noqa: E402
+from run_manifest import tree_hashes  # noqa: E402
 
 
 def sha(rel: str) -> str:
     return hashlib.sha256((D / rel).read_bytes()).hexdigest()
 
 
+def binding(evidence: str) -> str | None:
+    """Name of a clean, successful run manifest that produced this exact evidence from the current tree."""
+    cur, digest = tree_hashes(), sha(evidence)
+    for m in sorted((D / 'run-manifests').glob('*.json')):
+        r = json.loads(m.read_text())
+        if (r.get('evidence', {}).get(evidence) == digest and r.get('hashes') == cur and r.get('exit_code') == 0
+                and not r.get('tree_changed_during_run')):
+            return m.name
+    return None
+
+
+def live(evidence: str, notes: str) -> dict:
+    """A check observed by hand in the user's ChatGPT (no command can re-run it): PASS only while the evidence names
+    the revision it was observed on and that revision's src tree equals the current one."""
+    text = (D / evidence).read_text()
+    ok = f'src-tree:{src_tree()[:16]}' in text
+    return check('PASS_LIVE' if ok else 'NOT_RUN', evidence,
+                 notes if ok else f'Live evidence was observed on an older src tree; re-probe. {notes}')
+
+
+def src_tree() -> str:
+    return hashlib.sha256(b''.join(hashlib.sha256(p.read_bytes()).digest()
+                                   for p in sorted((ROOT / 'src/phctx').glob('*.py')))).hexdigest()
+
+
 def check(status: str, evidence: str | None, notes: str) -> dict:
     if evidence is not None and not (D / evidence).is_file():
         raise SystemExit(f'missing evidence file: {evidence}')
+    if status == 'PASS_LIVE':
+        status, notes = 'PASS', f'{notes} [live observation, src-tree bound]'
+    elif status == 'PASS':
+        bound = binding(evidence) if evidence else None
+        if not bound:
+            status, notes = 'NOT_RUN', f'Evidence is not bound to the current tree by a run manifest. {notes}'
+        else:
+            notes = f'{notes} [run-manifests/{bound}]'
     return {'status': status, 'evidence': evidence, 'evidence_sha256': sha(evidence) if evidence else None,
             'notes': notes}
 
 
 def load(rel: str) -> dict:
     return json.loads((D / rel).read_text())
+
+
+LIVE = 'live-evidence/chatgpt_live_probe.md'
 
 
 def main() -> int:
@@ -40,8 +81,7 @@ def main() -> int:
     ev = load('eval-report/summary.json')
     code_rev = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, capture_output=True, text=True).stdout.strip() \
         or 'uncommitted'
-    tree = hashlib.sha256(b''.join(hashlib.sha256(p.read_bytes()).digest()
-                                   for p in sorted((ROOT / 'src/phctx').glob('*.py')))).hexdigest()
+    tree = src_tree()
 
     core_file_ok = eng_ok and steps.get('disk_full_no_false_original') == 'PASS'
     checks = {
@@ -63,13 +103,10 @@ def main() -> int:
                                'recovery-report/recovery_drill.json',
                                'Online snapshot during writes → verify → restore into new root → counts match; '
                                'production paths also restored (recovery-report/production_local_restore.log).'),
-        'chatgpt_read_write': check('BLOCKED', None,
-                                    'Needs user-created Platform runtime key + tunnel id and ChatGPT developer-mode app '
-                                    '(USER_ACTIONS §1). Tunnel client v0.0.14 verified and wired (ops/tunnel.sh).'),
-        'chatgpt_files': check('BLOCKED', None, 'Same dependency; download host allowlist stays empty until the live '
-                                                 'probe observes ChatGPT\'s file host.'),
-        'fresh_conversation': check('BLOCKED', None, 'Same dependency. Fresh-session recovery is verified in model eval '
-                                                     '(memory category) and cross-process tests, not in ChatGPT.'),
+        'chatgpt_read_write': live(LIVE, 'ChatGPT web wrote a capture (committed receipt) and read it back.'),
+        'chatgpt_files': live(LIVE, 'Photo and 2-page PDF saved from ChatGPT with local SHA-256 == stored SHA-256; '
+                                    'pages readable.'),
+        'fresh_conversation': live(LIVE, 'A new ChatGPT chat found the earlier capture by content.'),
         'apple_device_sync': check('BLOCKED', None, 'No Xcode/iOS SDK on this Mac; helper source + Swift core tests '
                                                     'delivered (ios/STATUS.md). XML backfill importer works.'),
         'oura_official_access': check('BLOCKED', None, 'No official Oura MCP route available to this account '
@@ -91,14 +128,15 @@ def main() -> int:
                                           'AES-256-GCM archive written to iCloud Drive, read back, decrypted, restored '
                                           'into a new root (synthetic data); tamper rejected. Production cloud backup '
                                           'is opt-in (USER_ACTIONS §5).'),
-        'single_interface': check('BLOCKED', None, 'Depends on the ChatGPT app connection (USER_ACTIONS §1).'),
+        'single_interface': live(LIVE, 'ChatGPT is the only daily interface: write, read, files, fresh chat, real-data '
+                                       'investigation observed live. The iPhone helper is a one-time setup screen.'),
     }
     gaps = [f'{k}: {v["status"]} — {v["notes"]}' for k, v in checks.items() if v['status'] != 'PASS']
     core = ['unit_regression', 'auth_and_policy', 'durable_capture', 'original_file_integrity', 'local_restore']
     failed = [k for k, v in checks.items() if v['status'] == 'FAIL']
     claimed = 'BLOCKED' if any(checks[k]['status'] != 'PASS' for k in core) or failed else (
         'READY_WITH_GAPS' if gaps else 'READY')
-    release = {'release_version': '0.3.0', 'claimed_status': claimed, 'code_revision': f'{code_rev} src-tree:{tree[:16]}',
+    release = {'release_version': __version__, 'claimed_status': claimed, 'code_revision': f'{code_rev} src-tree:{tree[:16]}',
                'created_at': datetime.now(timezone.utc).isoformat(), 'checks': checks, 'gaps': gaps,
                'scope_changes_accepted_by_user': []}
     (D / 'release.json').write_text(json.dumps(release, ensure_ascii=False, indent=2) + '\n')

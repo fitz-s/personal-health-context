@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 import jsonschema
+from urllib.parse import urlsplit
 
 from . import download, extract
 from .store import Store, StoreError, dump
@@ -101,6 +102,8 @@ class Tools:
 
     def context_read(self, record_ids: list[str], include_history: bool = False) -> dict:
         out = self.s.get_records(record_ids)
+        # Echo these as a candidate's evidence_versions; the outbox rejects it if any changed since this read.
+        out['versions'] = self.s.read_versions([r['id'] for r in out['records']])
         if include_history:
             out['history'] = {r['id']: [h['id'] for h in self.s.history(r['id'])] for r in out['records']}
         return out
@@ -112,15 +115,17 @@ class Tools:
                               end_page: int | None = None) -> Result | dict:
         info = self.s.object_info(object_sha256)
         if mode == 'info':
-            return info
+            return {**info, 'versions': self.s.read_versions([f'obj:{object_sha256}'])}
         if mode in {'text', 'pages'}:
-            return self.s.read_pages(object_sha256, start_page or 1, end_page)
+            out = self.s.read_pages(object_sha256, start_page or 1, end_page)
+            return {**out, 'versions': self.s.read_versions(out['evidence_ids'])}
         data = self.s.read_object(object_sha256)
         if len(data) > FILE_RETURN_CAP:
             return Result({'error': 'file_too_large_to_return', 'size': len(data),
                            'message': 'Use mode=text/pages for this original.'}, True)
         meta = {'object_sha256': object_sha256, 'size': len(data), 'mime': info['mime'],
-                'filename': info['filename'], 'verified_sha256': hashlib.sha256(data).hexdigest() == object_sha256}
+                'filename': info['filename'], 'verified_sha256': hashlib.sha256(data).hexdigest() == object_sha256,
+                'versions': self.s.read_versions([f'obj:{object_sha256}'])}
         if info['mime'].startswith('image/') and info['mime'] != 'image/heic':
             return Result(meta, image=(data, info['mime']))
         meta['base64'] = base64.b64encode(data).decode()
@@ -149,13 +154,14 @@ class Tools:
         # Signed URLs change between retries, so the envelope is the host file id plus the capture fields.
         envelope = hashlib.sha256(dump([file['file_id'], text, occurred_at, timezone_name, payload or {}])
                                   .encode()).hexdigest()
-        receipt = self.s.receipt(request_id)
+        receipt, failed = self.s.receipt(request_id), None
         if receipt is not None:
             rec = self.s.get_records([receipt['record_id']])['records']
             if not rec or rec[0]['payload'].get('request_envelope_sha256') != envelope:
                 raise StoreError('idempotency_conflict', 'request_id was already used for a different file or '
                                                          'capture; use a new request_id.')
         else:
+            log.info('file_fetch host=%s', urlsplit(file['download_url']).hostname or '?')
             got = self.ctx.fetch(file['download_url'], allowlist=self.ctx.allowed_download_hosts,
                                  max_bytes=self.ctx.max_file_bytes, **self.ctx.fetch_options)
             name = Path(file.get('file_name') or '').name.strip() or 'attachment'
@@ -168,13 +174,24 @@ class Tools:
                                                   payload=meta, max_bytes=self.ctx.max_file_bytes)
             log.info('file_saved request=%s sha=%s size=%d host=%s', request_id, receipt['object_sha256'][:12],
                      receipt['size'], got.host)
+            # The original is committed: from here on a failure is an extraction state, never an error result.
             if self.ctx.run_extraction:
                 try:
                     extract.extract(self.s, receipt['object_sha256'])
-                except StoreError as e:
-                    log.info('extraction_failed sha=%s code=%s', receipt['object_sha256'][:12], e.code)
+                except (StoreError, sqlite3.Error, OSError, ValueError, KeyError) as e:
+                    failed = getattr(e, 'code', type(e).__name__)
+                    log.info('extraction_failed sha=%s code=%s', receipt['object_sha256'][:12], failed)
         # Same answer for the first call and any replay: the committed receipt plus current extraction state.
-        ex = self.s.object_info(receipt['object_sha256'])['extraction'] or {}
+        try:
+            ex = self.s.object_info(receipt['object_sha256'])['extraction'] or {}
+        except StoreError as e:
+            if e.code in {'object_missing', 'object_corrupt', 'not_found'}:
+                raise  # the receipt exists but its bytes do not verify: never report the original as saved
+            failed, ex = failed or e.code, {}
+        except sqlite3.Error:
+            failed, ex = failed or 'storage_error', {}
+        if failed and ex.get('status') in {None, 'pending'}:
+            ex = {'status': 'failed', 'error_code': failed}
         return {**receipt, 'extraction_status': ex.get('status', 'pending'), 'pages': ex.get('page_count') or 0,
                 'extraction_error': ex.get('error_code')}
 

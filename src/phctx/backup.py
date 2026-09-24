@@ -9,6 +9,7 @@ import hashlib
 import os
 import secrets
 import shutil
+import sqlite3
 import tarfile
 import tempfile
 from datetime import datetime, timezone
@@ -23,6 +24,37 @@ from .store import Store, StoreError
 MAGIC = b'PHCTXBK1'
 CHUNK = 4 * 1024 * 1024
 KEEP_DAILY, KEEP_WEEKLY = 7, 4
+
+
+def _fsync(path: Path | str) -> None:
+    """fsync a file or directory (directory entries become durable only once the directory is synced)."""
+    fd = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def _seal(stage: Path, final: Path) -> None:
+    """Make a fully written snapshot dir durable, then publish it by rename. Manifest goes last via temp+fsync+rename;
+    until the directory rename lands, no `snapshot-*` name exists, so a crash leaves nothing that looks complete."""
+    m, tmp = stage / 'backup_manifest.json', stage / '.backup_manifest.json.tmp'
+    if m.exists():
+        os.replace(m, tmp)
+    for f in sorted(p for p in stage.rglob('*') if p.is_file() and p != tmp):
+        _fsync(f)
+    for d in sorted((p for p in stage.rglob('*') if p.is_dir()), reverse=True):
+        _fsync(d)
+    if tmp.exists():
+        _fsync(tmp)
+        os.replace(tmp, m)
+    _fsync(stage)
+    os.rename(stage, final)
+    try:
+        _fsync(final.parent)
+    except OSError:  # the name is not durable: never leave a complete-looking directory behind a raised call
+        shutil.rmtree(final, ignore_errors=True)
+        raise
 
 
 def _key(passphrase: str, salt: bytes) -> bytes:
@@ -70,6 +102,7 @@ def encrypt_dir(src: Path, dest_file: Path, secret: str) -> dict:
             os.fsync(f.fileno())
     os.chmod(tmp, 0o600)
     os.replace(tmp, dest_file)
+    _fsync(dest_file.parent)
     return {'path': str(dest_file), 'bytes': dest_file.stat().st_size, 'chunks': n, 'sha256': digest.hexdigest()}
 
 
@@ -112,7 +145,7 @@ def rotate(directory: Path) -> list[str]:
     keep, weeks = set(snaps[:KEEP_DAILY]), {}
     for p in snaps:
         try:
-            ts = datetime.strptime(p.name.split('-', 1)[1][:15], '%Y%m%dT%H%M%S')  # snapshot-YYYYmmddTHHMMSSZ
+            ts = datetime.strptime(p.name.split('-', 1)[1][:15], '%Y%m%dT%H%M%S')  # snapshot-YYYYmmddTHHMMSS[ffffff]Z
         except ValueError:
             keep.add(p)
             continue
@@ -130,11 +163,17 @@ def rotate(directory: Path) -> list[str]:
 
 def backup(cfg: Config, dest: Path | None = None, encrypt: bool = False) -> dict:
     store = Store(cfg.root, cfg.profile)
-    stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+    stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')  # microseconds: two runs in one second never collide
     base = dest or cfg.backup_dir
     base.mkdir(parents=True, exist_ok=True, mode=0o700)
-    snap = base / f'snapshot-{stamp}'
-    result = {'snapshot': store.backup(snap)}
+    snap, stage = base / f'snapshot-{stamp}', base / f'.snapshot-{stamp}.partial'
+    try:
+        made = store.backup(stage)
+        _seal(stage, snap)
+    except BaseException:
+        shutil.rmtree(stage, ignore_errors=True)
+        raise
+    result = {'snapshot': {**made, 'path': str(snap)}}
     result['verified'] = {k: v for k, v in Store.verify_snapshot(snap).items() if k != 'manifest'}
     if encrypt:
         if not cfg.cloud_backup_dir:
@@ -171,3 +210,69 @@ def restore(cfg: Config, snapshot: Path, new_root: Path, keychain_service: str |
         if work:
             shutil.rmtree(work, ignore_errors=True)
 
+
+
+def _digest(p: Path) -> str:
+    """Streamed SHA-256: a multi-GB database never sits in memory."""
+    with p.open('rb') as f:
+        return hashlib.file_digest(f, 'sha256').hexdigest()
+
+
+def restore_premigration(cfg: Config, sqlite: Path, new_root: Path) -> dict:
+    """Build a NEW root from a pre-migration SQLite file (root/migrations/pre-v*.sqlite3) plus the live objects
+    it references, each hash-verified. Verified WITHOUT opening it as a Store, which would migrate it forward again:
+    the point is a root the rolled-back program version can open."""
+    live = cfg.root.expanduser().resolve()
+    src, dest = Path(sqlite).expanduser().resolve(), Path(new_root).expanduser().resolve()
+    if not src.is_file():
+        raise StoreError('invalid_restore_path', 'Pre-migration SQLite file not found.')
+    if dest.exists() or dest == live or live in dest.parents:
+        raise StoreError('invalid_restore_path', 'Restore into a new directory outside the live root.')
+    stage = dest.parent / f'.{dest.name}.partial'
+    dest.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    stage.mkdir(mode=0o700)
+    try:
+        db = stage / 'context.sqlite3'
+        want = _digest(src)
+        shutil.copyfile(src, db)
+        os.chmod(db, 0o600)
+        if _digest(db) != want:
+            raise StoreError('restore_mismatch', 'SQLite copy changed in transit.')
+        c = sqlite3.connect(db)
+        try:
+            if (c.execute('PRAGMA integrity_check').fetchone()[0] != 'ok'
+                    or c.execute('PRAGMA foreign_key_check').fetchone() is not None):
+                raise StoreError('backup_invalid', 'Pre-migration SQLite failed its integrity check.')
+            schema = int(c.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0])
+            objects = c.execute('SELECT sha256, size FROM objects').fetchall()
+            counts = {t: c.execute(f'SELECT count(*) FROM {t}').fetchone()[0]
+                      for t in ('records', 'observations', 'objects')}
+        except sqlite3.DatabaseError as e:
+            raise StoreError('backup_invalid', 'Not a phctx SQLite database.') from e
+        finally:
+            c.close()
+        (stage / 'objects').mkdir(mode=0o700)
+        for sha, size in objects:
+            try:
+                data = (live / 'objects' / sha).read_bytes()
+            except OSError as e:
+                raise StoreError('object_missing', f'Referenced original {sha[:12]} is missing from the live root.') from e
+            if len(data) != size or hashlib.sha256(data).hexdigest() != sha:
+                raise StoreError('object_corrupt', f'Referenced original {sha[:12]} failed verification.')
+            fd = os.open(stage / 'objects' / sha, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(fd, 'wb') as f:
+                f.write(data)
+        marker = live / 'PROFILE'
+        profile = marker.read_text().strip() if marker.exists() else cfg.profile
+        (stage / 'PROFILE').write_text(profile + '\n')
+        os.chmod(stage / 'PROFILE', 0o600)
+        _seal(stage, dest)
+    except BaseException:
+        shutil.rmtree(stage, ignore_errors=True)
+        raise
+    for sha, size in objects:  # re-read from the published root
+        data = (dest / 'objects' / sha).read_bytes()
+        if len(data) != size or hashlib.sha256(data).hexdigest() != sha:
+            raise StoreError('object_corrupt', 'Restored original failed verification.')
+    return {'restored_root': str(dest), 'schema_version': schema, 'counts': counts,
+            'originals_verified': len(objects), 'profile': profile, 'from': str(src), 'sqlite_sha256': want}

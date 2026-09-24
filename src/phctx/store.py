@@ -122,7 +122,7 @@ class Store:
     CLOSED_QUESTION = {'closed', 'superseded', 'answered_final'}
     PUBLIC_TABLES = {'records', 'active_records', 'observations', 'active_observations', 'canonical_observations',
                      'sources', 'objects', 'evidence_links', 'evidence_refs', 'object_pages', 'extractions',
-                     'observation_catalog'}
+                     'observation_catalog', 'supersessions'}
     SAFE_FUNCTIONS = {'abs', 'avg', 'coalesce', 'count', 'date', 'datetime', 'ifnull', 'julianday',
                       'length', 'like', 'lower', 'max', 'min', 'nullif', 'replace', 'round',
                       'strftime', 'substr', 'sum', 'total', 'trim', 'upper', 'json_extract',
@@ -169,7 +169,7 @@ class Store:
             return
         # Snapshot before taking the write lock: the backup API cannot run inside this connection's own write
         # transaction (it hangs waiting on itself).
-        if c.execute('SELECT count(*) FROM records').fetchone()[0]:
+        if c.execute('SELECT EXISTS(SELECT 1 FROM records) OR EXISTS(SELECT 1 FROM observations)').fetchone()[0]:
             snap = self.root / 'migrations'
             snap.mkdir(exist_ok=True, mode=0o700)
             target = sqlite3.connect(snap / f'pre-v{current + 1}-{int(time.time())}.sqlite3')
@@ -302,6 +302,11 @@ class Store:
 
     def _stale_refs(self, c: sqlite3.Connection, versions: dict[str, str]) -> list[str]:
         return [ref for ref, v in versions.items() if self._ref_version(c, ref) != v]
+
+    def read_versions(self, refs: list[str]) -> dict[str, str]:
+        """Current version of each existing ref, for a reader to echo back as a candidate's evidence_versions."""
+        with self.connect() as c:
+            return {r: v for r in refs if (v := self._ref_version(c, r)) is not None}
 
     # ---- records -------------------------------------------------------------------------
     def put_record(self, *, request_id: str, kind: str, text: str, occurred_at: str,
@@ -692,20 +697,36 @@ class Store:
                     d[1] = lo_
                 if hi_ and (d[2] is None or hi_ > d[2]):
                     d[2] = hi_
-            shrink: set[tuple[str, str]] = set()
+            shrink: set[tuple[str, str]] = set()  # pairs that may have lost their first/last sample
+            live = source_id.startswith('apple_health:')
+
+            def leave(prev: sqlite3.Row) -> None:
+                """prev (metric, unit, _, start, end) leaves or changes: its pair needs a re-read only if prev was that
+                pair's first or last sample, and the change detail names what was removed."""
+                nonlocal lo, hi
+                cat = c.execute('SELECT first_at, last_at FROM observation_catalog WHERE source_id=? AND metric=? '
+                                'AND unit=?', (source_id, prev[0], prev[1])).fetchone()
+                if cat is None or prev[3] == cat[0] or prev[4] == cat[1]:
+                    shrink.add((prev[0], prev[1]))
+                metrics.add(prev[0])
+                lo = prev[3] if lo is None or prev[3] < lo else lo
+                hi = prev[4] if hi is None or prev[4] > hi else hi
             for s, start, end, tz in checked:
                 oid = 'obs_' + hashlib.sha256((source_id + '\0' + s['native_id']).encode()).hexdigest()
                 origin = s.get('origin_key')
-                prev = c.execute('SELECT metric, coalesce(unit,\'\'), deleted FROM observations WHERE id=?', (oid,)).fetchone()
+                pair = (s['metric'], s.get('unit') or '')
+                prev = c.execute("SELECT metric, coalesce(unit,''), deleted, start_at, end_at FROM observations "
+                                 'WHERE id=?', (oid,)).fetchone()
                 if prev and not prev[2]:
-                    if (prev[0], prev[1]) != (s['metric'], s.get('unit') or ''):
-                        bump(prev[0], prev[1], -1)
-                        shrink.add((prev[0], prev[1]))
-                        bump(s['metric'], s.get('unit') or '', 1, start, end)
-                    else:
-                        bump(s['metric'], s.get('unit') or '', 0, start, end)
+                    moved = (prev[0], prev[1]) != pair
+                    bump(prev[0], prev[1], -moved)
+                    bump(*pair, moved, start, end)
+                    if moved or start > prev[3] or end < prev[4]:
+                        leave(prev)
                 else:
-                    bump(s['metric'], s.get('unit') or '', 1, start, end)
+                    bump(*pair, 1, start, end)
+                if live and origin:
+                    c.execute('INSERT OR IGNORE INTO supersessions VALUES(?,?)', (origin, oid))
                 c.execute('''INSERT INTO observations(id,source_id,native_id,metric,start_at,end_at,timezone,value_num,
                     value_text,unit,raw_json,deleted,updated_at,source_name,bundle_id,origin_key)
                     VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
@@ -724,29 +745,21 @@ class Store:
                 nonempty(sid, 'deleted_id', 200)
                 # A deletion-only object has no measurement body and stays outside active data.
                 oid = 'obs_' + hashlib.sha256((source_id + '\0' + sid).encode()).hexdigest()
-                prev = c.execute('SELECT metric, coalesce(unit,\'\'), deleted FROM observations WHERE id=?', (oid,)).fetchone()
+                prev = c.execute("SELECT metric, coalesce(unit,''), deleted, start_at, end_at FROM observations "
+                                 'WHERE id=?', (oid,)).fetchone()
                 if prev and not prev[2]:
                     bump(prev[0], prev[1], -1)
-                    shrink.add((prev[0], prev[1]))
+                    leave(prev)
                 c.execute('''INSERT INTO observations(id,source_id,native_id,metric,start_at,end_at,timezone,value_num,
                     value_text,unit,raw_json,deleted,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
                     ON CONFLICT(source_id,native_id) DO UPDATE SET deleted=1,updated_at=excluded.updated_at''',
                     (oid, source_id, sid, 'tombstone', now, now, 'UTC', None, None, None, '{}', 1, now))
-            if deleted_ids:  # a deletion may remove the latest sample: recompute via the source/time index
-                latest = c.execute('SELECT max(end_at) FROM observations WHERE source_id=? AND deleted=0',
-                                   (source_id,)).fetchone()[0]
-            else:  # incremental: O(page), not O(source)
-                prev = c.execute('SELECT latest_sample_at FROM sources WHERE id=?', (source_id,)).fetchone()[0]
-                latest = max([x for x in (prev, hi) if x], default=None)
+            # Any deletion or correction may remove the latest sample; one seek on obs_source_end, not a scan.
+            latest = c.execute('SELECT max(end_at) FROM observations WHERE source_id=? AND deleted=0',
+                               (source_id,)).fetchone()[0]
             c.execute('''UPDATE sources SET state='ready',last_attempt_at=?,last_success_at=?,
                       latest_sample_at=?,cursor=?,coverage_json=? WHERE id=?''',
                       (now, now, latest, cursor, dump(coverage or {}), source_id))
-            if source_id.startswith('apple_health:'):
-                keys = [s_.get('origin_key') for s_, *_ in checked if s_.get('origin_key')]
-                for i in range(0, len(keys), 500):
-                    chunk = keys[i:i + 500]
-                    c.execute("UPDATE observations SET superseded_by_live=1 WHERE source_id='apple_health_export' "
-                              f"AND origin_key IN ({','.join('?' * len(chunk))})", chunk)
             if checked or deleted_ids:
                 self._apply_catalog(c, source_id, delta, shrink)
                 c.execute("INSERT INTO changes(entity, entity_id, detail, at) VALUES('observations', ?, ?, ?)",
@@ -760,20 +773,23 @@ class Store:
         return self._mutate(request_id, body, write)
 
     def _apply_catalog(self, c: sqlite3.Connection, source_id: str, delta: dict, shrink: set) -> None:
-        """Maintain observation_catalog in O(page): add count deltas and widen the time range. A pair that lost rows
-        (deletion or metric change) may have lost its first/last sample, so only that pair's range is recomputed."""
+        """Maintain observation_catalog in O(page): count deltas are exact and the range only widens. A pair that
+        lost a row or a boundary (deletion, metric/unit move, endpoint shrink) gets its first/last re-read by two index
+        seeks (obs_lookup, obs_group_end)."""
         for (metric, unit), (n, lo, hi) in delta.items():
             c.execute('INSERT INTO observation_catalog VALUES(?,?,?,?,?,?) ON CONFLICT(source_id, metric, unit) DO '
                       'UPDATE SET n = n + excluded.n, first_at = min(coalesce(first_at, excluded.first_at), '
                       'coalesce(excluded.first_at, first_at)), last_at = max(coalesce(last_at, excluded.last_at), '
                       'coalesce(excluded.last_at, last_at))', (source_id, metric, unit, n, lo, hi))
+        group = "FROM observations INDEXED BY {} WHERE metric=? AND source_id=? AND coalesce(unit,'')=? AND deleted=0"
         for metric, unit in shrink:
-            row = c.execute('SELECT count(*), min(start_at), max(end_at) FROM observations INDEXED BY obs_metric_time '
-                            "WHERE metric=? AND source_id=? AND coalesce(unit,'')=? AND deleted=0",
-                            (metric, source_id, unit)).fetchone()
-            if row[0]:
-                c.execute('UPDATE observation_catalog SET n=?, first_at=?, last_at=? WHERE source_id=? AND metric=? '
-                          'AND unit=?', (*row, source_id, metric, unit))
+            args = (metric, source_id, unit)
+            first = c.execute(f'SELECT start_at {group.format("obs_lookup")} ORDER BY start_at LIMIT 1', args).fetchone()
+            last = c.execute(f'SELECT end_at {group.format("obs_group_end")} ORDER BY end_at DESC LIMIT 1',
+                             args).fetchone()
+            if first:
+                c.execute('UPDATE observation_catalog SET first_at=?, last_at=? WHERE source_id=? AND metric=? '
+                          'AND unit=?', (first[0], last[0], source_id, metric, unit))
         c.execute('DELETE FROM observation_catalog WHERE source_id=? AND n<=0', (source_id,))
 
     def source_status(self) -> dict:
@@ -818,41 +834,22 @@ class Store:
         row = c.execute("SELECT payload_json FROM active_records WHERE id=? AND kind='question'", (qid,)).fetchone()
         return bool(row) and json.loads(row[0]).get('state', 'open') not in self.CLOSED_QUESTION
 
-    def queue_insight(self, *, request_id: str, candidate: dict, ttl_days: int | None = None) -> dict:
-        """Local background writer only. Silence is an output, not a persisted health conclusion."""
+    def queue_insight(self, *, request_id: str, candidate: dict, ttl_days: int | None = None,
+                      fence: Callable[[sqlite3.Connection], None] | None = None) -> dict:
+        """Local background writer only. Silence is an output, not a persisted health conclusion.
+
+        `fence` runs first inside the same transaction; raising there (e.g. lease lost) drops the whole write."""
         if candidate.get('decision') == 'silence':
             return {'status': 'silent', 'queued': False}
-        if candidate.get('decision') != 'surface':
-            raise StoreError('invalid_candidate', 'Use surface or silence.')
-        for key in ('why_now', 'what_changed', 'unknowns', 'next_step'):
-            nonempty(candidate.get(key), key, 5000)
-        if any(p != 'durable' for p in candidate.get('source_policies', ['durable'])):
-            raise StoreError('source_restricted', 'Only durable-source evidence may be surfaced from the outbox.')
-        qid = candidate.get('question_id')
-        evidence = sorted(set(candidate.get('evidence_ids', [])))
-        if not evidence:
-            raise StoreError('missing_evidence', 'A proactive proposal needs actual stored evidence.')
+        qid, evidence = self._candidate(candidate)
         ttl = self.INSIGHT_TTL_DAYS if ttl_days is None else ttl_days
 
         def write(c: sqlite3.Connection) -> dict:
-            if qid and not self._question_open(c, qid):
-                raise StoreError('missing_question', 'Question reference is not an active open stored question.')
-            versions = self._evidence_versions(c, evidence)
-            fingerprint = hashlib.sha256(dump({'question_id': qid, 'evidence': versions,
-                                               'topic': candidate.get('topic', 'unspecified')}).encode()).hexdigest()
-            old = c.execute('SELECT id FROM insights WHERE fingerprint=?', (fingerprint,)).fetchone()
-            if old:
-                return {'queued': False, 'reason': 'duplicate', 'insight_id': old[0]}
-            prefs = {r['key']: json.loads(r['value_json']) for r in c.execute('SELECT * FROM preferences')}
-            mode = prefs.get('proactivity', 'normal')
-            if mode == 'off':
-                return {'queued': False, 'reason': 'preference_off'}
-            # Attention budget is policy, not a medical-significance threshold.
-            hours = 168 if mode == 'quiet' else 72
-            since = datetime.fromtimestamp(time.time() - hours * 3600, timezone.utc).isoformat(timespec='microseconds')
-            if c.execute("SELECT 1 FROM insights WHERE created_at>? AND state IN('pending','delivered') LIMIT 1",
-                         (since,)).fetchone():
-                return {'queued': False, 'reason': 'attention_budget'}
+            if fence:
+                fence(c)
+            versions, fingerprint, verdict = self._gate(c, candidate, qid, evidence)
+            if verdict:
+                return verdict
             iid = 'ins_' + uuid.uuid4().hex
             c.execute('INSERT INTO insights(id,fingerprint,question_id,payload_json,state,evidence_versions_json,'
                       'created_at,expires_at) VALUES(?,?,?,?,?,?,?,?)',
@@ -860,6 +857,64 @@ class Store:
                        utc_in(ttl * 86400)))
             return {'queued': True, 'insight_id': iid}
         return self._mutate(request_id, dict(op='insight', candidate=candidate), write)
+
+    def _candidate(self, candidate: dict) -> tuple[str | None, list[str]]:
+        if candidate.get('decision') != 'surface':
+            raise StoreError('invalid_candidate', 'Use surface or silence.')
+        for key in ('why_now', 'what_changed', 'unknowns', 'next_step'):
+            nonempty(candidate.get(key), key, 5000)
+        if any(p != 'durable' for p in candidate.get('source_policies', ['durable'])):
+            raise StoreError('source_restricted', 'Only durable-source evidence may be surfaced from the outbox.')
+        evidence = sorted(set(candidate.get('evidence_ids', [])))
+        if not evidence:
+            raise StoreError('missing_evidence', 'A proactive proposal needs actual stored evidence.')
+        return candidate.get('question_id'), evidence
+
+    def _gate(self, c: sqlite3.Connection, candidate: dict, qid: str | None,
+              evidence: list[str]) -> tuple[dict[str, str], str, dict | None]:
+        """(current evidence versions, fingerprint, why a real insight would not be queued now or None to queue)."""
+        if qid and not self._question_open(c, qid):
+            raise StoreError('missing_question', 'Question reference is not an active open stored question.')
+        versions = self._evidence_versions(c, evidence)
+        read = candidate.get('evidence_versions') or {}
+        if any((versions[r] if r in versions else self._ref_version(c, r)) != v for r, v in read.items()):
+            raise StoreError('stale_evidence', 'Evidence changed after it was read; re-read and re-investigate.')
+        fingerprint = hashlib.sha256(dump({'question_id': qid, 'evidence': versions,
+                                           'topic': candidate.get('topic', 'unspecified')}).encode()).hexdigest()
+        old = c.execute('SELECT id FROM insights WHERE fingerprint=?', (fingerprint,)).fetchone()
+        if old:
+            return versions, fingerprint, {'queued': False, 'reason': 'duplicate', 'insight_id': old[0]}
+        prefs = {r['key']: json.loads(r['value_json']) for r in c.execute('SELECT * FROM preferences')}
+        mode = prefs.get('proactivity', 'normal')
+        if mode == 'off':
+            return versions, fingerprint, {'queued': False, 'reason': 'preference_off'}
+        # Attention budget is policy, not a medical-significance threshold.
+        hours = 168 if mode == 'quiet' else 72
+        since = datetime.fromtimestamp(time.time() - hours * 3600, timezone.utc).isoformat(timespec='microseconds')
+        if c.execute("SELECT 1 FROM insights WHERE created_at>? AND state IN('pending','delivered') LIMIT 1",
+                     (since,)).fetchone():
+            return versions, fingerprint, {'queued': False, 'reason': 'attention_budget'}
+        return versions, fingerprint, None
+
+    def queue_shadow(self, *, request_id: str, candidate: dict,
+                     fence: Callable[[sqlite3.Connection], None] | None = None) -> dict:
+        """Shadow mode: record what the gate would have done, in shadow_insights only. Never reaches the outbox,
+        pending_insights, bootstrap, real-insight dedup or the attention budget."""
+        if candidate.get('decision') == 'silence':
+            return {'status': 'silent', 'queued': False, 'shadow': True}
+        qid, evidence = self._candidate(candidate)
+
+        def write(c: sqlite3.Connection) -> dict:
+            if fence:
+                fence(c)
+            versions, _, verdict = self._gate(c, candidate, qid, evidence)
+            sid = 'shd_' + uuid.uuid4().hex
+            c.execute('INSERT INTO shadow_insights VALUES(?,?,?,?,?,?,?)',
+                      (sid, qid, dump(candidate), dump(versions), int(verdict is None),
+                       verdict and verdict['reason'], utcnow()))
+            return {'queued': False, 'shadow': True, 'shadow_id': sid, 'would_queue': verdict is None,
+                    'reason': verdict['reason'] if verdict else None}
+        return self._mutate(request_id, dict(op='shadow', candidate=candidate), write)
 
     def pending_insights(self) -> dict:
         """Current, presentable candidates. Stale/expired ones are closed here, never shown."""

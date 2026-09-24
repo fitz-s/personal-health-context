@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-09-23",
+  "as_of": "2026-09-24",
   "user_timezone": "America/Chicago",
   "template_only": false,
   "environment": {
@@ -7,8 +7,8 @@
     "xcode": "not installed (Command Line Tools only; Swift 6.1.2)",
     "ios": "no device tested",
     "chatgpt_account": "ChatGPT Pro (personal)",
-    "client": "chatgpt.com web (read-only settings check)",
-    "model_mode": "n/a (no live tool call yet)",
+    "client": "chatgpt.com web (developer-mode app over Secure MCP Tunnel)",
+    "model_mode": "ChatGPT \"6 Pro\" (live tool calls 2026-09-24)",
     "python": "3.12.13",
     "mcp_sdk": "mcp 2.2.0",
     "tunnel_client": "0.0.14 (sha256 verified)"
@@ -20,49 +20,49 @@
       "notes": "Switch observed ON in Settings → Security and login."
     },
     "chatgpt_read": {
-      "status": "BLOCKED",
-      "evidence": null,
-      "notes": "Needs phctx tunnel + developer-mode app created by the user (USER_ACTIONS §1)."
+      "status": "PASS",
+      "evidence": "live-evidence/chatgpt_live_probe.md",
+      "notes": "context_search/context_read/context_query from ChatGPT web; server log + DB verification alongside."
     },
     "chatgpt_write": {
-      "status": "BLOCKED",
-      "evidence": null,
-      "notes": "Same; docs S1/S2 conflict on Pro write — to be settled by the live probe."
+      "status": "PASS",
+      "evidence": "live-evidence/chatgpt_live_probe.md",
+      "notes": "context_capture committed with receipt; ChatGPT asks Allow once/Always before each write."
     },
     "chatgpt_original_file_bytes": {
-      "status": "BLOCKED",
-      "evidence": null,
-      "notes": "Same; file host allowlist empty until observed."
+      "status": "PASS",
+      "evidence": "live-evidence/chatgpt_live_probe.md",
+      "notes": "PNG and 2-page PDF: local SHA-256 == stored SHA-256; ChatGPT file hosts oaisdmntpr*.blob.core.windows.net allowlisted by anchored pattern."
     },
     "fresh_chat": {
-      "status": "BLOCKED",
-      "evidence": null,
-      "notes": "Same."
+      "status": "PASS",
+      "evidence": "live-evidence/chatgpt_live_probe.md",
+      "notes": "A new chat found the earlier capture by content."
     },
     "mobile_client": {
       "status": "NOT_RUN",
       "evidence": null,
-      "notes": "Requires the app connection first."
+      "notes": "ChatGPT mobile app not exercised (needs your phone); same connector."
     },
     "transcribed_voice": {
       "status": "NOT_RUN",
       "evidence": null,
-      "notes": "Transcript-as-text capture verified in model eval (E009); not in ChatGPT."
+      "notes": "Dictation yields text; text capture verified live. Voice mode itself not exercised."
     },
     "secure_tunnel": {
-      "status": "BLOCKED",
-      "evidence": "research/official_sources_2026-09-23.md",
-      "notes": "Official client downloaded, checksum-verified, wired (ops/tunnel.sh); needs user runtime key + tunnel id."
+      "status": "PASS",
+      "evidence": "live-evidence/chatgpt_live_probe.md",
+      "notes": "tunnel-client 0.0.14 under launchd (com.personalhealthcontext.tunnel), tunnel phctx-mac; runtime key reused from the existing WebCodex tunnel config at your direction."
     },
     "apple_device_sync": {
       "status": "BLOCKED",
       "evidence": null,
-      "notes": "No Xcode/iOS SDK; needs user's Apple signing + device."
+      "notes": "Helper not built: needs Xcode licence acceptance (sudo), Apple ID signing and your iPhone — deferred by you."
     },
     "apple_xml_backfill": {
       "status": "PASS",
       "evidence": "test-report/p1_p5_engineering_tests.log",
-      "notes": "Synthetic export import, Oura filter, idempotent re-import, entity refusal."
+      "notes": "Engineering suite + the real export imported into production (1.87 M observations; import_runs done)."
     },
     "oura_official_mcp": {
       "status": "BLOCKED",
@@ -72,7 +72,7 @@
     "background_model_api": {
       "status": "BLOCKED",
       "evidence": "live-evidence/p0_account_probe_2026-09-23.md",
-      "notes": "Platform org shows 'Add credits'; no paid API use without authorization."
+      "notes": "Not used: the background model runs through your Codex CLI login instead; no paid API."
     },
     "background_model_codex_cli": {
       "status": "PASS",

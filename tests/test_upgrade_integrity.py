@@ -1,0 +1,130 @@
+"""Cross-version integrity: rows written under the old key formula must still dedupe after upgrade (v6)."""
+import hashlib
+import json
+import sqlite3
+import tempfile
+import unittest
+import zipfile
+from pathlib import Path
+
+from phctx import apple_export, ingest, migrations
+from phctx.store import Store, StoreError
+from phctx.tools import Tools, ToolContext
+from phctx.download import Downloaded
+
+HEAD = '<?xml version="1.0" encoding="UTF-8"?>\n<HealthData locale="en_US">\n'
+REC = ('<Record type="HKQuantityTypeIdentifierStepCount" sourceName="SYNTHETIC Watch" unit="count" '
+       'startDate="2026-09-20 08:00:00 -0500" endDate="2026-09-20 08:10:00 -0500" value="500"/>\n')
+
+
+def export_zip(path: Path, body: str = REC) -> Path:
+    with zipfile.ZipFile(path, 'w') as z:
+        z.writestr('apple_health_export/export.xml', HEAD + body + '</HealthData>')
+    return path
+
+
+def canonical(s: Store) -> tuple:
+    with s.connect() as c:
+        return tuple(c.execute("SELECT count(*), sum(value_num) FROM canonical_observations "
+                               "WHERE metric='HKQuantityTypeIdentifierStepCount'").fetchone())
+
+
+class UpgradeTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.base = Path(self.tmp.name)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def v5_style_db(self) -> Store:
+        """An archive whose export rows carry legacy (pre-normalization) keys, as production had before v6."""
+        s = Store(self.base / 'live', 'synthetic')
+        apple_export.import_export(s, export_zip(self.base / 'e.zip'), tz='America/Chicago')
+        with s.transaction() as c:  # emulate the old formula: keys that no longer match anything new code makes
+            c.execute("UPDATE observations SET origin_key='legacy-'||substr(origin_key,1,20) "
+                      "WHERE source_id='apple_health_export'")
+            c.execute("UPDATE meta SET value='5' WHERE key='schema_version'")
+            c.execute('DELETE FROM migrations WHERE version=6')
+        return s
+
+    def test_live_sample_after_upgrade_supersedes_legacy_export_copy(self):
+        self.v5_style_db()
+        s = Store(self.base / 'live', 'synthetic')  # reopen: runs v6, recomputes keys
+        self.assertEqual(s.status()['schema_version'], str(migrations.TARGET))
+        s.register_source('apple_health:dev1', 'live')
+        s.ingest_batch(request_id='live1', source_id='apple_health:dev1', deleted_ids=[], cursor='c', samples=[{
+            'native_id': 'U1', 'metric': 'HKQuantityTypeIdentifierStepCount', 'start_at': '2026-09-20T08:00:00.345-05:00',
+            'end_at': '2026-09-20T08:10:00.120-05:00', 'value_num': 500, 'unit': 'count', 'source_name': 'SYNTHETIC Watch',
+            'origin_key': apple_export.origin_key('HKQuantityTypeIdentifierStepCount', '2026-09-20T08:00:00.345-05:00',
+                                                  '2026-09-20T08:10:00.120-05:00', 500, None, 'count',
+                                                  'SYNTHETIC Watch')}])
+        self.assertEqual(canonical(s), (1, 500.0))
+
+    def test_since_reimport_after_upgrade_does_not_duplicate_legacy_rows(self):
+        s = Store(self.base / 'live', 'synthetic')
+        z = export_zip(self.base / 'e.zip')
+        sha = hashlib.sha256(z.read_bytes()).hexdigest()
+        # a pre-v4 archive: one legacy x: row for this sample (no import tag, old key) from a done import run
+        s.ingest_batch(request_id='legacy', source_id=apple_export.SOURCE, deleted_ids=[], cursor='old', samples=[{
+            'native_id': 'x:' + 'a' * 40, 'metric': 'HKQuantityTypeIdentifierStepCount', 'unit': 'count',
+            'start_at': '2026-09-20T08:00:00-05:00', 'end_at': '2026-09-20T08:10:00-05:00', 'value_num': 500.0,
+            'source_name': 'SYNTHETIC Watch', 'origin_key': 'legacy-key'}])
+        with s.transaction() as c:
+            c.execute("INSERT INTO import_runs VALUES('imp_old','apple_export',?,'t',NULL,'done','{}')", (sha,))
+            c.execute("UPDATE meta SET value='5' WHERE key='schema_version'")
+            c.execute('DELETE FROM migrations WHERE version=6')
+        s = Store(self.base / 'live', 'synthetic')  # v6: recompute keys, attribute legacy rows to this export
+        apple_export.import_export(s, z, tz='America/Chicago', since='2026-09-01')
+        self.assertEqual(canonical(s), (1, 500.0))
+
+    def test_reimport_with_other_timezone_is_not_an_idempotency_conflict(self):
+        s = Store(self.base / 'live', 'synthetic')
+        body = REC.replace('/>', '><MetadataEntry key="X" value="1"/></Record>', 1).replace(
+            '<Record ', '<Workout workoutActivityType="HKWorkoutActivityTypeRunning" duration="10" durationUnit="min" '
+            'sourceName="SYNTHETIC Watch" startDate="2026-09-20 07:00:00 -0500" endDate="2026-09-20 07:10:00 -0500">'
+            '<WorkoutRoute sourceName="SYNTHETIC Watch"><FileReference path="/workout-routes/route_x.gpx"/></WorkoutRoute>'
+            '</Workout>\n<Record ', 1)
+        z = self.base / 'e.zip'
+        with zipfile.ZipFile(z, 'w') as zf:
+            zf.writestr('apple_health_export/export.xml', HEAD + body + '</HealthData>')
+            zf.writestr('apple_health_export/workout-routes/route_x.gpx', '<gpx>SYNTHETIC</gpx>')
+        apple_export.import_export(s, z, tz='America/Chicago')
+        apple_export.import_export(s, z, tz='Europe/Berlin')
+        with s.connect() as c:
+            self.assertEqual(c.execute("SELECT count(*) FROM active_records WHERE kind='attachment'").fetchone()[0], 1)
+
+    def test_legacy_shadow_insights_leave_the_outbox_on_upgrade(self):
+        s = Store(self.base / 'live', 'synthetic')
+        q = s.put_record(request_id='q', kind='question', text='SYNTHETIC q', occurred_at='2026-01-01T00:00:00Z')
+        with s.transaction() as c:
+            c.execute("INSERT INTO insights(id,fingerprint,question_id,payload_json,state,evidence_versions_json,"
+                      "created_at) VALUES('ins_old','fp',?,?, 'pending','{}','2026-09-01T00:00:00Z')",
+                      (q['record_id'], json.dumps({'decision': 'surface', 'shadow': True})))
+            c.execute("UPDATE meta SET value='5' WHERE key='schema_version'")
+            c.execute('DELETE FROM migrations WHERE version=6')
+        s = Store(self.base / 'live', 'synthetic')
+        self.assertEqual(s.pending_insights()['insights'], [])
+        with s.connect() as c:
+            self.assertEqual(c.execute("SELECT count(*) FROM shadow_insights WHERE id='ins_old'").fetchone()[0], 1)
+            self.assertIsNone(c.execute('PRAGMA table_info(model_calls)').fetchall()[8][3] or None)
+
+
+class ReplayTruthTests(unittest.TestCase):
+    def test_replay_with_missing_original_is_an_error_not_a_saved_claim(self):
+        with tempfile.TemporaryDirectory() as d:
+            s = Store(Path(d) / 'x', 'synthetic')
+            t = Tools(ToolContext(store=s, allowed_download_hosts=['h.test'],
+                                  fetch=lambda u, **k: Downloaded(b'SYNTHETIC bytes', 'h.test', 'text/plain', 0)))
+            args = {'request_id': 'r1', 'file': {'download_url': 'https://h.test/a', 'file_id': 'f1'},
+                    'text': 'SYNTHETIC', 'occurred_at': '2026-09-23T09:00:00-05:00'}
+            first = t.call('context_capture_file', args)
+            self.assertFalse(first.is_error)
+            (s.blobs / first.data['object_sha256']).unlink()
+            again = t.call('context_capture_file', args)
+            self.assertTrue(again.is_error)
+            self.assertEqual(again.data['error'], 'object_missing')
+
+
+if __name__ == '__main__':
+    unittest.main()
