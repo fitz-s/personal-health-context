@@ -484,7 +484,8 @@ class Store:
     # ---- originals -----------------------------------------------------------------------
     def put_attachment_bytes(self, *, request_id: str, data: bytes, filename: str, mime: str,
                              text: str, occurred_at: str, timezone_name: str = 'America/Chicago',
-                             payload: dict | None = None, max_bytes: int = 25 * 1024 * 1024) -> dict:
+                             payload: dict | None = None, max_bytes: int = 25 * 1024 * 1024,
+                             source_key: str | None = None) -> dict:
         """Called only after a trusted file transport supplies actual bytes, not a filename claim."""
         if not isinstance(data, bytes) or not data or len(data) > max_bytes:
             raise StoreError('file_size', 'Attachment must be nonempty and within the size cap.')
@@ -499,7 +500,7 @@ class Store:
         sha = self._write_blob(data)
         detected = sniff_mime(data)
         body = dict(op='attachment', sha=sha, filename=filename, mime=mime, text=text, at=at, tz=timezone_name,
-                    payload=payload)
+                    payload=payload, source_key=source_key)
 
         def write(c: sqlite3.Connection) -> dict:
             c.execute('INSERT OR IGNORE INTO objects VALUES(?,?,?,?,?)', (sha, len(data), detected, filename, utcnow()))
@@ -509,7 +510,7 @@ class Store:
             rid = 'rec_' + uuid.uuid4().hex
             meta = {**payload, 'filename': filename, 'declared_mime': mime, 'detected_mime': detected}
             c.execute('INSERT INTO records VALUES(?,?,?,?,?,?,?,?,?,?,?)',
-                      (rid, 'attachment', at, timezone_name, text, dump(meta), 'user', None, sha, None, utcnow()))
+                      (rid, 'attachment', at, timezone_name, text, dump(meta), 'user', source_key, sha, None, utcnow()))
             return {'record_id': rid, 'object_sha256': sha, 'size': len(data), 'detected_mime': detected,
                     'original_saved': True, 'extraction_status': status}
         return self._mutate(request_id, body, write)

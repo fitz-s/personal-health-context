@@ -107,8 +107,9 @@ def main() -> int:
         'chatgpt_files': live(LIVE, 'Photo and 2-page PDF saved from ChatGPT with local SHA-256 == stored SHA-256; '
                                     'pages readable.'),
         'fresh_conversation': live(LIVE, 'A new ChatGPT chat found the earlier capture by content.'),
-        'apple_device_sync': check('BLOCKED', None, 'No Xcode/iOS SDK on this Mac; helper source + Swift core tests '
-                                                    'delivered (ios/STATUS.md). XML backfill importer works.'),
+        'apple_device_sync': check('BLOCKED', None, 'Helper not built: needs Xcode licence (sudo), Apple ID signing and '
+                                                    'the iPhone — deferred by the user. Swift core tests + TLS interop '
+                                                    'pass; full export backfill is in production.'),
         'oura_official_access': check('BLOCKED', None, 'No official Oura MCP route available to this account '
                                                        '(live-evidence/p0_account_probe_2026-09-23.md). Nothing persisted.'),
         'model_eval': check(ev['status'], 'eval-report/summary.json', ev['note']),
@@ -116,8 +117,8 @@ def main() -> int:
                                     and ev['buckets'].get('revisit', {}).get('rate', 0) >= .8 else 'FAIL',
                                     'eval-report/summary.json',
                                     'Real worker + strong model on synthetic fixtures: silence and revisit categories.'),
-        'background_shadow': check('NOT_RUN', None, 'Worker installed 2026-09-23 in shadow mode with the model disabled; '
-                                                    'no multi-day observation has elapsed.'),
+        'background_shadow': check('NOT_RUN', None, 'Background model disabled in production (user decision pending, '
+                                                    'USER_ACTIONS §4); no multi-day shadow observation.'),
         'restart_recovery': check('PASS' if (D / 'recovery-report/launchd_restart_drill.log').is_file()
                                   and steps.get('stale_lease_recovers') == 'PASS' else 'FAIL',
                                   'recovery-report/launchd_restart_drill.log',

@@ -1,10 +1,11 @@
 """Forward-only schema migrations. Each step runs inside the caller's IMMEDIATE transaction."""
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
 
-TARGET = 6
+TARGET = 7
 
 
 def statements(sql: str):
@@ -214,7 +215,34 @@ ALTER TABLE model_calls_v6 RENAME TO model_calls;
 ''')
 
 
-STEPS = {2: _v2, 3: _v3, 4: _v4, 5: _v5, 6: _v6}
+def _v7(c: sqlite3.Connection) -> None:
+    # Importer records had no identity beyond their request_id, so every request-id format change re-inserted the
+    # same GPX/ECG attachment and profile note. Duplicates are chained as revisions (oldest → newest; nothing is
+    # deleted) and the surviving record gets the source_key the importer now checks.
+    from .apple_export import OBJECT_KEY, PROFILE_KEY
+    from .store import dump
+    groups: dict[str, list[tuple[str, str]]] = {}
+    for rid, sha, payload in c.execute(
+            "SELECT id, object_sha, payload_json FROM records WHERE source_id='user' AND source_key IS NULL AND "
+            "supersedes IS NULL AND json_extract(payload_json, '$.source')='apple_health_export' ORDER BY created_at, id"):
+        chars = json.loads(payload).get('apple_health_characteristics')
+        if sha:
+            key = OBJECT_KEY + sha
+        elif chars is not None:
+            key = PROFILE_KEY
+        else:
+            continue
+        groups.setdefault(key, []).append((rid, dump(chars) if chars is not None else ''))
+    for key, rows in groups.items():
+        for (older, _), (newer, _) in zip(rows, rows[1:]):
+            c.execute('UPDATE records SET supersedes=? WHERE id=?', (older, newer))
+        last, chars = rows[-1]
+        if key == PROFILE_KEY:
+            key += hashlib.sha256(chars.encode()).hexdigest()[:12]
+        c.execute('UPDATE records SET source_key=? WHERE id=?', (key, last))
+
+
+STEPS = {2: _v2, 3: _v3, 4: _v4, 5: _v5, 6: _v6, 7: _v7}
 
 
 def apply(c: sqlite3.Connection, current: int, now: str) -> int:

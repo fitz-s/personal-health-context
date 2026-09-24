@@ -330,6 +330,21 @@ def _summary(item: dict, tz: str, imp: dict) -> list[dict]:
     return out
 
 
+PROFILE_KEY, OBJECT_KEY = 'apple-export:profile:', 'apple-export:obj:'  # records.source_key identities
+
+
+def _recorded(store: Store, key: str) -> bool:
+    with store.connect() as c:
+        return c.execute("SELECT 1 FROM records WHERE source_id='user' AND source_key=?", (key,)).fetchone() is not None
+
+
+def _active_profile(store: Store) -> str | None:
+    with store.connect() as c:
+        row = c.execute("SELECT id FROM active_records WHERE source_id='user' AND source_key LIKE ?",
+                        (PROFILE_KEY + '%',)).fetchone()
+    return row[0] if row else None
+
+
 def _retire(store: Store, sha16: str, rid: str, cursor: str, since_at: str | None = None) -> int:
     """Tombstone rows of THIS export written by an older parser.
 
@@ -444,12 +459,12 @@ def import_export(store: Store, zip_path: Path, dry_run: bool = False, since: st
             if item['tag'] == 'Me':
                 profile = {k.replace('HKCharacteristicTypeIdentifier', ''): v for k, v in a.items()}
                 counts['profile_fields'] = len(profile)
-                if not dry_run:
-                    store.put_record(request_id=f'apple-export:{sha[:16]}:profile:' + hashlib.sha256(
-                                         dump(profile).encode()).hexdigest()[:12], kind='note',
+                key = PROFILE_KEY + hashlib.sha256(dump(profile).encode()).hexdigest()[:12]
+                if not dry_run and not _recorded(store, key):  # one note per distinct profile; a new one revises it
+                    store.put_record(request_id=f'apple-export:{sha[:16]}:{key}', kind='note',
                                      text='Apple Health profile characteristics (from Health export)',
-                                     occurred_at=export_at, payload={'apple_health_characteristics': profile,
-                                                                     'source': 'apple_health_export'})
+                                     occurred_at=export_at, source_key=key, supersedes=_active_profile(store),
+                                     payload={'apple_health_characteristics': profile, 'source': 'apple_health_export'})
                 continue
             if item['tag'] == 'ActivitySummary':
                 counts['activity_summary_days'] = counts.get('activity_summary_days', 0) + 1
@@ -549,13 +564,13 @@ def _attachments(store: Store, zip_path: Path, counts: dict, routes: dict, refus
                 if at is None:
                     at, payload['event_time_unknown'] = export_at, True
             n['attachments'] += 1
-            if dry_run:
+            key = OBJECT_KEY + hashlib.sha256(data).hexdigest()
+            if dry_run or _recorded(store, key):  # the same original is recorded once, whatever export carried it
                 continue
             kind = 'Workout route (GPX)' if gpx else 'Electrocardiogram (CSV)'
             store.put_attachment_bytes(
-                request_id=f'apple-export:{tag.split(":")[1]}:att:' + hashlib.sha256(name.encode() + data).hexdigest()[:16],
-                data=data,
+                request_id=f'apple-export:{tag.split(":")[1]}:{key}', data=data,
                 filename=parts[-1], mime='application/gpx+xml' if gpx else 'text/csv',
                 text=f'{kind} from Apple Health export: {parts[-1]}', occurred_at=at, timezone_name='UTC',
-                payload=payload, max_bytes=MAX_ATTACHMENT)
+                payload=payload, max_bytes=MAX_ATTACHMENT, source_key=key)
     counts.update(n)

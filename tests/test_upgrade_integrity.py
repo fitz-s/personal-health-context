@@ -45,7 +45,7 @@ class UpgradeTests(unittest.TestCase):
             c.execute("UPDATE observations SET origin_key='legacy-'||substr(origin_key,1,20) "
                       "WHERE source_id='apple_health_export'")
             c.execute("UPDATE meta SET value='5' WHERE key='schema_version'")
-            c.execute('DELETE FROM migrations WHERE version=6')
+            c.execute('DELETE FROM migrations WHERE version>5')
         return s
 
     def test_live_sample_after_upgrade_supersedes_legacy_export_copy(self):
@@ -73,7 +73,7 @@ class UpgradeTests(unittest.TestCase):
         with s.transaction() as c:
             c.execute("INSERT INTO import_runs VALUES('imp_old','apple_export',?,'t',NULL,'done','{}')", (sha,))
             c.execute("UPDATE meta SET value='5' WHERE key='schema_version'")
-            c.execute('DELETE FROM migrations WHERE version=6')
+            c.execute('DELETE FROM migrations WHERE version>5')
         s = Store(self.base / 'live', 'synthetic')  # v6: recompute keys, attribute legacy rows to this export
         apple_export.import_export(s, z, tz='America/Chicago', since='2026-09-01')
         self.assertEqual(canonical(s), (1, 500.0))
@@ -94,6 +94,40 @@ class UpgradeTests(unittest.TestCase):
         with s.connect() as c:
             self.assertEqual(c.execute("SELECT count(*) FROM active_records WHERE kind='attachment'").fetchone()[0], 1)
 
+    def test_reimports_record_each_original_and_profile_once_and_v7_chains_old_duplicates(self):
+        me = '<Me HKCharacteristicTypeIdentifierBiologicalSex="HKBiologicalSexNotSet"/>\n'
+        z = self.base / 'att.zip'
+        with zipfile.ZipFile(z, 'w') as zf:
+            zf.writestr('apple_health_export/export.xml', HEAD + me + REC + '</HealthData>')
+            zf.writestr('apple_health_export/electrocardiograms/ecg_1.csv', 'Name,SYNTHETIC\n\nx\n')
+        s = Store(self.base / 'live', 'synthetic')
+        apple_export.import_export(s, z, tz='America/Chicago')
+        z2 = self.base / 'att2.zip'  # a later export (different archive hash) carrying the same original and profile
+        with zipfile.ZipFile(z, 'r') as a, zipfile.ZipFile(z2, 'w') as b:
+            for n in a.namelist():
+                b.writestr(n, a.read(n) + (b'<!-- later -->' if n.endswith('export.xml') else b''))
+        apple_export.import_export(s, z2, tz='America/Chicago')
+
+        def active():
+            with s.connect() as c:
+                return sorted(r[0] for r in c.execute("SELECT kind FROM active_records WHERE source_id='user'"))
+        self.assertEqual(active(), ['attachment', 'note'])
+        # An archive written by older request-id formats: the same original/profile recorded twice more.
+        with s.transaction() as c:
+            for rid, in c.execute("SELECT id FROM records WHERE source_id='user'").fetchall():
+                for i in range(2):
+                    c.execute("INSERT INTO records SELECT ?||?, kind, occurred_at, timezone, text, payload_json, source_id, "
+                              "NULL, object_sha, NULL, created_at FROM records WHERE id=?", (rid, f'dup{i}', rid))
+            c.execute('UPDATE records SET source_key=NULL')
+            c.execute("UPDATE meta SET value='6' WHERE key='schema_version'")
+            c.execute('DELETE FROM migrations WHERE version=7')
+        s = Store(self.base / 'live', 'synthetic')
+        self.assertEqual(active(), ['attachment', 'note'])
+        with s.connect() as c:
+            self.assertEqual(c.execute("SELECT count(*) FROM records").fetchone()[0], 6)  # nothing deleted
+        apple_export.import_export(s, z, tz='America/Chicago')
+        self.assertEqual(active(), ['attachment', 'note'])
+
     def test_legacy_shadow_insights_leave_the_outbox_on_upgrade(self):
         s = Store(self.base / 'live', 'synthetic')
         q = s.put_record(request_id='q', kind='question', text='SYNTHETIC q', occurred_at='2026-01-01T00:00:00Z')
@@ -102,7 +136,7 @@ class UpgradeTests(unittest.TestCase):
                       "created_at) VALUES('ins_old','fp',?,?, 'pending','{}','2026-09-01T00:00:00Z')",
                       (q['record_id'], json.dumps({'decision': 'surface', 'shadow': True})))
             c.execute("UPDATE meta SET value='5' WHERE key='schema_version'")
-            c.execute('DELETE FROM migrations WHERE version=6')
+            c.execute('DELETE FROM migrations WHERE version>5')
         s = Store(self.base / 'live', 'synthetic')
         self.assertEqual(s.pending_insights()['insights'], [])
         with s.connect() as c:
