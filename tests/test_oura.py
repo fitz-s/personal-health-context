@@ -6,7 +6,7 @@ from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
-from phctx import oura
+from phctx import oauth, oura
 from phctx.store import Store
 
 TODAY = date(2026, 9, 24)
@@ -90,8 +90,8 @@ class OuraSyncTests(unittest.TestCase):
 
     def test_an_expired_token_marks_the_source_and_saves_nothing(self):
         def refused(*a):
-            raise oura.OuraError('oura_auth')
-        with patch.object(oura, '_get', refused), self.assertRaises(oura.OuraError):
+            raise oauth.OAuthError('oura_auth')
+        with patch.object(oura, '_get', refused), self.assertRaises(oauth.OAuthError):
             oura.sync(self.s, token='SYNTHETIC-token', today=TODAY)
         self.assertEqual(self.rows("SELECT state FROM sources WHERE id='oura'"), [('error',)])
         self.assertEqual(self.rows("SELECT count(*) FROM observations WHERE source_id='oura'"), [(0,)])

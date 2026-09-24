@@ -82,7 +82,9 @@ def main(argv: list[str] | None = None) -> int:
     ia.add_argument('--since')
     oa = sub.add_parser('sync-oura', help="pull the owner's Oura data (backfill on first run, then a trailing window)")
     oa.add_argument('--full', action='store_true', help='re-read every collection from the first day')
-    sub.add_parser('whoop-login', help='one-time WHOOP consent in the browser (keeps the refresh token in the Keychain)')
+    cn = sub.add_parser('connect', help='one-time OAuth consent for a wearable API (refresh token kept in the Keychain)')
+    cn.add_argument('provider', choices=['whoop', 'oura'])
+    cn.add_argument('--no-browser', action='store_true', help='only print the consent URL')
     wa = sub.add_parser('sync-whoop', help="pull the owner's WHOOP data (backfill on first run, then a trailing window)")
     wa.add_argument('--full', action='store_true')
     ig = sub.add_parser('ingest-server')
@@ -142,18 +144,22 @@ def dispatch(cfg, args) -> int:
         out(import_export(store_of(cfg), args.zip, dry_run=args.dry_run, since=args.since))
         return 0
     if c == 'sync-oura':
-        from . import oura
+        from . import oauth, oura
         try:
             out(oura.sync(store_of(cfg), tz=cfg.timezone, full=args.full))
-        except oura.OuraError as e:
+        except oauth.OAuthError as e:
             out({'error': e.code})
             return 1
         return 0
-    if c in {'whoop-login', 'sync-whoop'}:
-        from . import whoop
+    if c in {'connect', 'sync-whoop'}:
+        from . import oauth, oura, whoop
         try:
-            out(whoop.login() if c == 'whoop-login' else whoop.sync(store_of(cfg), tz=cfg.timezone, full=args.full))
-        except whoop.WhoopError as e:
+            if c == 'connect':
+                p = {'whoop': whoop.PROVIDER, 'oura': oura.PROVIDER}[args.provider]
+                out(oauth.login(p, **({'open_browser': lambda u: None} if args.no_browser else {})))
+            else:
+                out(whoop.sync(store_of(cfg), tz=cfg.timezone, full=args.full))
+        except oauth.OAuthError as e:
             out({'error': e.code})
             return 1
         return 0

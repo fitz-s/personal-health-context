@@ -14,12 +14,16 @@ import urllib.parse
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
 
+from . import oauth
 from .config import keychain_get
 from .store import Store, StoreError, dump, utcnow
 
 API = 'https://api.ouraring.com/v2/usercollection/'
 SOURCE = 'oura'
-KEYCHAIN = ('openclaw-oura-personal-access-token', 'leofitz')  # the owner's existing token (Secret Pipeline entry)
+PROVIDER = oauth.Provider('oura', 'https://cloud.ouraring.com/oauth/authorize', 'https://api.ouraring.com/oauth/token',
+                          'email personal daily heartrate workout tag session spo2 heart_health')
+# Oura deprecated personal access tokens in Dec 2025; the owner's old one still answers, so it serves until OAuth consent.
+LEGACY_TOKEN = ('openclaw-oura-personal-access-token', 'leofitz')
 FIRST_DAY = date(2015, 1, 1)  # before the first Oura ring; a full backfill asks from here
 REREAD_DAYS = 14  # Oura revises recent documents as the ring syncs
 TIME_SERIES_DAYS = 30  # heartrate / battery: the API caps a request's datetime range
@@ -41,12 +45,6 @@ INTERVAL = {  # collection → (headline, unit, start field, end field)
 SERIES = {'heartrate': ('bpm', 'count/min'), 'ring_battery_level': ('level', '%')}
 
 
-class OuraError(Exception):
-    def __init__(self, code: str):
-        self.code = code
-        super().__init__(code)
-
-
 def _get(token: str, collection: str, params: dict) -> dict:
     url = API + collection + '?' + urllib.parse.urlencode(params)
     for attempt in range(5):
@@ -59,16 +57,16 @@ def _get(token: str, collection: str, params: dict) -> dict:
                 time.sleep(min(int(e.headers.get('Retry-After') or 30), 300))
                 continue
             if e.code in (401, 403):
-                raise OuraError('oura_auth') from e  # expired/revoked token or missing scope
+                raise oauth.OAuthError('oura_auth') from e  # expired/revoked token or missing scope
             if e.code == 404:
-                raise OuraError('oura_not_found') from e
-            raise OuraError(f'oura_http_{e.code}') from e
+                raise oauth.OAuthError('oura_not_found') from e
+            raise oauth.OAuthError(f'oura_http_{e.code}') from e
         except (urllib.error.URLError, TimeoutError) as e:
             if attempt < 4:
                 time.sleep(2 ** attempt)
                 continue
-            raise OuraError('oura_unreachable') from e
-    raise OuraError('oura_rate_limited')
+            raise oauth.OAuthError('oura_unreachable') from e
+    raise oauth.OAuthError('oura_rate_limited')
 
 
 def _pages(token: str, collection: str, params: dict):
@@ -123,9 +121,10 @@ def _windows(first: date, last: date, days: int):
 def sync(store: Store, tz: str = 'America/Chicago', full: bool = False, token: str | None = None,
          today: date | None = None) -> dict:
     """Backfill (first run or full=True) or re-read the trailing window, one committed page per collection window."""
-    token = token or keychain_get(*KEYCHAIN)
+    if token is None:
+        token = oauth.access_token(PROVIDER) if oauth.connected(PROVIDER) else keychain_get(*LEGACY_TOKEN)
     if not token:
-        raise OuraError('oura_token_missing')
+        raise oauth.OAuthError('oura_token_missing')
     today = today or datetime.now(timezone.utc).date()
     with store.connect() as c:
         row = c.execute("SELECT cursor FROM sources WHERE id='oura'").fetchone()
@@ -146,7 +145,7 @@ def sync(store: Store, tz: str = 'America/Chicago', full: bool = False, token: s
                 counts[collection] = counts.get(collection, 0) + len(docs)
             done[collection] = today.isoformat()
             _commit_cursor(store, done)
-    except OuraError as e:
+    except oauth.OAuthError as e:
         store.mark_source_attempt(SOURCE, e.code)
         raise
     return {'status': 'synced', 'mode': 'full' if full else 'incremental', 'documents': counts}

@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from phctx import whoop
+from phctx import oauth, whoop
 from phctx.store import Store
 
 
@@ -82,17 +82,17 @@ class WhoopSyncTests(unittest.TestCase):
         stored = {'phctx-whoop-client-id': 'SYNTHETIC-id', 'phctx-whoop-client-secret': 'SYNTHETIC-secret',
                   'phctx-whoop-refresh-token': 'SYNTHETIC-r1'}
         sent = []
-        with patch.object(whoop, 'keychain_get', stored.get), \
-                patch.object(whoop, 'keychain_set', lambda k, v: stored.__setitem__(k, v)), \
-                patch.object(whoop, '_post_token', lambda form: sent.append(form) or
+        with patch.object(oauth, 'keychain_get', stored.get), \
+                patch.object(oauth, 'keychain_set', lambda k, v: stored.__setitem__(k, v)), \
+                patch.object(oauth, '_post', lambda p, form: sent.append(form) or
                              {'access_token': 'SYNTHETIC-a2', 'refresh_token': 'SYNTHETIC-r2'}):
-            self.assertEqual(whoop.access_token(), 'SYNTHETIC-a2')
+            self.assertEqual(oauth.access_token(whoop.PROVIDER), 'SYNTHETIC-a2')
         self.assertEqual((sent[0]['refresh_token'], sent[0]['scope']), ('SYNTHETIC-r1', 'offline'))
         self.assertEqual(stored['phctx-whoop-refresh-token'], 'SYNTHETIC-r2')
 
     def test_missing_client_secret_is_a_bounded_error(self):
-        with patch.object(whoop, 'keychain_get', lambda k: None), self.assertRaises(whoop.WhoopError) as e:
-            whoop.access_token()
+        with patch.object(oauth, 'keychain_get', lambda k: None), self.assertRaises(oauth.OAuthError) as e:
+            oauth.access_token(whoop.PROVIDER)
         self.assertEqual(e.exception.code, 'whoop_client_missing')
 
 
