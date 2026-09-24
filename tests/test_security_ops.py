@@ -724,7 +724,8 @@ class ReleaseBindingTests(Tmp):
         h = self.rm.tree_hashes()
         self.assertTrue({'ops', 'ios'} <= set(h))
         self.assertTrue(any(p.name == 'test-report' for p in (ROOT / 'ios').iterdir()))
-        self.assertEqual(self.rm.SKIP & {'test-report'}, {'test-report'})
+        self.assertTrue(self.rm._excluded(Path('ios/test-report/interop.log')))
+        self.assertFalse(self.rm._excluded(Path('ios/test-report/typecheck.sh')))
 
     def test_package_archive_uses_runtime_version(self):
         self.assertNotRegex((ROOT / 'scripts' / 'package_release.py').read_text(), r'context-\d+\.\d+\.\d+-')
