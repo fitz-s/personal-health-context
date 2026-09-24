@@ -120,35 +120,57 @@ def _windows(first: date, last: date, days: int):
 
 def sync(store: Store, tz: str = 'America/Chicago', full: bool = False, token: str | None = None,
          today: date | None = None) -> dict:
-    """Backfill (first run or full=True) or re-read the trailing window, one committed page per collection window."""
-    if token is None:
-        token = oauth.access_token(PROVIDER) if oauth.connected(PROVIDER) else keychain_get(*LEGACY_TOKEN)
-    if not token:
+    """Backfill (first run or full=True) or re-read the trailing window, one committed page per collection window.
+
+    Tokens are tried in order per collection: OAuth (once consented), then the owner's personal token, because the
+    OAuth app's scopes do not reach every collection (resilience, battery, ring configuration refuse it)."""
+    if token is not None:
+        tokens = [token]
+    else:
+        tokens = [t for t in ((oauth.access_token(PROVIDER) if oauth.connected(PROVIDER) else None),
+                              keychain_get(*LEGACY_TOKEN)) if t]
+    if not tokens:
         raise oauth.OAuthError('oura_token_missing')
     today = today or datetime.now(timezone.utc).date()
     with store.connect() as c:
         row = c.execute("SELECT cursor FROM sources WHERE id='oura'").fetchone()
     done = json.loads(row[0]) if row and row[0] else {}
     counts: dict[str, int] = {}
-    try:
-        for collection in [*DAILY, *INTERVAL, *SERIES]:
-            since = FIRST_DAY if full or collection not in done else date.fromisoformat(done[collection]) - timedelta(
-                days=REREAD_DAYS)
-            span = TIME_SERIES_DAYS if collection in SERIES else 3650
+    refused: dict[str, str] = {}
+    for collection in [*DAILY, *INTERVAL, *SERIES]:
+        since = FIRST_DAY if full or collection not in done else date.fromisoformat(done[collection]) - timedelta(
+            days=REREAD_DAYS)
+        span = TIME_SERIES_DAYS if collection in SERIES else 3650
+        try:
             for lo, hi in _windows(since, today + timedelta(days=1), span):
                 if collection in SERIES:
                     params = {'start_datetime': f'{lo}T00:00:00+00:00', 'end_datetime': f'{hi}T23:59:59+00:00'}
                 else:
                     params = {'start_date': lo.isoformat(), 'end_date': hi.isoformat()}
-                docs = list(_pages(token, collection, params))
+                docs = _read(tokens, collection, params)
                 _commit(store, collection, lo, hi, docs, tz, done)
                 counts[collection] = counts.get(collection, 0) + len(docs)
-            done[collection] = today.isoformat()
-            _commit_cursor(store, done)
-    except oauth.OAuthError as e:
-        store.mark_source_attempt(SOURCE, e.code)
-        raise
-    return {'status': 'synced', 'mode': 'full' if full else 'incremental', 'documents': counts}
+        except oauth.OAuthError as e:  # one collection refused: the others still sync
+            refused[collection] = e.code
+            continue
+        done[collection] = today.isoformat()
+        _commit_cursor(store, done)
+    store.mark_source_attempt(SOURCE, next(iter(refused.values()), None))
+    out = {'status': 'synced' if not refused else 'partial', 'mode': 'full' if full else 'incremental',
+           'documents': counts}
+    if refused:
+        out['refused'] = refused
+    return out
+
+
+def _read(tokens: list[str], collection: str, params: dict) -> list[dict]:
+    for i, token in enumerate(tokens):
+        try:
+            return list(_pages(token, collection, params))
+        except oauth.OAuthError as e:
+            if e.code != 'oura_auth' or i == len(tokens) - 1:
+                raise
+    return []
 
 
 def _commit(store: Store, collection: str, lo: date, hi: date, docs: list[dict], tz: str, done: dict) -> None:

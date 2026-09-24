@@ -91,11 +91,28 @@ class OuraSyncTests(unittest.TestCase):
     def test_an_expired_token_marks_the_source_and_saves_nothing(self):
         def refused(*a):
             raise oauth.OAuthError('oura_auth')
-        with patch.object(oura, '_get', refused), self.assertRaises(oauth.OAuthError):
-            oura.sync(self.s, token='SYNTHETIC-token', today=TODAY)
+        with patch.object(oura, '_get', refused):
+            out = oura.sync(self.s, token='SYNTHETIC-token', today=TODAY)
+        self.assertEqual(out['status'], 'partial')
+        self.assertEqual(set(out['refused'].values()), {'oura_auth'})
         self.assertEqual(self.rows("SELECT state FROM sources WHERE id='oura'"), [('error',)])
         self.assertEqual(self.rows("SELECT count(*) FROM observations WHERE source_id='oura'"), [(0,)])
 
+    def test_a_collection_the_first_token_cannot_read_falls_back_to_the_next(self):
+        served = []
+
+        def get(token, collection, params):
+            if token == 'SYNTHETIC-oauth' and collection == 'daily_sleep':
+                raise oauth.OAuthError('oura_auth')  # the OAuth app's scopes do not reach it
+            served.append((collection, token))
+            return self.fake(token, collection, params)
+        with patch.object(oura, '_get', get), patch.object(oauth, 'connected', lambda p: True), \
+                patch.object(oauth, 'access_token', lambda p: 'SYNTHETIC-oauth'), \
+                patch.object(oura, 'keychain_get', lambda *a: 'SYNTHETIC-personal'):
+            out = oura.sync(self.s, today=TODAY)
+        self.assertEqual((out['status'], out['documents']['daily_sleep']), ('synced', 2))
+        self.assertEqual({t for c, t in served if c == 'daily_sleep'}, {'SYNTHETIC-personal'})
+        self.assertEqual({t for c, t in served if c == 'sleep'}, {'SYNTHETIC-oauth'})
 
 if __name__ == '__main__':
     unittest.main()
