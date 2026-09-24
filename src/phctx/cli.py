@@ -95,6 +95,12 @@ def main(argv: list[str] | None = None) -> int:
     pd.add_argument('--host', help='LAN address the phone will use (default: detected)')
     rv = sub.add_parser('revoke-device')
     rv.add_argument('installation_id')
+    sub.add_parser('companion-secret', help='set up (or re-print) the HMAC secret for the Life Dashboard '
+                                            'Companion iPhone app webhook')
+    cs = sub.add_parser('companion-server', help='receive Apple Health data pushed by the Life Dashboard '
+                                                 'Companion iPhone app webhook')
+    cs.add_argument('--host')
+    cs.add_argument('--port', type=int)
     w = sub.add_parser('worker')
     w.add_argument('--once', action='store_true')
     b = sub.add_parser('backup')
@@ -183,6 +189,27 @@ def dispatch(cfg, args) -> int:
         from . import ingest
         ingest.revoke(store_of(cfg), args.installation_id)
         out({'revoked': args.installation_id})
+        return 0
+    if c == 'companion-secret':
+        from . import companion
+        from .config import KEYCHAIN
+        out(companion.setup_secret(KEYCHAIN))
+        return 0
+    if c == 'companion-server':
+        import logging
+        from . import companion
+        from .config import KEYCHAIN
+        from .mcp_server import setup_logging
+        setup_logging(None)
+        secret = KEYCHAIN.get(companion.KEYCHAIN_SERVICE)
+        if not secret:
+            print(json.dumps({'error': 'companion_secret_missing',
+                              'message': 'Run `phctx companion-secret` first.'}), file=sys.stderr)
+            return 1
+        srv = companion.make_server(store_of(cfg), args.host or companion.DEFAULT_HOST,
+                                    args.port or companion.DEFAULT_PORT, secret, cfg.timezone)
+        logging.getLogger('phctx.companion').info('listening port=%s', srv.server_address[1])
+        srv.serve_forever()
         return 0
     if c == 'ingest-server':
         import logging
