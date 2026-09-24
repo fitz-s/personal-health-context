@@ -1,55 +1,55 @@
 {
   "release_version": "0.4.1",
-  "claimed_status": "BLOCKED",
-  "code_revision": "fcb66c26d02e78f59f5623311ce57c33d8a22d82 src-tree:8f8f9501a6b25dba",
-  "created_at": "2026-09-24T15:27:57.954153+00:00",
+  "claimed_status": "READY_WITH_GAPS",
+  "code_revision": "1dfc982b04e3529905259851b0d54867b75b4289 src-tree:8f8f9501a6b25dba",
+  "created_at": "2026-09-24T15:29:17.291363+00:00",
   "checks": {
     "unit_regression": {
-      "status": "FAIL",
+      "status": "PASS",
       "evidence": "test-report/p1_p5_engineering_tests.log",
-      "evidence_sha256": "dc1fa30dbbeb8ae3267f5fbbdeda211ad1900a15083c83709555b5a1f0fbd7a2",
-      "notes": "Full engineering suite (store, migrations, tools, SSRF-safe download, MCP stdio via official SDK client, Apple XML import, TLS ingest protocol, worker, backup)."
+      "evidence_sha256": "176530dc57a98baea111843c58dc3d4e5fffff9fb613af13415e9574d0b9ce12",
+      "notes": "Full engineering suite (store, migrations, tools, SSRF-safe download, MCP stdio via official SDK client, Apple XML import, TLS ingest protocol, worker, backup). [run-manifests/engineering.json]"
     },
     "auth_and_policy": {
-      "status": "FAIL",
+      "status": "PASS",
       "evidence": "test-report/p1_p5_engineering_tests.log",
-      "evidence_sha256": "dc1fa30dbbeb8ae3267f5fbbdeda211ad1900a15083c83709555b5a1f0fbd7a2",
-      "notes": "Read-only tool profile enforced server-side; SQL authorizer; device tokens hashed; Oura durable registration/ingest refused; synthetic sources refused in production; eval security category in eval-report/summary.json."
+      "evidence_sha256": "176530dc57a98baea111843c58dc3d4e5fffff9fb613af13415e9574d0b9ce12",
+      "notes": "Read-only tool profile enforced server-side; SQL authorizer; device tokens hashed; Oura durable registration/ingest refused; synthetic sources refused in production; eval security category in eval-report/summary.json. [run-manifests/engineering.json]"
     },
     "durable_capture": {
-      "status": "FAIL",
+      "status": "PASS",
       "evidence": "recovery-report/recovery_drill.json",
-      "evidence_sha256": "8a190cc05284355831bc9e2c3bb0abbcac110b13368fcd7a311b2b188ea51511",
-      "notes": "Receipts only after COMMIT; SIGKILL mid-burst leaves records==receipts, integrity ok; same-key retry idempotent; new-process read."
+      "evidence_sha256": "956006ef35e298e554aad7a165c86c81b26f534b05c5136b29a46fe9c21f2d48",
+      "notes": "Receipts only after COMMIT; SIGKILL mid-burst leaves records==receipts, integrity ok; same-key retry idempotent; new-process read. [run-manifests/recovery.json]"
     },
     "original_file_integrity": {
-      "status": "FAIL",
+      "status": "PASS",
       "evidence": "test-report/p1_p5_engineering_tests.log",
-      "evidence_sha256": "dc1fa30dbbeb8ae3267f5fbbdeda211ad1900a15083c83709555b5a1f0fbd7a2",
-      "notes": "Real HTTPS download → SHA-256 verified original; failed/partial/oversize/SSRF refused with nothing persisted; disk-full leaves no object row."
+      "evidence_sha256": "176530dc57a98baea111843c58dc3d4e5fffff9fb613af13415e9574d0b9ce12",
+      "notes": "Real HTTPS download → SHA-256 verified original; failed/partial/oversize/SSRF refused with nothing persisted; disk-full leaves no object row. [run-manifests/engineering.json]"
     },
     "local_restore": {
       "status": "PASS",
       "evidence": "recovery-report/recovery_drill.json",
-      "evidence_sha256": "8a190cc05284355831bc9e2c3bb0abbcac110b13368fcd7a311b2b188ea51511",
+      "evidence_sha256": "956006ef35e298e554aad7a165c86c81b26f534b05c5136b29a46fe9c21f2d48",
       "notes": "Online snapshot during writes → verify → restore into new root → counts match; production paths also restored (recovery-report/production_local_restore.log). [run-manifests/recovery.json]"
     },
     "chatgpt_read_write": {
       "status": "PASS",
       "evidence": "live-evidence/chatgpt_live_probe.json",
-      "evidence_sha256": "9f5705a6110855a43021bb2d7995c80db167a55b551cd2bbc8a760285e88f657",
+      "evidence_sha256": "a59cf4c41ec7db2d17d5f4c33d46719f296cf9f5284feab38421f1b736329e24",
       "notes": "ChatGPT web wrote a capture (committed receipt) and read it back. [live observation, bound to delivery/live-evidence/chatgpt_live_probe.json]"
     },
     "chatgpt_files": {
       "status": "PASS",
       "evidence": "live-evidence/chatgpt_live_probe.json",
-      "evidence_sha256": "9f5705a6110855a43021bb2d7995c80db167a55b551cd2bbc8a760285e88f657",
+      "evidence_sha256": "a59cf4c41ec7db2d17d5f4c33d46719f296cf9f5284feab38421f1b736329e24",
       "notes": "Photo and 2-page PDF saved from ChatGPT with local SHA-256 == stored SHA-256; pages readable. [live observation, bound to delivery/live-evidence/chatgpt_live_probe.json]"
     },
     "fresh_conversation": {
       "status": "PASS",
       "evidence": "live-evidence/chatgpt_live_probe.json",
-      "evidence_sha256": "9f5705a6110855a43021bb2d7995c80db167a55b551cd2bbc8a760285e88f657",
+      "evidence_sha256": "a59cf4c41ec7db2d17d5f4c33d46719f296cf9f5284feab38421f1b736329e24",
       "notes": "A new ChatGPT chat found the earlier capture by content. [live observation, bound to delivery/live-evidence/chatgpt_live_probe.json]"
     },
     "apple_device_sync": {
@@ -91,21 +91,17 @@
     "encrypted_backup_restore": {
       "status": "PASS",
       "evidence": "recovery-report/recovery_drill.json",
-      "evidence_sha256": "8a190cc05284355831bc9e2c3bb0abbcac110b13368fcd7a311b2b188ea51511",
+      "evidence_sha256": "956006ef35e298e554aad7a165c86c81b26f534b05c5136b29a46fe9c21f2d48",
       "notes": "AES-256-GCM archive written to iCloud Drive, read back, decrypted, restored into a new root (synthetic data); tamper rejected. Production cloud backup is opt-in (USER_ACTIONS §5). [run-manifests/recovery.json]"
     },
     "single_interface": {
       "status": "PASS",
       "evidence": "live-evidence/chatgpt_live_probe.json",
-      "evidence_sha256": "9f5705a6110855a43021bb2d7995c80db167a55b551cd2bbc8a760285e88f657",
+      "evidence_sha256": "a59cf4c41ec7db2d17d5f4c33d46719f296cf9f5284feab38421f1b736329e24",
       "notes": "ChatGPT is the only daily interface: write, read, files, fresh chat, real-data investigation observed live. The iPhone helper is a one-time setup screen. [live observation, bound to delivery/live-evidence/chatgpt_live_probe.json]"
     }
   },
   "gaps": [
-    "unit_regression: FAIL — Full engineering suite (store, migrations, tools, SSRF-safe download, MCP stdio via official SDK client, Apple XML import, TLS ingest protocol, worker, backup).",
-    "auth_and_policy: FAIL — Read-only tool profile enforced server-side; SQL authorizer; device tokens hashed; Oura durable registration/ingest refused; synthetic sources refused in production; eval security category in eval-report/summary.json.",
-    "durable_capture: FAIL — Receipts only after COMMIT; SIGKILL mid-burst leaves records==receipts, integrity ok; same-key retry idempotent; new-process read.",
-    "original_file_integrity: FAIL — Real HTTPS download → SHA-256 verified original; failed/partial/oversize/SSRF refused with nothing persisted; disk-full leaves no object row.",
     "apple_device_sync: BLOCKED — Helper not built: needs Xcode licence (sudo), Apple ID signing and the iPhone — deferred by the user. Swift core tests + TLS interop pass; full export backfill is in production.",
     "oura_official_access: BLOCKED — No official Oura MCP route available to this account (live-evidence/p0_account_probe_2026-09-23.md). Nothing persisted.",
     "model_eval: NOT_RUN — Evidence is not bound to the current tree by a run manifest. Real model runs on synthetic fixtures; case PASS requires every run to pass (critical safety cases 3 runs). dev 42/42, holdout 14/14. Hard failures: none. Host is Codex CLI, not the ChatGPT client.",
