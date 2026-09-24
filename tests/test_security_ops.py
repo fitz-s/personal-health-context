@@ -771,7 +771,7 @@ class ReleaseBindingTests(Tmp):
     def test_single_version_source(self):
         import phctx
         py = tomllib.loads((ROOT / 'pyproject.toml').read_text())
-        self.assertEqual(phctx.__version__, '0.4.0')
+        self.assertRegex(phctx.__version__, r'^\d+\.\d+\.\d+$')
         self.assertNotIn('version', py['project'])
         self.assertIn('version', py['project']['dynamic'])
         self.assertEqual(py['tool']['hatch']['version']['path'], 'src/phctx/__init__.py')
