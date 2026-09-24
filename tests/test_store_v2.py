@@ -295,6 +295,13 @@ print(json.dumps({'schema_version': s.status()['schema_version'], 'snapshot': st
             self.assertEqual(c.execute('SELECT count(*) FROM objects').fetchone()[0], 0)
 
 
+    def test_query_over_budget_is_a_distinct_timeout_error(self):
+        for i in range(30):
+            self.record(text=f'SYNTHETIC row {i}')
+        with patch('phctx.store.time.monotonic', side_effect=[0.0] + [100.0] * 10000):
+            self.expect_error('query_timeout', self.s.query_readonly,
+                              'SELECT count(*) FROM records a, records b, records c, records d')
+
     def test_directory_sync_failure_is_retried_on_an_existing_blob(self):
         args = dict(data=b'SYNTHETIC dir-sync bytes', filename='s.bin', mime='application/octet-stream',
                     text='SYNTHETIC attachment', occurred_at=AT)

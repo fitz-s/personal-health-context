@@ -699,6 +699,9 @@ class Store:
         except sqlite3.Error as e:
             # SQLite's message names the problem (no such column, not authorized, interrupted) and holds no data.
             detail = str(e).replace('\n', ' ')[:200]
+            if detail == 'interrupted':
+                raise StoreError('query_timeout', 'The query exceeded its 8 s budget. Narrow the time range or '
+                                 'metric, aggregate in fewer steps, or use observation_catalog for counts.') from e
             raise StoreError('query_rejected', f'Read-only query rejected: {detail}. Readable tables: '
                              f'{", ".join(sorted(self.PUBLIC_TABLES))}.') from e
         finally:
