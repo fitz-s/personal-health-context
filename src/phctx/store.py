@@ -120,14 +120,15 @@ def repeat_signature(raw_json: str) -> str:
 def mark_repeats(c: sqlite3.Connection, source_id: str, key: str) -> None:
     """Within one export origin_key group, a row whose repeat_signature equals an earlier (smaller id) active row's
     repeats it: repeat_of = the first such row. Recomputed for the whole (small) group on any change."""
-    rows = c.execute('SELECT id, raw_json FROM observations WHERE origin_key=? AND source_id=? AND deleted=0 '
-                     'ORDER BY id', (key, source_id)).fetchall()
+    # INDEXED BY: the planner otherwise walks obs_source_end — every row of the source — for a group of a few rows.
+    rows = c.execute('SELECT id, raw_json FROM observations INDEXED BY obs_origin WHERE origin_key=? AND source_id=? '
+                     'AND deleted=0 ORDER BY id', (key, source_id)).fetchall()
     first: dict[str, str] = {}
     for oid, raw in rows:
         original = first.setdefault(repeat_signature(raw), oid)
         c.execute('UPDATE observations SET repeat_of=? WHERE id=?', (None if original == oid else original, oid))
-    c.execute('UPDATE observations SET repeat_of=NULL WHERE origin_key=? AND source_id=? AND deleted=1',
-              (key, source_id))
+    c.execute('UPDATE observations INDEXED BY obs_origin SET repeat_of=NULL WHERE origin_key=? AND source_id=? '
+              'AND deleted=1', (key, source_id))
 
 
 def ref_kind(ref: str) -> str:

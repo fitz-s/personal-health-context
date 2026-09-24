@@ -258,6 +258,7 @@ def _v8(c: sqlite3.Connection) -> None:
         c.execute('ALTER TABLE object_pages ADD COLUMN sha256 TEXT')
     if 'repeat_of' not in {r[1] for r in c.execute('PRAGMA table_info(observations)')}:
         c.execute('ALTER TABLE observations ADD COLUMN repeat_of TEXT')
+    c.execute('CREATE INDEX IF NOT EXISTS obs_repeat ON observations(origin_key) WHERE repeat_of IS NOT NULL')
     run(c, """
 DROP VIEW IF EXISTS canonical_observations_raw;
 DROP VIEW IF EXISTS canonical_observations;
@@ -282,12 +283,13 @@ UPDATE observations SET repeat_of = (SELECT d.id FROM observations d INDEXED BY 
 
 def _v9(c: sqlite3.Connection) -> None:
     # v8 marked repeats on measured columns + device only, which also hid rows differing in timezone or other metadata.
-    # Re-resolve every export group that has more than one active row with the shared signature (store.repeat_signature,
-    # which ignores only creation/import bookkeeping). A change of canonical membership is an observation change.
+    # The shared signature (store.repeat_signature: every field except creation/import bookkeeping) is strictly
+    # narrower, so only rows v8 marked can change: re-resolve just the groups that hold one (one table pass).
+    # A change of canonical membership is an observation change.
     from .store import mark_repeats, utcnow
-    c.execute("UPDATE observations SET repeat_of=NULL WHERE repeat_of IS NOT NULL")
-    keys = [k for (k,) in c.execute("SELECT origin_key FROM observations WHERE source_id='apple_health_export' "
-                                    "AND deleted=0 AND origin_key IS NOT NULL GROUP BY origin_key HAVING count(*) > 1")]
+    c.execute('CREATE INDEX IF NOT EXISTS obs_repeat ON observations(origin_key) WHERE repeat_of IS NOT NULL')
+    keys = [k for (k,) in c.execute("SELECT DISTINCT origin_key FROM observations INDEXED BY obs_repeat "
+                                    "WHERE repeat_of IS NOT NULL")]
     for k in keys:
         mark_repeats(c, 'apple_health_export', k)
     c.execute("INSERT INTO changes(entity, entity_id, detail, at) VALUES('observations', 'apple_health_export', ?, ?)",
