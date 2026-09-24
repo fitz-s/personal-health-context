@@ -36,7 +36,7 @@ COLLECTIONS = {
 def _get(token: str, path: str, params: dict) -> dict:
     url = API + path + ('?' + urllib.parse.urlencode(params) if params else '')
     for attempt in range(5):
-        req = urllib.request.Request(url, headers={'Authorization': f'Bearer {token}'})
+        req = urllib.request.Request(url, headers={'Authorization': f'Bearer {token}', 'User-Agent': oauth.USER_AGENT})
         try:
             with urllib.request.urlopen(req, timeout=60) as r:
                 return json.loads(r.read())

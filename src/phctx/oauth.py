@@ -19,6 +19,8 @@ from dataclasses import dataclass
 from .config import keychain_get, keychain_set
 
 PORT = 47822
+# WHOOP's Cloudflare front refuses urllib's default User-Agent (HTTP 403 "error code: 1010").
+USER_AGENT = 'phctx/0.4 (personal health context)'
 
 
 class OAuthError(Exception):
@@ -47,7 +49,7 @@ class Provider:
 
 def _post(p: Provider, form: dict) -> dict:
     req = urllib.request.Request(p.token_url, data=urllib.parse.urlencode(form).encode(),
-                                 headers={'Content-Type': 'application/x-www-form-urlencoded'})
+                                 headers={'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': USER_AGENT})
     try:
         with urllib.request.urlopen(req, timeout=60) as r:
             return json.loads(r.read())
@@ -69,17 +71,31 @@ def connected(p: Provider) -> bool:
 
 
 def login(providers: list[Provider], open_browser=webbrowser.open, timeout: float = 600) -> dict:
-    """One-time owner consent for each provider on one localhost server (all redirects share the port). Prints each
-    consent URL, to open in the browser that holds the vendor session; returns once every provider answered or timed out."""
-    pending = {p.name: (p, *client(p), secrets.token_urlsafe(p.state_chars)[:p.state_chars]) for p in providers}
+    """One-time owner consent for each provider on one localhost server (all redirects share the port).
+
+    Consent starts at http://localhost:47822/<name>/start, which creates the authorization request when it is
+    opened: a vendor login request expires (WHOOP's after about 30 minutes), so a consent page opened in advance and
+    signed into later fails. Prints each start URL; returns once every provider answered or `timeout` passed."""
+    clients = {p.name: (p, *client(p)) for p in providers}
+    issued: dict[str, set[str]] = {n: set() for n in clients}
     got: dict[str, dict] = {}
 
     class Callback(http.server.BaseHTTPRequestHandler):
         def do_GET(self):
             url = urllib.parse.urlsplit(self.path)
+            name, _, step = url.path.strip('/').partition('/')
+            if name in clients and name not in got and step == 'start':
+                p, cid, _ = clients[name]
+                state = secrets.token_urlsafe(p.state_chars)[:p.state_chars]
+                issued[name].add(state)
+                self.send_response(302)
+                self.send_header('Location', p.auth_url + '?' + urllib.parse.urlencode(
+                    {'response_type': 'code', 'client_id': cid, 'redirect_uri': p.redirect, 'scope': p.scopes,
+                     'state': state}))
+                self.end_headers()
+                return
             q = urllib.parse.parse_qs(url.query)
-            name = url.path.removeprefix('/').removesuffix('/callback')
-            ok = name in pending and name not in got and q.get('state') == [pending[name][3]]
+            ok = name in clients and name not in got and step == 'callback' and (q.get('state') or [''])[0] in issued[name]
             if ok:
                 got[name] = {'code': (q.get('code') or [''])[0], 'error': (q.get('error') or [''])[0]}
             self.send_response(200 if ok else 400)
@@ -88,7 +104,10 @@ def login(providers: list[Provider], open_browser=webbrowser.open, timeout: floa
             # The code has not been exchanged yet, so this page only says whether consent came back; the CLI reports
             # the final outcome.
             msg = (f'{name}: consent received, finishing on the Mac.' if ok and got[name]['code'] else
-                   f'{name}: NOT connected ({got[name]["error"] or "no code"}).' if ok else 'Unexpected request.')
+                   f'{name}: NOT connected ({got[name]["error"] or "no code"}). Open /{name}/start to try again.'
+                   if ok else 'Unexpected request.')
+            if ok and not got[name]['code']:
+                del got[name]  # a refused attempt does not end the wait: a fresh start may follow
             self.wfile.write(msg.encode())
 
         def log_message(self, *a):  # no request logging: the query carries the authorization code
@@ -96,21 +115,17 @@ def login(providers: list[Provider], open_browser=webbrowser.open, timeout: floa
 
     server = http.server.HTTPServer(('127.0.0.1', PORT), Callback)
     server.timeout = 5
-    for p, cid, _, state in pending.values():
-        url = p.auth_url + '?' + urllib.parse.urlencode({'response_type': 'code', 'client_id': cid,
-                                                         'redirect_uri': p.redirect, 'scope': p.scopes, 'state': state})
-        print(url, flush=True)
-        open_browser(url)
+    for name in clients:
+        start = f'http://localhost:{PORT}/{name}/start'
+        print(start, flush=True)
+        open_browser(start)
     deadline = time.monotonic() + timeout
     out = {}
     try:
-        while len(got) < len(pending) and time.monotonic() < deadline:
+        while len(out) < len(clients) and time.monotonic() < deadline:
             server.handle_request()
             for name in [n for n in got if n not in out]:
-                p, cid, secret, _ = pending[name]
-                if not got[name]['code']:
-                    out[name] = f'consent_{got[name]["error"] or "denied"}'
-                    continue
+                p, cid, secret = clients[name]
                 try:  # exchange at once: authorization codes are short-lived
                     tokens = _post(p, {'grant_type': 'authorization_code', 'code': got[name]['code'],
                                        'redirect_uri': p.redirect, 'client_id': cid, 'client_secret': secret})
@@ -120,7 +135,7 @@ def login(providers: list[Provider], open_browser=webbrowser.open, timeout: floa
                     out[name] = e.code
     finally:
         server.server_close()
-    return {name: out.get(name, 'consent_timeout') for name in pending}
+    return {name: out.get(name, 'consent_timeout') for name in clients}
 
 
 def access_token(p: Provider) -> str:

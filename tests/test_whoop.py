@@ -101,63 +101,82 @@ if __name__ == '__main__':
 
 
 class ConsentServerTests(unittest.TestCase):
-    """One localhost server answers every provider's registered redirect; a code is exchanged as soon as it arrives."""
+    """One localhost server answers every provider; each consent request is created when its start URL is opened."""
 
-    def test_two_providers_on_one_port_each_exchange_their_own_code(self):
+    def run_login(self, providers, approve, stored, post=None):
         import threading
         import urllib.parse
         import urllib.request
-        from phctx import oura
-        stored = {f'phctx-{n}-{k}': f'SYNTHETIC-{n}-{k}' for n in ('whoop', 'oura') for k in ('client-id', 'client-secret')}
-        urls, exchanged, pages = [], [], []
+        direct = urllib.request.build_opener(urllib.request.ProxyHandler({}))  # bypass any HTTP proxy
+        pages, seen = [], []
 
-        def browse(url):  # stands in for the owner approving in the browser
-            urls.append(url)
-            if len(urls) == 2:
-                def approve():
-                    for u in urls:
-                        q = urllib.parse.parse_qs(urllib.parse.urlsplit(u).query)
-                        cb = q['redirect_uri'][0] + '?' + urllib.parse.urlencode({'code': 'SYNTHETIC-code-' + q['client_id'][0],
-                                                                                  'state': q['state'][0]})
-                        direct = urllib.request.build_opener(urllib.request.ProxyHandler({}))  # bypass any HTTP proxy
-                        pages.append(direct.open(cb.replace('localhost', '127.0.0.1'), timeout=10).read().decode())
-                threading.Thread(target=approve).start()
+        class NoRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, *a, **k):
+                return None
+        no_follow = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect)
 
-        def post(p, form):
-            exchanged.append((p.name, form['code']))
-            return {'access_token': 'SYNTHETIC-a', 'refresh_token': f'SYNTHETIC-r-{p.name}'}
+        def browse(start):  # stands in for the owner: open the start URL, then answer the vendor's consent page
+            def go():
+                for attempt in approve[start.rstrip('/').split('/')[-2]]:
+                    try:
+                        no_follow.open(start.replace('localhost', '127.0.0.1'), timeout=10)
+                    except urllib.error.HTTPError as e:  # the 302 to the vendor
+                        auth = e.headers['Location']
+                    seen.append(auth)
+                    q = urllib.parse.parse_qs(urllib.parse.urlsplit(auth).query)
+                    cb = q['redirect_uri'][0] + '?' + urllib.parse.urlencode({**attempt, 'state': q['state'][0]})
+                    pages.append(direct.open(cb.replace('localhost', '127.0.0.1'), timeout=10).read().decode())
+            threading.Thread(target=go).start()
         with patch.object(oauth, 'keychain_get', stored.get), \
                 patch.object(oauth, 'keychain_set', lambda k, v: stored.__setitem__(k, v)), \
-                patch.object(oauth, '_post', post), patch.object(oauth, 'PORT', 47899), \
-                patch('builtins.print'):
-            out = oauth.login([whoop.PROVIDER, oura.PROVIDER], open_browser=browse, timeout=30)
+                patch.object(oauth, '_post', post or (lambda p, form: {'access_token': 'SYNTHETIC-a',
+                                                                       'refresh_token': f'SYNTHETIC-r-{p.name}'})), \
+                patch.object(oauth, 'PORT', 47897), patch('builtins.print'):
+            out = oauth.login(providers, open_browser=browse, timeout=30)
+        return out, pages, seen
+
+    def test_two_providers_on_one_port_each_exchange_their_own_code(self):
+        import urllib.parse
+        from phctx import oura
+        stored = {f'phctx-{n}-{k}': f'SYNTHETIC-{n}-{k}' for n in ('whoop', 'oura') for k in ('client-id', 'client-secret')}
+        exchanged = []
+        out, pages, seen = self.run_login(
+            [whoop.PROVIDER, oura.PROVIDER], {'whoop': [{'code': 'SYNTHETIC-w'}], 'oura': [{'code': 'SYNTHETIC-o'}]},
+            stored, post=lambda p, form: exchanged.append((p.name, form['code'])) or
+            {'access_token': 'SYNTHETIC-a', 'refresh_token': f'SYNTHETIC-r-{p.name}'})
         self.assertEqual(out, {'whoop': 'connected', 'oura': 'connected'})
-        states = {urllib.parse.urlsplit(u).netloc: urllib.parse.parse_qs(urllib.parse.urlsplit(u).query)['state'][0]
-                  for u in urls}
-        self.assertEqual(len(states['api.prod.whoop.com']), 8)  # WHOOP requires an 8-character state
-        self.assertEqual(sorted(exchanged), [('oura', 'SYNTHETIC-code-SYNTHETIC-oura-client-id'),
-                                             ('whoop', 'SYNTHETIC-code-SYNTHETIC-whoop-client-id')])
+        self.assertEqual(sorted(exchanged), [('oura', 'SYNTHETIC-o'), ('whoop', 'SYNTHETIC-w')])
         self.assertEqual(stored['phctx-oura-refresh-token'], 'SYNTHETIC-r-oura')
         self.assertTrue(all('consent received' in page for page in pages))
+        whoop_auth = next(u for u in seen if 'whoop' in u)
+        self.assertEqual(len(urllib.parse.parse_qs(urllib.parse.urlsplit(whoop_auth).query)['state'][0]), 8)
 
-    def test_a_vendor_error_is_reported_as_not_connected(self):
-        import threading
-        import urllib.parse
-        import urllib.request
+    def test_a_refused_attempt_says_so_and_a_fresh_start_still_connects(self):
         stored = {f'phctx-whoop-{k}': f'SYNTHETIC-{k}' for k in ('client-id', 'client-secret')}
-        pages, threads = [], []
-
-        def browse(url):
-            q = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)
-            cb = (q['redirect_uri'][0] + '?' + urllib.parse.urlencode({'error': 'request_unauthorized',
-                                                                       'state': q['state'][0]}))
-            direct = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-            threads.append(threading.Thread(target=lambda: pages.append(
-                direct.open(cb.replace('localhost', '127.0.0.1'), timeout=10).read().decode())))
-            threads[-1].start()
-        with patch.object(oauth, 'keychain_get', stored.get), patch.object(oauth, 'PORT', 47898), \
-                patch('builtins.print'):
-            out = oauth.login([whoop.PROVIDER], open_browser=browse, timeout=30)
-        self.assertEqual(out, {'whoop': 'consent_request_unauthorized'})
-        threads[0].join(10)
+        out, pages, seen = self.run_login(
+            [whoop.PROVIDER], {'whoop': [{'error': 'request_unauthorized'}, {'code': 'SYNTHETIC-w'}]}, stored)
+        self.assertEqual(out, {'whoop': 'connected'})
         self.assertIn('NOT connected (request_unauthorized)', pages[0])
+        self.assertNotEqual(seen[0], seen[1])  # each start creates a new request
+
+
+class UserAgentTests(unittest.TestCase):
+    def test_every_vendor_request_names_a_user_agent(self):
+        """WHOOP's front refuses urllib's default User-Agent with HTTP 403 (error code 1010)."""
+        from phctx import oura
+        sent = []
+
+        class Response:
+            status = 200
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+            def read(self): return b'{"records": [], "data": [], "access_token": "a", "refresh_token": "r"}'
+
+        def urlopen(req, timeout=None):
+            sent.append(req.get_header('User-agent'))
+            return Response()
+        with patch('urllib.request.urlopen', urlopen):
+            whoop._get('SYNTHETIC', '/v2/cycle', {})
+            oura._get('SYNTHETIC', 'daily_sleep', {})
+            oauth._post(whoop.PROVIDER, {'grant_type': 'refresh_token'})
+        self.assertEqual(sent, [oauth.USER_AGENT] * 3)

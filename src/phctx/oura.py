@@ -48,7 +48,7 @@ SERIES = {'heartrate': ('bpm', 'count/min'), 'ring_battery_level': ('level', '%'
 def _get(token: str, collection: str, params: dict) -> dict:
     url = API + collection + '?' + urllib.parse.urlencode(params)
     for attempt in range(5):
-        req = urllib.request.Request(url, headers={'Authorization': f'Bearer {token}'})
+        req = urllib.request.Request(url, headers={'Authorization': f'Bearer {token}', 'User-Agent': oauth.USER_AGENT})
         try:
             with urllib.request.urlopen(req, timeout=60) as r:
                 return json.loads(r.read())
