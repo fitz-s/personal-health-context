@@ -90,7 +90,7 @@ final class SetupModel: ObservableObject {
         do {
             guard let outbox else { return }
             pendingCount = try await outbox.pendingCount()
-            lastSync = await outbox.latestAckedAt() ?? "—"
+            lastSync = try await outbox.latestAckedAt() ?? "—"
             if let engine, await engine.requiresRepair {
                 paired = false
                 statusText = "Re-pair needed / 需要重新配对"

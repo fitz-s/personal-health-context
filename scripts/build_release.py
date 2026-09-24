@@ -3,12 +3,16 @@
 
 Every PASS points at a file under delivery/ with its SHA-256 AND a run manifest (delivery/run-manifests/*.json,
 written by scripts/run_manifest.py) whose recorded tree hashes equal the current tree and whose evidence hash equals
-the file now; a manifest's own declared `inputs` (scripts/run_manifest.py --input) must each still validate the
-same way, recursively, or the whole binding is refused. Otherwise the check is downgraded to NOT_RUN. Live checks
-(chatgpt_*, single_interface) instead read delivery/live-evidence/chatgpt_live_probe.json — written by
-scripts/record_live_probe.py — and PASS only while its structural inputs and artifacts match the current tree and
-its needed probes read PASS. Statuses for checks that need the user's account/device stay BLOCKED/NOT_RUN with the
-reason. Then run scripts/release_gate.py yourself.
+the file now; a manifest's own declared `inputs` must each still validate the same way, recursively — the consumer's
+recorded input digest, the file's current digest, and the producer's own recorded evidence digest must all agree,
+and the producer manifest's own bytes must be unchanged since consumption — or the whole binding is refused.
+eval-report/summary.json additionally requires its bound manifest to declare results_all_runs.jsonl AND
+run_meta.json as inputs for both campaign dirs it names (dev_round/holdout_round); an incomplete declared closure
+downgrades it to NOT_RUN even though --input is otherwise optional per run. Live checks (chatgpt_*, single_interface)
+instead read delivery/live-evidence/chatgpt_live_probe.json — written by scripts/record_live_probe.py — and PASS
+only while its structural inputs and top-level artifacts match the current tree and every probe a check needs is
+itself {"status": "PASS", "artifacts": [...]} with at least one of those artifacts still intact. Statuses for checks
+that need the user's account/device stay BLOCKED/NOT_RUN with the reason. Then run scripts/release_gate.py yourself.
 """
 from __future__ import annotations
 
@@ -32,7 +36,15 @@ def sha(rel: str) -> str:
 
 def _inputs_valid(record: dict, cur: dict, seen: frozenset[str]) -> bool:
     """Every entry in record['inputs'] is itself still a clean, current binding, recursively (cycle-safe: a
-    manifest name already in `seen` is treated as invalid rather than re-descended into)."""
+    manifest name already in `seen` is treated as invalid rather than re-descended into).
+
+    Three digests must agree, not just the producer manifest's name: the input's sha256 as the CONSUMER recorded
+    it at the time (meta['sha256']), the file's CURRENT sha256, and the PRODUCER's own recorded evidence sha256
+    for that file. A rerun of the producer that overwrites both its result file and its manifest (same name, new
+    bytes) makes the current file and the producer's fresh record agree with each other while disagreeing with
+    what the consumer actually consumed — meta['sha256'] catches exactly that. The producer manifest's own bytes
+    are pinned too (meta['manifest_sha256']): if the manifest file itself changed at all since consumption, the
+    binding it named is no longer the one relied on, even if the other three digests still happen to line up."""
     for rel, meta in record.get('inputs', {}).items():
         mname = meta.get('manifest')
         if not mname or mname in seen:
@@ -41,11 +53,17 @@ def _inputs_valid(record: dict, cur: dict, seen: frozenset[str]) -> bool:
         if not mpath.is_file():
             return False
         try:
-            r = json.loads(mpath.read_text())
+            raw = mpath.read_bytes()
+            r = json.loads(raw)
         except (json.JSONDecodeError, OSError):
             return False
+        if hashlib.sha256(raw).hexdigest() != meta.get('manifest_sha256'):
+            return False
         f = D / rel
-        if not f.is_file() or hashlib.sha256(f.read_bytes()).hexdigest() != r.get('evidence', {}).get(rel):
+        if not f.is_file():
+            return False
+        digest = hashlib.sha256(f.read_bytes()).hexdigest()
+        if digest != meta.get('sha256') or digest != r.get('evidence', {}).get(rel):
             return False
         if r.get('hashes') != cur or r.get('exit_code') != 0 or r.get('tree_changed_during_run'):
             return False
@@ -78,19 +96,29 @@ LIVE_PROBES = {
 def live(kind: str, notes: str) -> dict:
     """A check observed by hand in the user's ChatGPT (no command can re-run it): PASS only while
     delivery/live-evidence/chatgpt_live_probe.json binds its structural inputs (src, contracts, prompts, ops) to
-    the current tree, every artifact it lists still hashes as recorded, and every probe `kind` needs reads PASS."""
+    the current tree, every artifact it lists still hashes as recorded, and every probe `kind` needs is itself
+    {"status": "PASS", "artifacts": [rel, ...]} with at least one of those artifacts intact — a status of PASS
+    with no verifiable artifact records that the probe was merely asserted, not actually re-checkable."""
     probe = json.loads((D / LIVE).read_text())
     cur = tree_hashes()
     inputs = probe.get('inputs', {})
     reasons = [f'input {k} does not match the current tree' for k in LIVE_INPUT_KEYS if inputs.get(k) != cur.get(k)]
-    for rel, digest in probe.get('artifacts', {}).items():
+    artifacts = probe.get('artifacts', {})
+    intact = set()
+    for rel, digest in artifacts.items():
         f = D / rel
-        if not f.is_file() or hashlib.sha256(f.read_bytes()).hexdigest() != digest:
+        if f.is_file() and hashlib.sha256(f.read_bytes()).hexdigest() == digest:
+            intact.add(rel)
+        else:
             reasons.append(f'artifact {rel} missing or changed')
     probes = probe.get('probes', {})
-    failed = [name for name in LIVE_PROBES[kind] if probes.get(name) != 'PASS']
-    if failed:
-        reasons.append(f'probe(s) not PASS: {", ".join(failed)}')
+    for name in LIVE_PROBES[kind]:
+        entry = probes.get(name)
+        entry = entry if isinstance(entry, dict) else {}
+        if entry.get('status') != 'PASS':
+            reasons.append(f'probe {name} not PASS')
+        elif not any(rel in intact for rel in entry.get('artifacts', [])):
+            reasons.append(f'probe {name} is PASS but has no verified artifact')
     ok = not reasons
     return check('PASS_LIVE' if ok else 'NOT_RUN', LIVE,
                  notes if ok else f'Live probe check failed: {"; ".join(reasons)}. {notes}')
@@ -99,6 +127,23 @@ def live(kind: str, notes: str) -> dict:
 def src_tree() -> str:
     return hashlib.sha256(b''.join(hashlib.sha256(p.read_bytes()).digest()
                                    for p in sorted((ROOT / 'src/phctx').glob('*.py')))).hexdigest()
+
+
+SUMMARY_EVIDENCE = 'eval-report/summary.json'
+
+
+def _summary_missing_required_inputs(bound_manifest: str) -> list[str]:
+    """eval-report/summary.json is a known derived artifact with a fixed dependency shape: for each campaign dir
+    it names (its own dev_round/holdout_round fields — basenames under eval-report/), the bound manifest must
+    declare BOTH results_all_runs.jsonl and run_meta.json as inputs. --input is otherwise optional per run, so an
+    omitted edge would silently validate; this closes that specific, known-shape gap rather than making --input
+    generically mandatory. Returns the missing required relative paths, empty if the closure is complete."""
+    record = json.loads((D / 'run-manifests' / bound_manifest).read_text())
+    summary = load(SUMMARY_EVIDENCE)
+    required = [f'eval-report/{d}/{name}' for d in (summary.get('dev_round'), summary.get('holdout_round')) if d
+                for name in ('results_all_runs.jsonl', 'run_meta.json')]
+    have = set(record.get('inputs', {}))
+    return [r for r in required if r not in have]
 
 
 def check(status: str, evidence: str | None, notes: str) -> dict:
@@ -110,6 +155,8 @@ def check(status: str, evidence: str | None, notes: str) -> dict:
         bound = binding(evidence) if evidence else None
         if not bound:
             status, notes = 'NOT_RUN', f'Evidence is not bound to the current tree by a run manifest. {notes}'
+        elif evidence == SUMMARY_EVIDENCE and (missing := _summary_missing_required_inputs(bound)):
+            status, notes = 'NOT_RUN', f'Summary is missing required campaign inputs {missing}. {notes}'
         else:
             notes = f'{notes} [run-manifests/{bound}]'
     return {'status': status, 'evidence': evidence, 'evidence_sha256': sha(evidence) if evidence else None,

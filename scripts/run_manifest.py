@@ -14,8 +14,10 @@ exist, and be the recorded `evidence` of some existing delivery/run-manifests/*.
 current tree_hashes(), whose recorded evidence hash equals the file's current SHA-256, whose exit_code is 0, and
 which is not tree_changed_during_run. This stops a stale campaign (e.g. re-summarized under a changed tree) from
 being laundered into a new manifest's evidence. Each validated input is recorded as
-{rel: {sha256, manifest}} under the new manifest's `inputs` key. Any --input that fails validation refuses the
-whole command: exit 2, no manifest is written, nothing runs.
+{rel: {sha256, manifest, manifest_sha256}} under the new manifest's `inputs` key — manifest_sha256 pins the exact
+bytes of the producer manifest consumed, so a later rerun that overwrites both the input file and its manifest
+under the same name cannot be mistaken for the one actually consumed here. Any --input that fails validation
+refuses the whole command: exit 2, no manifest is written, nothing runs.
 
 The command's own argv is refused (exit 2, no manifest, nothing runs) if any element resolves to an existing path
 outside the repo root — this catches a wrapper invoking a script from a private temp directory that sits outside
@@ -91,7 +93,10 @@ def argv_path_outside_repo(cmd: list[str]) -> str | None:
 
 
 def validate_input(delivery: Path, rel: str, cur_hashes: dict[str, str]) -> dict[str, str] | None:
-    """{'sha256', 'manifest'} if REL is the valid, current evidence of an existing clean manifest; else None."""
+    """{'sha256', 'manifest', 'manifest_sha256'} if REL is the valid, current evidence of an existing clean
+    manifest; else None. manifest_sha256 pins the exact producer manifest bytes consumed, alongside the file's own
+    digest, so a later rerun that overwrites both under the same name cannot be mistaken for the one consumed
+    here (build_release._inputs_valid checks both, not just the manifest name)."""
     f = delivery / rel
     if not f.is_file():
         return None
@@ -101,12 +106,13 @@ def validate_input(delivery: Path, rel: str, cur_hashes: dict[str, str]) -> dict
         return None
     for m in sorted(mdir.glob('*.json')):
         try:
-            r = json.loads(m.read_text())
+            raw = m.read_bytes()
+            r = json.loads(raw)
         except (json.JSONDecodeError, OSError):
             continue
         if (r.get('evidence', {}).get(rel) == digest and r.get('hashes') == cur_hashes
                 and r.get('exit_code') == 0 and not r.get('tree_changed_during_run')):
-            return {'sha256': digest, 'manifest': m.name}
+            return {'sha256': digest, 'manifest': m.name, 'manifest_sha256': hashlib.sha256(raw).hexdigest()}
     return None
 
 

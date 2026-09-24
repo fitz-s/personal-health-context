@@ -105,7 +105,7 @@ private func enqueue(_ store: OutboxStore, stream: String = "HKQuantityTypeIdent
     try await store.acknowledge(batchID: first.batch.batchID, ack: ack)
     #expect(try await store.entries().isEmpty)
     try await store.acknowledge(batchID: first.batch.batchID, ack: ack)
-    #expect(await store.checkpoint(for: first.stream).lastAckedBatchID == first.batch.batchID)
+    #expect(try await store.checkpoint(for: first.stream).lastAckedBatchID == first.batch.batchID)
     try? FileManager.default.removeItem(at: directory)
 }
 
@@ -119,8 +119,8 @@ private func enqueue(_ store: OutboxStore, stream: String = "HKQuantityTypeIdent
     let entries = try await store.entries(stream: first.stream)
     #expect(entries.isEmpty)
     #expect(await mock.sent == [first.batch.batchID, first.batch.batchID, second.batch.batchID])
-    #expect(await store.checkpoint(for: first.stream).lastAckedSequence == 1)
-    #expect(await store.checkpoint(for: first.stream).lastAckedBatchID == second.batch.batchID)
+    #expect(try await store.checkpoint(for: first.stream).lastAckedSequence == 1)
+    #expect(try await store.checkpoint(for: first.stream).lastAckedBatchID == second.batch.batchID)
     #expect(try await store.anchor(for: first.stream) == Data([1, 2, 3]))
     try? FileManager.default.removeItem(at: directory)
     try? FileManager.default.removeItem(at: directory)
@@ -248,14 +248,14 @@ func failedIndexWriteKeepsPageUnacknowledged(op: FileOp) async throws {
     files.arm(op, { isTemp($0) || isIndex($0) })
     await #expect(throws: InjectedFault.self) { try await store.acknowledge(batchID: entry.batch.batchID, ack: ack) }
     // Neither memory nor disk may claim the ACK; the page is still next in this process and after reopen.
-    #expect(await store.checkpoint(for: entry.stream).lastAckedSequence == -1)
+    #expect(try await store.checkpoint(for: entry.stream).lastAckedSequence == -1)
     #expect(try await store.nextEntry(stream: entry.stream)?.batch.batchID == entry.batch.batchID)
     let reopened = try OutboxStore(directory: directory)
-    #expect(await reopened.checkpoint(for: entry.stream).lastAckedSequence == -1)
+    #expect(try await reopened.checkpoint(for: entry.stream).lastAckedSequence == -1)
     #expect(try await reopened.nextEntry(stream: entry.stream)?.batch.batchID == entry.batch.batchID)
     files.disarm()
     try await store.acknowledge(batchID: entry.batch.batchID, ack: ack)
-    #expect(await store.checkpoint(for: entry.stream).lastAckedBatchID == entry.batch.batchID)
+    #expect(try await store.checkpoint(for: entry.stream).lastAckedBatchID == entry.batch.batchID)
 }
 
 @Test func failedPageRemovalAfterDurableAckIsReportedAndRecoveredOnReopen() async throws {
@@ -265,7 +265,7 @@ func failedIndexWriteKeepsPageUnacknowledged(op: FileOp) async throws {
     let ack = BatchAcknowledgement(batchID: entry.batch.batchID, requestHash: "h", committed: true)
     files.arm(.remove, { $0.lastPathComponent.hasPrefix("batch-") })
     await #expect(throws: InjectedFault.self) { try await store.acknowledge(batchID: entry.batch.batchID, ack: ack) }
-    #expect(await store.checkpoint(for: entry.stream).lastAckedBatchID == entry.batch.batchID)
+    #expect(try await store.checkpoint(for: entry.stream).lastAckedBatchID == entry.batch.batchID)
     #expect(try await store.nextEntry(stream: entry.stream) == nil)
     files.disarm()
     let reopened = try OutboxStore(directory: directory)
@@ -294,14 +294,28 @@ func failedIndexWriteKeepsPageUnacknowledged(op: FileOp) async throws {
     files.arm(.sync, isDirectory)
     await #expect(throws: InjectedFault.self) { try await enqueue(store, stream: "HKQuantityTypeIdentifierStepCount") }
     // While poisoned, reads must not treat the ambiguously-published entry's anchor as committed, nor
-    // pretend the store is otherwise readable.
+    // pretend the store is otherwise readable. Every public accessor that reads entries, anchors, or index
+    // state is routed through the same check, not just the two exercised above.
     await #expect(throws: OutboxError.poisoned) { try await store.anchor(for: "HKQuantityTypeIdentifierStepCount") }
     await #expect(throws: OutboxError.poisoned) { try await store.entries() }
     await #expect(throws: OutboxError.poisoned) { try await enqueue(store, stream: "HKQuantityTypeIdentifierHeartRate") }
-    // Once the directory fsync can be confirmed again, the poison clears and normal access resumes.
+    await #expect(throws: OutboxError.poisoned) { try await store.nextEntry(stream: first.stream) }
+    await #expect(throws: OutboxError.poisoned) { try await store.initialHistory(for: first.stream) }
+    await #expect(throws: OutboxError.poisoned) { try await store.pendingCount() }
+    await #expect(throws: OutboxError.poisoned) { try await store.checkpoint(for: first.stream) }
+    await #expect(throws: OutboxError.poisoned) { try await store.checkpoints() }
+    await #expect(throws: OutboxError.poisoned) { try await store.latestAckedAt() }
+    // Once the directory fsync can be confirmed again, the poison clears and every accessor resumes
+    // returning correct data, including for the entry that had been ambiguously published.
     files.disarm()
     #expect(try await store.anchor(for: first.stream) == Data([1, 2, 3]))
     #expect(try await store.entries().count == 2)
+    #expect(try await store.nextEntry(stream: first.stream)?.batch.batchID == first.batch.batchID)
+    #expect(try await store.initialHistory(for: first.stream).complete == false)
+    #expect(try await store.pendingCount() == 2)
+    #expect(try await store.checkpoint(for: first.stream).lastAckedSequence == -1)
+    #expect(try await store.checkpoints().isEmpty)
+    #expect(try await store.latestAckedAt() == nil)
 }
 
 @Test func unreadableIndexFailsOpenInsteadOfResettingCheckpoints() async throws {
@@ -590,10 +604,10 @@ import HealthKit
     let coverage: [String: JSONValue] = ["initial_history_start_epoch": .number(1_000)]
     _ = try await store.enqueue(installationID: "i", stream: stream, nextAnchor: Data([1]), queryCompletedAt: "2026-09-23T10:00:00-05:00",
                                 samples: [], deletedIDs: [], coverage: coverage.merging(["initial_history_complete": .bool(false)]) { $1 })
-    #expect(await store.initialHistory(for: stream).complete == false)
+    #expect(try await store.initialHistory(for: stream).complete == false)
     _ = try await store.enqueue(installationID: "i", stream: stream, nextAnchor: Data([2]), queryCompletedAt: "2026-09-23T10:00:00-05:00",
                                 samples: [], deletedIDs: [], coverage: coverage.merging(["initial_history_complete": .bool(true)]) { $1 })
-    let history = await store.initialHistory(for: stream)
+    let history = try await store.initialHistory(for: stream)
     #expect(history.complete)
     #expect(history.startEpoch == 1_000)
 }

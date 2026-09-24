@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""Build the code delivery archive + manifest.sha256 from exactly the files git tracks at HEAD.
+"""Build the code delivery archive from exactly HEAD's committed bytes, plus a secret/live-data scan report.
 
-The allowlist is the commit: an untracked file (a real export, a scratch report, a local database) cannot enter the
-archive however it is named, and a tracked file got there through a reviewed commit. The secret/live-data scan stays
-as a second check on that set. Refuses to package with uncommitted changes to tracked files.
+The archive is built with `git archive`, which reads straight from git's object store for the named revision: its
+bytes are HEAD's tree, not a rebuild from the working directory, so nothing regenerated during this same run (a
+scan report, a manifest) and no working-tree drift can end up inside it or diverge from what `git show HEAD:<path>`
+returns for any member. The allowlist is still the commit: an untracked file cannot enter the archive however it is
+named, and a tracked file got there through a reviewed commit. Refuses to package with uncommitted changes to
+tracked files. The scan report and file manifest are generated attestations, not part of what is packaged, so they
+are written to dist/ next to the archive — never into delivery/ or anywhere else under the tracked tree itself.
 """
 from __future__ import annotations
 
@@ -12,7 +16,6 @@ import json
 import re
 import subprocess
 import sys
-import tarfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -29,6 +32,14 @@ LIVE_DATA = re.compile(r'(context\.sqlite3(-wal|-shm)?|\.phbk|export\.zip|ingest
 def files() -> list[Path]:
     out = subprocess.run(['git', 'ls-files', '-z'], cwd=ROOT, capture_output=True, check=True).stdout.decode()
     return sorted(ROOT / f for f in out.split('\0') if f and (ROOT / f).is_file())
+
+
+def archive_head(dest: Path) -> None:
+    """Write HEAD's exact tree to DEST as a tar.gz via `git archive` — reads git's object store for the named
+    revision, so it is unaffected by anything uncommitted in the working directory (which the dirty-tree refusal
+    in main() guards against separately) and cannot diverge from `git show HEAD:<path>` for any tracked file."""
+    subprocess.run(['git', 'archive', '--format=tar.gz', '--prefix=personal-health-context/', 'HEAD',
+                    '-o', str(dest)], cwd=ROOT, check=True)
 
 
 def main() -> int:
@@ -59,21 +70,18 @@ def main() -> int:
         t = p.read_text(errors='ignore')
         if re.search(r'SYNTHETIC-OURA-FIXTURE', t) and 'eval-report' not in str(p):
             findings.append({'file': str(p.relative_to(ROOT)), 'issue': 'vendor fixture marker outside eval'})
+    dist = ROOT / 'dist'
+    dist.mkdir(exist_ok=True)
     report = {'scanned_files': len(fs), 'findings': findings, 'at': datetime.now(timezone.utc).isoformat()}
-    (ROOT / 'delivery' / 'package_scan.json').write_text(json.dumps(report, indent=1))
+    (dist / 'package_scan.json').write_text(json.dumps(report, indent=1))
     if findings:
         print(json.dumps(report, indent=1))
         return 1
-    manifest = ''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(ROOT)}\n' for p in fs
-                       if p.name not in {'manifest.sha256', 'package_scan.json'})
-    (ROOT / 'delivery' / 'manifest.sha256').write_text(manifest)
-    dist = ROOT / 'dist'
-    dist.mkdir(exist_ok=True)
+    manifest = ''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(ROOT)}\n' for p in fs)
+    (dist / 'manifest.sha256').write_text(manifest)
     rev = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], cwd=ROOT, capture_output=True, text=True).stdout.strip()
     arc = dist / f'personal-health-context-{__version__}-{rev or "worktree"}.tar.gz'
-    with tarfile.open(arc, 'w:gz') as tar:
-        for p in fs:
-            tar.add(p, arcname=f'personal-health-context/{p.relative_to(ROOT)}')
+    archive_head(arc)
     print(json.dumps({'archive': str(arc), 'bytes': arc.stat().st_size,
                       'sha256': hashlib.sha256(arc.read_bytes()).hexdigest(), 'files': len(fs),
                       'findings': 0}, indent=1))

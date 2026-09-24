@@ -773,6 +773,14 @@ class PairThrottleTests(Tmp):
         out = ingest.pair(s, code, 'SYNTHETIC-dev-2', 'phone', peer='10.0.0.7', throttle=t)
         self.assertIn('device_token', out)
 
+    def test_throttle_state_stays_bounded(self):
+        now = [0.0]
+        t = ingest.PairThrottle(clock=lambda: now[0])
+        t.MAX_PEERS = 50
+        for i in range(500):
+            t.failed(f'10.0.{i // 256}.{i % 256}')
+        self.assertLessEqual(len(t.state), 50)
+
     def test_throttle_expires(self):
         now = [0.0]
         t = ingest.PairThrottle(clock=lambda: now[0])
@@ -797,6 +805,27 @@ class PackageAllowlistTests(unittest.TestCase):
         self.assertNotIn('delivery/SYNTHETIC-untracked-report.md', names)
         tracked = subprocess.run(['git', 'ls-files'], cwd=ROOT, capture_output=True, text=True).stdout.split()
         self.assertEqual(names, {t for t in tracked if (ROOT / t).is_file()})
+
+    def test_archive_bytes_and_membership_equal_git_show_head(self):
+        # git archive reads HEAD's committed tree directly, so this holds regardless of any uncommitted changes
+        # in the working directory right now — it is not exercising main()'s separate dirty-tree refusal.
+        import random
+        import tarfile
+        sys.path.insert(0, str(ROOT / 'scripts'))
+        import package_release
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = Path(tmp) / 'archive.tar.gz'
+            package_release.archive_head(dest)
+            tracked = subprocess.run(['git', 'ls-tree', '-r', '--name-only', 'HEAD'], cwd=ROOT,
+                                     capture_output=True, text=True).stdout.split()
+            prefix = 'personal-health-context/'
+            with tarfile.open(dest, 'r:gz') as tar:
+                members = {m.name: m for m in tar.getmembers() if m.isfile()}
+                self.assertEqual(set(members), {prefix + t for t in tracked})
+                for rel in random.sample(tracked, min(20, len(tracked))):
+                    want = subprocess.run(['git', 'show', f'HEAD:{rel}'], cwd=ROOT, capture_output=True).stdout
+                    got = tar.extractfile(members[prefix + rel]).read()
+                    self.assertEqual(got, want, rel)
 
 
 class AllowlistTests(unittest.TestCase):

@@ -119,10 +119,18 @@ public actor OutboxStore {
         try Self.recoverAcknowledgedEntries(in: directory, files: files, index: index, decoder: decoder)
     }
 
-    public func checkpoints() -> [String: StreamCheckpoint] { index.streams }
-    public func latestAckedAt() -> String? { index.streams.values.compactMap(\.lastAckedAt).max() }
+    public func checkpoints() throws -> [String: StreamCheckpoint] {
+        try clearPoisonIfPossible()
+        return index.streams
+    }
 
-    public func initialHistory(for stream: String) -> (complete: Bool, startEpoch: Double?) {
+    public func latestAckedAt() throws -> String? {
+        try clearPoisonIfPossible()
+        return index.streams.values.compactMap(\.lastAckedAt).max()
+    }
+
+    public func initialHistory(for stream: String) throws -> (complete: Bool, startEpoch: Double?) {
+        try clearPoisonIfPossible()
         let checkpoint = index.streams[stream] ?? StreamCheckpoint()
         if checkpoint.initialHistoryComplete { return (true, checkpoint.initialHistoryStartEpoch) }
         let pending = ((try? allEntries(stream: stream)) ?? []).filter { $0.state != .acked }
@@ -171,6 +179,7 @@ public actor OutboxStore {
     }
 
     public func nextEntry(stream: String) throws -> OutboxEntry? {
+        try clearPoisonIfPossible()
         let checkpoint = index.streams[stream] ?? StreamCheckpoint()
         return try allEntries(stream: stream).filter { $0.sequence > checkpoint.lastAckedSequence }
             .sorted { $0.sequence < $1.sequence }.first
@@ -185,7 +194,10 @@ public actor OutboxStore {
         return Data(base64Encoded: value)
     }
 
-    public func pendingCount() throws -> Int { try allEntries(stream: nil).filter { $0.state != .acked }.count }
+    public func pendingCount() throws -> Int {
+        try clearPoisonIfPossible()
+        return try allEntries(stream: nil).filter { $0.state != .acked }.count
+    }
 
     public func recordRetry(batchID: String, now: Date = Date()) throws -> TimeInterval {
         var entry = try load(batchID: batchID)
@@ -254,7 +266,10 @@ public actor OutboxStore {
         try files.sync(directory)
     }
 
-    public func checkpoint(for stream: String) -> StreamCheckpoint { index.streams[stream] ?? StreamCheckpoint() }
+    public func checkpoint(for stream: String) throws -> StreamCheckpoint {
+        try clearPoisonIfPossible()
+        return index.streams[stream] ?? StreamCheckpoint()
+    }
 
     /// Retries the directory fsync a prior ambiguous publication left unconfirmed. Success clears the poison;
     /// failure keeps every enqueue/anchor/entries call throwing until a later call retries and succeeds.

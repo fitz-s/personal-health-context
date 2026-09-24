@@ -14,7 +14,9 @@ public final class AnchoredSyncCoordinator: @unchecked Sendable {
     private let lock = NSLock()
     private var runningStreams = Set<String>()
     private var observers: [HKObserverQuery] = []
-    private var waitingObserverCompletions: [String: [() -> Void]] = [:]
+    // Every caller that asks for a page while the stream is already running joins here, observer or not —
+    // a joined caller's completion must still fire when the in-flight query finishes.
+    private var waitingCompletions: [String: [() -> Void]] = [:]
     private var pageLimitReached: Set<String> = []
     #if os(iOS)
     private var backgroundTasks: [String: BGAppRefreshTask] = [:]
@@ -32,8 +34,8 @@ public final class AnchoredSyncCoordinator: @unchecked Sendable {
         observers.forEach { healthStore.stop($0) }
         observers.removeAll()
         lock.lock()
-        let completions = waitingObserverCompletions.values.flatMap { $0 }
-        waitingObserverCompletions.removeAll()
+        let completions = waitingCompletions.values.flatMap { $0 }
+        waitingCompletions.removeAll()
         pageLimitReached.removeAll()
         lock.unlock()
         completions.forEach { $0() }
@@ -50,7 +52,7 @@ public final class AnchoredSyncCoordinator: @unchecked Sendable {
             let stream = type.identifier
             let observer = HKObserverQuery(sampleType: type, predicate: nil) { [weak self] _, completion, _ in
                 guard let self else { completion(); return }
-                self.fetchPage(type: type, stream: stream, isObserver: true, completion: completion)
+                self.fetchPage(type: type, stream: stream, completion: completion)
             }
             observers.append(observer)
             healthStore.execute(observer)
@@ -118,11 +120,12 @@ public final class AnchoredSyncCoordinator: @unchecked Sendable {
         }
     }
 
-    private func fetchPage(type: HKSampleType, stream: String, isObserver: Bool = false,
-                           completion: @escaping () -> Void) {
+    private func fetchPage(type: HKSampleType, stream: String, completion: @escaping () -> Void) {
         lock.lock()
         guard !runningStreams.contains(stream) else {
-            if isObserver { waitingObserverCompletions[stream, default: []].append(completion) }
+            // Every joined caller — observer or not — must still complete when the running query finishes,
+            // otherwise a non-observer caller (e.g. the async wrapper above) waits forever.
+            waitingCompletions[stream, default: []].append(completion)
             lock.unlock()
             return
         }
@@ -134,7 +137,7 @@ public final class AnchoredSyncCoordinator: @unchecked Sendable {
                 guard let self else { completion(); return }
                 self.lock.lock()
                 self.runningStreams.remove(stream)
-                let queued = self.waitingObserverCompletions.removeValue(forKey: stream) ?? []
+                let queued = self.waitingCompletions.removeValue(forKey: stream) ?? []
                 // Another page is pending, or a change arrived while this query ran: query again from the new anchor.
                 let pageLimit = self.pageLimitReached.remove(stream) != nil
                 let shouldQueryAgain = pageLimit || !queued.isEmpty
@@ -150,7 +153,7 @@ public final class AnchoredSyncCoordinator: @unchecked Sendable {
         Task {
             let anchorData = try? await outbox.anchor(for: stream)
             let anchor = anchorData.flatMap { try? NSKeyedUnarchiver.unarchivedObject(ofClass: HKQueryAnchor.self, from: $0) }
-            let history = await outbox.initialHistory(for: stream)
+            let history = (try? await outbox.initialHistory(for: stream)) ?? (complete: false, startEpoch: nil)
             let lowerBound = history.startEpoch.map { Date(timeIntervalSince1970: $0) } ??
                 Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
             let predicate = history.complete ? nil : HKQuery.predicateForSamples(withStart: lowerBound, end: nil)

@@ -2,12 +2,16 @@
 """Write delivery/live-evidence/chatgpt_live_probe.json: the structured evidence build_release.live() checks
 against probes observed by hand in the user's ChatGPT (no command can re-run these).
 
-    scripts/record_live_probe.py --probe write=PASS --probe fresh_read=PASS \\
-        [--artifact eval-report/summary.json ...]
+    scripts/record_live_probe.py --probe write=PASS:live-evidence/x.md,live-evidence/y.txt \\
+        --probe fresh_read=PASS:live-evidence/x.md
 
-`inputs` (src, contracts, prompts, ops) come from run_manifest.tree_hashes(); each --artifact path (relative to
-delivery/) is hashed as it stands now. observed_at is the current UTC time. Re-run this after any change to the
-tree or the artifacts, or build_release.live() will report NOT_RUN.
+Each --probe is name=STATUS[:rel1,rel2,...] (artifacts optional, comma-separated, relative to delivery/): the
+listed files are what an operator or reviewer can independently re-open to check the probe actually happened,
+distinct from merely asserting STATUS. build_release.live() requires a needed probe's status to be PASS AND at
+least one of its listed artifacts to still hash as recorded. `inputs` (src, contracts, prompts, ops) come from
+run_manifest.tree_hashes(); every artifact referenced by any probe is hashed as it stands now and recorded in the
+top-level `artifacts` map. observed_at is the current UTC time. Re-run this after any change to the tree or the
+artifacts, or build_release.live() will report NOT_RUN.
 """
 from __future__ import annotations
 
@@ -27,23 +31,23 @@ LIVE_INPUT_KEYS = ('src', 'contracts', 'prompts', 'ops')
 
 def main(argv: list[str] | None = None, delivery: Path = ROOT / 'delivery') -> int:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument('--probe', action='append', default=[], metavar='name=STATUS')
-    p.add_argument('--artifact', action='append', default=[], metavar='rel')
+    p.add_argument('--probe', action='append', default=[], metavar='name=STATUS[:rel1,rel2,...]')
     a = p.parse_args(sys.argv[1:] if argv is None else argv)
 
-    probes = {}
+    probes: dict[str, dict] = {}
+    artifacts: dict[str, str] = {}
     for item in a.probe:
-        name, sep, status = item.partition('=')
-        if not sep or not name or not status:
-            p.error(f'--probe must be name=STATUS, got {item!r}')
-        probes[name] = status
-
-    artifacts = {}
-    for rel in a.artifact:
-        f = delivery / rel
-        if not f.is_file():
-            p.error(f'artifact not found under delivery/: {rel}')
-        artifacts[rel] = hashlib.sha256(f.read_bytes()).hexdigest()
+        name, sep, rest = item.partition('=')
+        if not sep or not name or not rest:
+            p.error(f'--probe must be name=STATUS[:rel1,rel2,...], got {item!r}')
+        status, _, rels = rest.partition(':')
+        rel_list = [r for r in rels.split(',') if r]
+        for rel in rel_list:
+            f = delivery / rel
+            if not f.is_file():
+                p.error(f'probe {name!r} names an artifact not found under delivery/: {rel}')
+            artifacts[rel] = hashlib.sha256(f.read_bytes()).hexdigest()
+        probes[name] = {'status': status, 'artifacts': rel_list}
 
     hashes = tree_hashes()
     doc = {'observed_at': datetime.now(timezone.utc).isoformat(),

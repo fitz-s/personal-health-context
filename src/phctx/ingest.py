@@ -51,7 +51,7 @@ class PairThrottle:
     """Per-peer brake on wrong pairing codes. A code has 32^8 values and expires in minutes, so throttling one guesser is
     enough; wrong guesses never touch other peers' attempts or outstanding codes (a global burn let any LAN client
     block pairing). After FREE failures a peer waits BASE_S, doubling per further failure up to MAX_S."""
-    FREE, BASE_S, MAX_S = 5, 30.0, 3600.0
+    FREE, BASE_S, MAX_S, MAX_PEERS = 5, 30.0, 3600.0, 4096
 
     def __init__(self, clock: Callable[[], float] = time.monotonic):
         self.clock, self.lock, self.state = clock, threading.Lock(), {}  # peer -> (failures, blocked_until)
@@ -64,6 +64,12 @@ class PairThrottle:
 
     def failed(self, peer: str) -> None:
         with self.lock:
+            if peer not in self.state and len(self.state) >= self.MAX_PEERS:
+                # Bounded memory: drop peers whose wait has passed; if none, the peer blocked longest ago.
+                now = self.clock()
+                done = [p for p, (_, until) in self.state.items() if until <= now]
+                for p in done or [min(self.state, key=lambda p: self.state[p][1])]:
+                    del self.state[p]
             fails = self.state.get(peer, (0, 0.0))[0] + 1
             wait = 0.0 if fails <= self.FREE else min(self.MAX_S, self.BASE_S * 2 ** (fails - self.FREE - 1))
             self.state[peer] = (fails, self.clock() + wait)

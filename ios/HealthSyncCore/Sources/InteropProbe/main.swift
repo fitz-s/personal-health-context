@@ -91,7 +91,7 @@ struct InteropProbe {
         await engine.drain()
         guard try await store.pendingCount() == 0 else { throw ProbeError.pendingEntriesRemain }
         for entry in [first, second, otherStream] {
-            guard let acked = await store.checkpoint(for: entry.stream).lastAckedBatchID,
+            guard let acked = try await store.checkpoint(for: entry.stream).lastAckedBatchID,
                   acked == (entry.stream == streamA ? second.batch.batchID : otherStream.batch.batchID) else {
                 throw ProbeError.acknowledgementMissing(entry.stream)
             }
