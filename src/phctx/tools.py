@@ -15,12 +15,14 @@ from pathlib import Path
 from typing import Any, Callable
 
 import jsonschema
+import re
 from urllib.parse import urlsplit
 
 from . import download, extract
 from .store import Store, StoreError, dump
 
 log = logging.getLogger('phctx.tools')
+EVIDENCE_ID = re.compile(r'(rec|obs)_[0-9a-f]{32,64}|obj:[0-9a-f]{64}(#p[1-9][0-9]{0,4})?')
 CONTRACT = Path(__file__).resolve().parents[2] / 'contracts' / 'tools.json'
 FILE_RETURN_CAP = 4 * 1024 * 1024
 
@@ -38,6 +40,29 @@ class ToolContext:
     fetch: Callable[..., download.Downloaded] = download.fetch
     fetch_options: dict = field(default_factory=dict)
     run_extraction: bool = True
+
+
+def evidence_ids_in(data: Any) -> set[str]:
+    """Every string in a read result that is an evidence id (rec_*, obs_*, obj:<sha>[#p<n>])."""
+    out: set[str] = set()
+    stack = [data]
+    while stack:
+        x = stack.pop()
+        if isinstance(x, dict):
+            stack.extend(x.values())
+        elif isinstance(x, list):
+            stack.extend(x)
+        elif isinstance(x, str) and EVIDENCE_ID.fullmatch(x):
+            out.add(x)
+    return out
+
+
+def _require_receipts(kind: str, evidence_ids: list[str] | None, read_receipts: list[str] | None) -> None:
+    """Primary facts (what the user says) need no prior read. Anything citing evidence, and every analysis, is a
+    derived write: it must name the reads that returned its evidence."""
+    if (evidence_ids or kind == 'analysis') and not read_receipts:
+        raise StoreError('evidence_unbound', 'A write that cites evidence (or any analysis) must pass read_receipts: '
+                         'the read_receipt of each read whose results it uses.')
 
 
 @dataclass
@@ -77,12 +102,14 @@ class Tools:
             return Result({'error': 'invalid_arguments',
                            'message': f'{"/".join(map(str, e.path)) or "arguments"}: {e.message}'[:500]}, True)
         try:
-            token = self.s.read_token() if tool['annotations']['readOnlyHint'] else None  # before the read runs
+            reads = tool['annotations']['readOnlyHint'] and name != 'context_receipt'
+            seq = self.s.generation() if reads else None  # before the read runs
             out = getattr(self, name)(**args)
-            if token is not None:
-                data = out.data if isinstance(out, Result) else out
-                if isinstance(data, dict) and not (isinstance(out, Result) and out.is_error):
-                    data['read_token'] = token
+            data = out.data if isinstance(out, Result) else out
+            if reads and isinstance(data, dict) and not (isinstance(out, Result) and out.is_error):
+                # The receipt names exactly what this read returned; a derived write cites evidence through it.
+                data['read_receipt'] = self.s.issue_receipt(evidence_ids_in(data), bool(data.get('reads_observations')),
+                                                            seq)
             return out if isinstance(out, Result) else Result(out)
         except StoreError as e:
             return Result({'error': e.code, 'message': str(e)}, True)
@@ -150,17 +177,19 @@ class Tools:
     # ---- write tools ---------------------------------------------------------------------
     def context_capture(self, request_id: str, kind: str, text: str, occurred_at: str,
                         timezone_name: str = 'America/Chicago', payload: dict | None = None,
-                        evidence_ids: list[str] | None = None, read_token: int | None = None) -> dict:
+                        evidence_ids: list[str] | None = None, read_receipts: list[str] | None = None) -> dict:
+        _require_receipts(kind, evidence_ids, read_receipts)
         return self.s.put_record(request_id=request_id, kind=kind, text=text, occurred_at=occurred_at,
                                  timezone_name=timezone_name, payload=payload, evidence_ids=evidence_ids,
-                                 read_token=read_token)
+                                 read_receipts=read_receipts)
 
     def context_revise(self, request_id: str, supersedes: str, kind: str, text: str, occurred_at: str,
                        timezone_name: str = 'America/Chicago', payload: dict | None = None,
-                       evidence_ids: list[str] | None = None, read_token: int | None = None) -> dict:
+                       evidence_ids: list[str] | None = None, read_receipts: list[str] | None = None) -> dict:
+        _require_receipts(kind, evidence_ids, read_receipts)
         return self.s.put_record(request_id=request_id, kind=kind, text=text, occurred_at=occurred_at,
                                  timezone_name=timezone_name, payload=payload, evidence_ids=evidence_ids,
-                                 supersedes=supersedes, read_token=read_token)
+                                 supersedes=supersedes, read_receipts=read_receipts)
 
     def context_capture_file(self, request_id: str, file: dict, text: str, occurred_at: str,
                              timezone_name: str = 'America/Chicago', payload: dict | None = None) -> dict:

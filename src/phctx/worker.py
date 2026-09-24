@@ -181,7 +181,7 @@ def execute(store: Store, cfg: Config, job: dict, owner: str, config_path: str,
     backend = cfg.model_backend if cfg.model_enabled else 'none'
     call_id = 'mc_' + uuid.uuid4().hex
     started = utcnow()
-    token = store.read_token()  # evidence that changes after this point cannot have been seen by this run
+    since = store.generation()  # evidence that changes after this point cannot have been seen by this run
     prompt_sha = hashlib.sha256(model.background_prompt().encode()).hexdigest()
     try:
         if backend == 'none':
@@ -231,7 +231,7 @@ def execute(store: Store, cfg: Config, job: dict, owner: str, config_path: str,
                 # attempts advances in the same transaction, so a re-run of a re-queued job is a new request; the
                 # owner makes a stale owner's replay miss the receipt and hit the fence instead.
                 gate, done = queue(request_id=f'worker:{job["id"]}:{job["attempts"]}:{owner}', candidate=cand,
-                                   fence=finish, read_token=token), True
+                                   fence=finish, since_seq=since), True
             except StoreError as e:
                 if e.code == 'lease_lost':
                     raise

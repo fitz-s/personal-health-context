@@ -172,6 +172,82 @@ class UpgradeTests(unittest.TestCase):
         self.assertEqual(s.query_readonly(q)['rows'], [[2]])
         self.assertNotIn('observation_reads', s.source_status())
 
+    def test_imports_are_exclusive_and_only_the_same_signature_may_resume(self):
+        import fcntl
+        s = Store(self.base / 'live', 'synthetic')
+        e = export_zip(self.base / 'e.zip', REC + REC.replace('500', '501'))
+        with open(s.root / 'import.lock', 'a') as held:  # another process is importing right now
+            fcntl.flock(held, fcntl.LOCK_EX)
+            with self.assertRaises(StoreError) as err:
+                apple_export.import_export(s, e, tz='America/Chicago')
+            self.assertEqual(err.exception.code, 'import_in_progress')
+        from unittest import mock
+        real = s.ingest_batch
+        with mock.patch.object(s, 'ingest_batch', side_effect=lambda **kw: (real(**kw), (_ for _ in ()).throw(KeyboardInterrupt))):
+            with self.assertRaises(KeyboardInterrupt):
+                apple_export.import_export(s, e, tz='America/Chicago')  # a full import dies mid-way
+        for other in ({'since': '2026-09-21', 'tz': 'America/Chicago'}, {'tz': 'Asia/Tokyo'}):
+            with self.assertRaises(StoreError) as err:  # a narrower or differently-zoned run cannot clear it
+                apple_export.import_export(s, e, **other)
+            self.assertEqual(err.exception.code, 'import_in_progress')
+        apple_export.import_export(s, e, tz='America/Chicago')  # the exact same run reconciles
+        self.assertEqual(s.query_readonly('SELECT count(*) FROM canonical_observations')['rows'], [[2]])
+
+    def test_gate_and_query_share_one_snapshot(self):
+        s = Store(self.base / 'live', 'synthetic')
+        apple_export.import_export(s, export_zip(self.base / 'e.zip'), tz='America/Chicago')
+        armed = []
+
+        class Reader(sqlite3.Connection):  # a writer commits right after the reader's gate check
+            def execute(self, sql, *a):
+                out = super().execute(sql, *a)
+                if "key='import_in_progress'" in sql and not armed:
+                    armed.append(1)
+                    w = sqlite3.connect(s.db)
+                    w.execute("INSERT INTO meta VALUES('import_in_progress', '{}')")
+                    w.execute("UPDATE observations SET value_num=value_num+1000")
+                    w.commit()
+                    w.close()
+                return out
+        from unittest import mock
+        real_connect = sqlite3.connect
+        with mock.patch('phctx.store.sqlite3.connect', lambda *a, **k: real_connect(*a, factory=Reader, **k)):
+            rows = s.query_readonly('SELECT sum(value_num) FROM canonical_observations')['rows']
+        self.assertTrue(armed)
+        self.assertEqual(rows, [[500.0]])  # the snapshot from before the writer, never the mixed state
+
+    def test_bootstrap_and_status_withhold_observation_numbers_during_an_import(self):
+        s = Store(self.base / 'live', 'synthetic')
+        apple_export.import_export(s, export_zip(self.base / 'e.zip'), tz='America/Chicago')
+        self.assertTrue(s.bootstrap()['observation_catalog'])
+        with s.transaction() as c:
+            c.execute("INSERT INTO meta VALUES('import_in_progress', '{}')")
+        b = s.bootstrap()
+        self.assertEqual(b['observation_catalog'], [])
+        src = next(x for x in b['source_status']['sources'] if x['id'] == apple_export.SOURCE)
+        self.assertEqual((src['active_observations'], src['latest_sample_at']), (None, None))
+        with self.assertRaises(StoreError) as err:
+            s.query_readonly('SELECT latest_sample_at FROM sources')
+        self.assertEqual(err.exception.code, 'import_in_progress')
+
+    def test_profile_a_then_b_then_a_ends_with_a_active_and_keeps_every_revision(self):
+        s = Store(self.base / 'live', 'synthetic')
+
+        def export(sex, n):
+            z = self.base / f'p{n}.zip'
+            with zipfile.ZipFile(z, 'w') as zf:
+                zf.writestr('apple_health_export/export.xml', HEAD + f'<Me HKCharacteristicTypeIdentifierBiologicalSex='
+                            f'"{sex}"/>\n' + REC + f'<!-- {n} --></HealthData>')
+            apple_export.import_export(s, z, tz='America/Chicago')
+        for n, sex in enumerate(('A', 'B', 'A', 'A')):
+            export(sex, n)
+        with s.connect() as c:
+            active = [json.loads(p)['apple_health_characteristics'] for (p,) in c.execute(
+                "SELECT payload_json FROM active_records WHERE source_key LIKE 'apple-export:profile:%'")]
+            total = c.execute("SELECT count(*) FROM records WHERE source_key LIKE 'apple-export:profile:%'").fetchone()[0]
+        self.assertEqual(active, [{'BiologicalSex': 'A'}])
+        self.assertEqual(total, 3)  # A, B, A again; the repeated A is not a fourth
+
     def test_legacy_shadow_insights_leave_the_outbox_on_upgrade(self):
         s = Store(self.base / 'live', 'synthetic')
         q = s.put_record(request_id='q', kind='question', text='SYNTHETIC q', occurred_at='2026-01-01T00:00:00Z')

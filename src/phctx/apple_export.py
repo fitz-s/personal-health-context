@@ -7,6 +7,7 @@ counted. Mapping follows contracts/normalization.md (source identity `native_id`
 from __future__ import annotations
 
 import hashlib
+import fcntl
 import json
 import stat
 import uuid
@@ -338,11 +339,12 @@ def _recorded(store: Store, key: str) -> bool:
         return c.execute("SELECT 1 FROM records WHERE source_id='user' AND source_key=?", (key,)).fetchone() is not None
 
 
-def _active_profile(store: Store) -> str | None:
+def _active_profile(store: Store) -> tuple[str, dict] | None:
+    """(record id, characteristics) of the current profile note, or None."""
     with store.connect() as c:
-        row = c.execute("SELECT id FROM active_records WHERE source_id='user' AND source_key LIKE ?",
+        row = c.execute("SELECT id, payload_json FROM active_records WHERE source_id='user' AND source_key LIKE ?",
                         (PROFILE_KEY + '%',)).fetchone()
-    return row[0] if row else None
+    return (row[0], json.loads(row[1]).get('apple_health_characteristics')) if row else None
 
 
 def _retire(store: Store, sha16: str, rid: str, cursor: str, since_at: str | None = None) -> tuple[int, int]:
@@ -395,6 +397,19 @@ def _ecg_header(data: bytes) -> tuple[str, str | None]:
 
 def import_export(store: Store, zip_path: Path, dry_run: bool = False, since: str | None = None,
                   tz: str | None = None) -> dict:
+    """Exclusive execution: an OS lock held for the whole run (the kernel releases it if the process dies), so no two
+    imports ever run at once, whatever they import. A dry run writes nothing and takes no lock."""
+    if dry_run:
+        return _import(store, zip_path, True, since, tz)
+    with open(store.root / 'import.lock', 'a') as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as e:
+            raise StoreError('import_in_progress', 'Another Apple import is running now; wait for it.') from e
+        return _import(store, zip_path, False, since, tz)
+
+
+def _import(store: Store, zip_path: Path, dry_run: bool, since: str | None, tz: str | None) -> dict:
     tz = tz or store.preferences().get('timezone', 'America/Chicago')
     check_tz(tz)
     try:
@@ -419,16 +434,17 @@ def import_export(store: Store, zip_path: Path, dry_run: bool = False, since: st
               'imported': 0, 'retired': 0, 'by_source': {}}
     run_id = 'imp_' + uuid.uuid4().hex
     if not dry_run:
+        # Recovery: while a run is unfinished old- and new-parser rows overlap, so the durable marker makes observation
+        # reads refuse until retirement finishes. A crashed run leaves it set on purpose; only a run with the exact same
+        # signature (archive, parser, since, timezone) may take it over and reconcile.
+        signature = {'export': sha, 'parser': PARSER_VERSION, 'since': since_at, 'tz': tz}
         with store.transaction() as c:
-            # One import at a time, and while it runs old- and new-parser rows overlap: the marker makes observation
-            # reads refuse (Store.observation_gate) until retirement finishes. A crashed run leaves the marker set on
-            # purpose — re-run the import to reconcile.
             held = c.execute("SELECT value FROM meta WHERE key='import_in_progress'").fetchone()
-            if held and json.loads(held[0])['export'] != sha:  # the same export may resume (it is how one reconciles)
-                raise StoreError('import_in_progress', 'An import of a different Apple export has not finished; '
-                                                       're-run that export first.')
+            if held and json.loads(held[0]).get('signature') != signature:
+                raise StoreError('import_in_progress', 'An earlier Apple import did not finish; re-run it with the same '
+                                                       f'archive and options to reconcile: {json.loads(held[0]).get("signature")}')
             c.execute("INSERT OR REPLACE INTO meta VALUES('import_in_progress', ?)",
-                      (dump({'run': run_id, 'export': sha}),))
+                      (dump({'run': run_id, 'signature': signature}),))
             c.execute('INSERT INTO import_runs VALUES(?,?,?,?,?,?,?)',
                       (run_id, 'apple_export', sha, utcnow(), None, 'running', '{}'))
     page: list[dict] = []
@@ -476,11 +492,13 @@ def import_export(store: Store, zip_path: Path, dry_run: bool = False, since: st
             if item['tag'] == 'Me':
                 profile = {k.replace('HKCharacteristicTypeIdentifier', ''): v for k, v in a.items()}
                 counts['profile_fields'] = len(profile)
-                key = PROFILE_KEY + hashlib.sha256(dump(profile).encode()).hexdigest()[:12]
-                if not dry_run and not _recorded(store, key):  # one note per distinct profile; a new one revises it
+                active = None if dry_run else _active_profile(store)
+                if not dry_run and (active is None or active[1] != profile):  # same as current: nothing to record
+                    # A revision of the chain, keyed by what it revises: a return to an earlier profile is a new revision.
+                    key = PROFILE_KEY + hashlib.sha256(dump([active and active[0], profile]).encode()).hexdigest()[:12]
                     store.put_record(request_id=f'apple-export:{sha[:16]}:{key}', kind='note',
                                      text='Apple Health profile characteristics (from Health export)',
-                                     occurred_at=export_at, source_key=key, supersedes=_active_profile(store),
+                                     occurred_at=export_at, source_key=key, supersedes=active and active[0],
                                      payload={'apple_health_characteristics': profile, 'source': 'apple_health_export'})
                 continue
             if item['tag'] == 'ActivitySummary':

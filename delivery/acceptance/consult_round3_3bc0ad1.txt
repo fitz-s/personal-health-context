@@ -1,0 +1,325 @@
+1. APPROACH / PLAN VERDICT
+
+NO-GO for the requested authoritative foreground use at 3bc0ad1. Confidence: high. The architectural verdict remains CORRECT-BUT-SUBOPTIMAL. Several Round 2 blockers are genuinely repaired, but four implementation areas still permit silent failures: evidence binding, import isolation, repeat maintenance, and release-evidence provenance.
+
+The foreground-only release boundary is correct. Your explicit exclusion of Apple live sync, Oura, background reasoning, voice, and mobile settles this round’s scope. I do not require another scope-acceptance ceremony, a built iPhone application, or a new blind model campaign before considering foreground GO-WITH-GAPS. Those are not the reasons for this verdict.
+
+The superior realization remains a small local system, not a replacement architecture. Keep SQLite, immutable originals, the private ChatGPT connection, and broad retrieval. Simplify the fragile parts: use a conservative, persisted data-generation dependency before attempting selective aggregate invalidation; read import state and data within one snapshot; separate import recovery state from exclusive execution ownership; and make evidence-manifest edges immutable references to the exact inputs consumed.
+
+The strongest counterargument is that today’s production import reportedly completed, the archive has no active live-phone stream, foreground probes succeeded, and the frozen regression now passes. Those facts substantially reduce exposure and support continued use as a recorder of independent user statements and originals. They do not make the backend’s “current evidence” certification reliable, establish correct repeat maintenance, or close the manifest counterexample. The committed release and evaluation reports do now record current-generation evidence and the passing regression rather than the stale Round 2 report.
+
+I ran isolated SQLite counterexamples for the relevant predicates and SQL. These were not your Mac measurements, not the complete repository test suite, and not an execution against production. They reproduced the aggregate-invalidation miss, import-check race, stale repeat pointer, overbroad repeat matching, and mutable-manifest dependency failure described below.
+
+2. CORE CORRECTNESS
+
+2.1 Evidence binding: the sequence is sound; the dependency definition is not
+
+Revising R2-14: replacing wall-clock ordering with a committed change-log sequence is the right correction. The implementation also versions extracted page text by its content hash, and re-extraction emits a change. Those improvements address the specific clock-ordering and “derived text is immutable” defects. The corresponding tests exercise changed observations and re-extracted pages.
+
+R2-07/R2-08 are not cleared, however. _changed_since compares a changed batch’s window with the intervals of the cited observations. It does not know the aggregate’s requested window, predicate, source set, or canonicalization dependency.
+
+A concrete counterexample is a daily mean initially computed from observation A at 09:00–09:10 with value 10. Observation B later arrives at 11:00–11:10 with value 30, inside the same requested day. The mean changes from 10 to 20, but B’s interval does not overlap A’s interval. _changed_since(..., [A], old_token) returns no stale references. My isolated execution produced exactly that result. The committed “new aggregate member” test uses an overlapping new sample, so it exercises a narrower property than its name suggests.
+
+The same problem occurs when a non-cited aggregate member is deleted or moved outside the query window. Deleting a directly cited observation is detected through evidence existence/currentness; deleting another member is not necessarily detected. An aggregate with no rows is an especially clear case: there are no observation IDs from which to infer its dependency.
+
+Supersession exposes another missing dependency. A live-source batch can change the canonical membership of an export-source row, but _changed_since requires the batch source to equal the cited row’s source. That cross-source case is an activation concern while live sync is excluded. The broader defect—depending on row intervals rather than the actual query—is already relevant to foreground backfill analysis.
+
+There is also a post-commit gap. The token participates in the write check and receipt hash, but the persisted analysis dependencies remain reference versions. Later reads use _stale_refs, not a stored aggregate/query dependency. Consequently, an analysis that was valid when saved can continue to be returned as current after a new aggregate member changes its answer. Fixing only admission-time checking does not provide durable analytical memory.
+
+Accepting captures without a token is appropriate for independent primary statements, but not for certifying derived evidence. “I ate dinner at seven” should not need a prior database read. In contrast, the compatibility path currently accepts an evidence-citing analysis without a token and stamps current versions onto it. That recreates the original failure rather than detecting it. The limitation is disclosed, but disclosure does not satisfy the foreground-authority contract.
+
+Even a supplied token is not bound to the evidence read. The tests explicitly obtain a fresh token from SELECT 1 and use it with an older reference. There is also no upper-bound validation against the store’s current sequence in the write implementation. These observations do not require assuming a malicious user: omitted arguments, reusing the most recent tool token, or combining evidence from several reads are normal client mistakes the proposed safeguard should detect.
+
+Smallest robust repair: require evidence-binding information for derived writes, preserve tokenless primary capture, and initially invalidate observation-derived analyses on any observation/canonical-generation change. Persist that dependency and check it on later reads. Return a read receipt associated with the actual retrieval, not a freely interchangeable sequence from an unrelated call. Selective source/metric/window invalidation can follow once actual query dependencies—including empty results and cross-source canonical effects—are represented.
+
+2.2 Import gating: the final crash window is safe, but the read and ownership boundaries are not
+
+Revising the specific final-retirement crash concern: for one owner running the same import configuration, a crash after the last retirement page but before completion leaves the durable marker present. Completion updates the run and removes its own marker in one transaction. Rerunning the matching import can therefore complete reconciliation before reopening reads. I do not identify that particular crash interval as an unsafe early-open path. The existing interruption test is useful, although it injects KeyboardInterrupt after a page rather than exercising this exact final interval or a hard process kill.
+
+The query gate itself has a time-of-check/time-of-use race. query_readonly reads import_in_progress, then executes the requested query without an explicit read transaction spanning both statements. A writer can commit the marker and an import page between them. The cached gated value remains false, while the query sees the newer, overlapping state.
+
+I reproduced that ordering with two SQLite connections: the marker check returned false, no explicit transaction remained active, an import transaction committed, and the subsequent query returned the newer rows. The fix is a read transaction covering the marker check and the data statement. In WAL mode, that makes both reads use the same snapshot; SQLite’s official isolation documentation describes precisely this guarantee.  SQLite
+
+Bootstrap and status still expose observation-derived numbers during import. bootstrap() reads catalog counts and extrema directly. source_status() returns active counts before attaching a blocking notice, and these are not one shared snapshot with bootstrap’s catalog. The sources table is also outside OBSERVATION_TABLES, so a direct query can obtain its observation-derived freshness fields without the observation gate.
+
+Not all such output must be prohibited. Source identifiers and operational progress are useful during maintenance. But numeric catalog/coverage fields should either come from a complete published generation or be withheld/explicitly represented as provisional operational counts, not ordinary evidence. One warning elsewhere in a compound response is weaker than the stated backend guarantee.
+
+context_search should remain available. It searches records and extracted pages, not observation measurements. Its concern is returning saved observation-derived analyses with an unjustified evidence.current=true; that belongs to the evidence-dependency repair, not a blanket search shutdown. Independent notes, questions, and originals should continue working.
+
+The marker does not actually serialize imports. A matching archive hash permits another run to replace the marker, even if the first process is still active. The marker also omits since, timezone, and parser/configuration identity.
+
+A paused full import can therefore be “resumed” by a second process using the same archive but a much narrower --since. The second process can finish its subset and clear the marker while the first still has work outstanding. Different timezones create another mismatch between permitted takeover and actual request identity. Thus the assertion that nothing can change between retirement selection and deletion is not established.
+
+Smallest repair: acquire an exclusive process-level import lock; retain a durable recovery marker containing the complete import signature; permit recovery only after obtaining that lock; and require exact-signature recovery or an explicit full reconciliation. Preserve the owner-qualified final deletion. Separately, make all analytical reads and gate decisions snapshot-consistent.
+
+2.3 repeat_of: preservation improves, but maintenance and matching are incorrect
+
+The raw/canonical split is a useful correction to the prior instruction to apply blanket DISTINCT origin_key. The new repeat test genuinely checks ordinary suppression, device distinction, and promotion after deletion of the representative.
+
+The old group is not recomputed when an upsert changes origin_key. The upsert reads previous metric/unit/time fields, but not the previous origin key. It adds only the new key to touched. Suppose A represents group K1 and B has repeat_of=A. Updating A to K2 recomputes K2 only. B remains hidden in K1 while pointing to a representative that is no longer equivalent. My isolated execution left only A visible where both A and B should be canonical. Deleting A is covered; moving A is not.
+
+Repair both old and new groups inside the same transaction, including old-key-to-null transitions. Treat any changed canonical membership as an analytical-generation change. A repeat_of update presently does not itself change the peer row’s updated_at, which is another reason reference-version checking alone is insufficient.
+
+The matching predicate is broader than “only creation metadata differs.” Both _mark_repeats and the v8 SQL compare selected measurement columns and device JSON. They do not require equality of timezone or non-creation metadata. My isolated execution hid one of two rows differing in timezone and measurement-context metadata. This directly contradicts the stronger preservation claim in the migration comment and reported disposition—not necessarily the actual classification of every production row.
+
+I cannot conclude that the reported 279 marks are all wrong, or that the other 12 should have been marked. They may differ in multiple fields. The required production check is a field-level comparison of each suppressed record with its representative, not agreement with a total repeat count.
+
+Use an explicit repeat signature that preserves all relevant source distinctions and excludes only a documented set of creation/import bookkeeping fields. Share its implementation between migration and ingestion. Since production is already v8, repair existing marks in a new forward migration, not by editing _v8 and assuming it will rerun.
+
+Revising R2-05: the changed v6 migration now carries historical supersessions through the export rows they previously suppressed, and the K1→K2 regression checks the identified case. That specific migration defect is repaired for databases traversing the corrected migration. It is not a reason to demand live-sync activation in this foreground round.
+
+A separate, smaller importer issue remains: _recorded tests whether a profile value ever existed, not whether it is the active profile. After profile A→B→A, the last A can be skipped while B remains active. Repeated identical snapshots should be deduplicated; a return to an earlier state is still a new revision.
+
+2.4 Manifest recursion: it follows producer names but ignores the consumed digest
+
+Revising part of R2-11: declared-input validation, recursive checking, hashed repository test drivers, and the committed engineering runner are meaningful improvements. The new tests reject stale source trees, changed evidence without a matching producer, missing inputs, and cycles. The engineering manifest no longer depends on the private temporary driver identified in Round 2.
+
+The central dependency binding remains broken. _inputs_valid reads the parent’s meta["manifest"], but never compares the parent’s recorded meta["sha256"] with the input file or producer evidence hash.
+
+A normal rerun is enough to demonstrate the failure:
+
+Summary S consumed input bytes A and records A’s digest.
+
+The upstream campaign is rerun under the same source tree, overwriting its result file and manifest with bytes B.
+
+S is not rerun.
+
+The validator sees that B matches the newly overwritten upstream manifest and accepts S, ignoring that S consumed A.
+
+My isolated execution returned true for that stale parent. No forged source hash, edited summary, or malicious operator was required. The existing “input changed” test changes only the file; it does not replace the upstream manifest as a normal rerun would.
+
+Require equality among the parent’s consumed digest, the current input digest, and the producer’s recorded output digest. Prefer immutable/content-addressed producer manifests; otherwise record and check their digest too.
+
+A second boundary remains: --input is optional, and the builder validates only declared dependencies. The committed summary declares both result files, which is good, but not the run_meta.json files the summarizer also reads. A known derived artifact such as an evaluation summary should have a required dependency set rather than allowing an omitted edge to become valid by default.
+
+Revising R2-12: the per-row model and mode-specific prompt comparisons address the prior whole-case substitution defect, and dedicated negative tests now cover it. Do not conflate that repaired check with the still-broken transitive artifact binding.
+
+2.5 Exact-host allowlisting is the right current trade-off
+
+Revising R2-09/R2-10: the plaintext tunnel fallback is removed, and host matching is exact rather than suffix/pattern based. Those specific defects are cleared in the inspected implementation. The new live report explicitly describes Keychain use and truthful rejection of previously unlisted regional hosts.
+
+Five observed hosts are a usability issue, not a reason to restore a shared-cloud wildcard. Keep exact matching. Improve enrollment through a controlled operator workflow: associate a refused destination with an actual host-provided attachment and controlled probe, approve that exact host, and retry with the same capture identity. Do not automatically trust every hostname that appears in a rejected request log.
+
+A provider-maintained destination list or authenticated per-transfer destination capability could improve this later, but the supplied evidence does not establish such a mechanism. Current OpenAI documentation establishes host-provided file parameters and temporary-download renewal, not a stable regional-host ownership rule that would justify the discarded naming heuristic. OpenAI Developers
+
+Revising R2-01: existing blobs and their directory are now synchronized on every _write_blob call. The persistent directory-sync-failure test requires both initial capture and same-byte retry to fail without a receipt, then succeed after removing the fault. This clears the identified durability bypass.
+
+3. VALIDATION SOUNDNESS
+
+The single load-bearing claim still not proved is that an accepted “current” foreground analysis corresponds to the evidence and complete analytical population that produced it. The token mechanism demonstrates several useful invalidation cases, but its passing tests do not establish aggregate completeness, future invalidation, or enforcement when tokens are omitted.
+
+The isolated checks produced these results:
+
+CheckObserved result
+
+New non-overlapping member inside the requested aggregate windowMean changed; _changed_since returned no stale references.
+
+Deletion of a non-cited memberNo stale reference was returned for the remaining cited member.
+
+Repeat representative moved to another keyIts old peer remained hidden, pointing outside its group.
+
+Rows differing in timezone/non-creation metadataOne was marked as a repeat.
+
+Import committed between gate check and queryQuery returned the new state despite the earlier unblocked check.
+
+Upstream input and producer manifest rerunThe unchanged downstream parent still validated.
+
+These are small executions of the relevant SQL/predicates on SQLite 3.46.1, not assertions about your SQLite 3.53.2 production run. The gate race follows the documented transaction boundary, rather than depending on an obscure SQLite-version behavior. SQLite
+
+The committed tests are not generally trivial. The blob retry test, derived-page version tests, stale-observation test, repeat-deletion promotion test, historical supersession test, and foreign-campaign tests would fail on meaningful regressions. The problem is specific missing adversarial cases:
+
+The aggregate test uses overlapping sample intervals, not a disjoint new member inside a larger query window.
+
+Repeat tests cover deletion, not representative movement or timezone/non-creation metadata differences.
+
+Import tests cover a marker already present, not a writer starting between two reader statements or concurrent same-archive runs.
+
+Manifest tests cover changed evidence without an updated producer manifest, not a normal upstream rerun.
+
+Those distinctions explain why the reported green suite and these defects can coexist.
+
+Revising R2-23: the committed release is regenerated as 0.4.0 with current evidence references and an explicit unbound restart-recovery gap. The evaluation summary records 42/42 development cases, 14/14 holdout-labelled cases, no hard failures, and no foreign/mixed rows. Calling this frozen regression rather than fresh blind validation is correct. I do not require discarding this useful evidence or rerunning it merely to rename the split.
+
+Likewise, I do not reject the live probe merely because its process started at c27db58 and the review pin is 3bc0ad1: unchanged relevant content is the appropriate reuse criterion. The structured probe is stronger than the old textual marker. It remains a human attestation bound to artifacts, not an automated proof that a probe happened; the recorder should not be used simply to restamp old observations after code changes. Its artifact list is currently optional, so strengthen the per-probe artifact requirements without pretending the existing reported live observations did not occur.
+
+The eight-second query budget is not independently a foreground blocker. The reported investigation narrowed queries and disclosed that exact interval merging was not completed. That is a valid bounded outcome. The later query_timeout distinction is outside this pin and receives no implementation credit here.
+
+4. PER-FILE / PER-STAGE FINDINGS
+
+Severity scale: HIGH blocks the requested foreground acceptance; MEDIUM is a bounded/deferred capability risk or incomplete assurance; LOW is documentation/operational correction; INFO records a supported improvement or evidence disposition. Verification instructions below are proposed local checks unless explicitly identified above as isolated executions.
+
+Runtime, contracts, and primary regressions
+
+[HIGH] R3-01 aggregate dependency — file:src/phctx/store.py:310–342 — Foreground blocker: cited-row overlap misses changed aggregate membership and cross-source canonical effects — Persist real query dependencies or conservatively invalidate on any observation-generation change — verify locally: disjoint insert/delete inside a daily query window must invalidate its old result.
+
+[HIGH] R3-02 authority without binding — file:src/phctx/store.py:355–410 — Foreground blocker: omitted/interchangeable tokens allow old interpretations to acquire current evidence stamps — Require retrieval-bound dependencies for derived writes, preserve tokenless primary facts, and persist dependencies for later reads — verify locally: omitted token, future token, unrelated SELECT 1 token, and post-save aggregate change cannot produce verified-current analysis.
+
+[HIGH] R3-03 import snapshot race — file:src/phctx/store.py:644–708 — Foreground blocker: marker check and data query can observe different committed states — Enclose both in one read transaction — verify locally: barrier a writer between those statements and require an old complete snapshot or import_in_progress, never mixed data.
+
+[HIGH] R3-04 secondary read surfaces — file:src/phctx/store.py:875–895 — Foreground blocker: catalog/source numerics remain exposed without a consistent published-state qualification — Share the read snapshot and suppress or explicitly classify provisional numerics — verify locally: bootstrap, source queries, and saved-analysis retrieval cannot bypass the analytical maintenance state.
+
+[HIGH] R3-05 repeat re-key — file:src/phctx/store.py:770–853 — Foreground integrity blocker: only the new group is recomputed after an origin-key change — Capture and repair old/new keys transactionally, including null transitions — verify locally: move the representative and require its remaining old-group peer to become canonical.
+
+[HIGH] R3-06 repeat equivalence — file:src/phctx/migrations.py:251–286 — Foreground integrity blocker: v8 suppression does not enforce the claimed “only creation metadata differs” condition — Share a precise repeat signature with ingestion and repair deployed v8 data in a new migration — verify locally: timezone, non-creation metadata, and child-measurement differences remain distinguishable.
+
+[HIGH] R3-07 import ownership — file:src/phctx/apple_export.py:420–435 — Foreground blocker: same-hash concurrent runs and changed-option resumes can overwrite recovery ownership and reopen reads prematurely — Add exclusive execution locking and a complete durable import signature — verify locally: a paused full import cannot be superseded by the same archive with a narrower since or different timezone.
+
+[MEDIUM] R3-08 profile recurrence — file:src/phctx/apple_export.py:335–346 — Importing A→B→A can retain B because A exists in history — Compare with the active profile and represent recurrence as a new revision — verify locally: three snapshots finish with A active and all prior revisions preserved.
+
+[HIGH] R3-09 tool contract — file:contracts/tools.json:194–240 — Foreground blocker: prose requests a token while the write contract permits derived evidence without one — Enforce conditional requirements or return explicit unverified status — verify locally: an evidence-citing analysis without binding is rejected or cannot receive authoritative freshness.
+
+[HIGH] R3-10 read receipt — file:src/phctx/tools.py:80–88 — Foreground blocker: the returned sequence is not associated with the retrieval’s actual evidence or query — Return and validate retrieval-bound receipts, including combined-read dependencies — verify locally: a token from an unrelated read cannot certify a prior result.
+
+[MEDIUM] R3-11 normalization contract — file:contracts/normalization.md:35–47 — Non-blocking documentation alone, but its exact-repeat claim exceeds the implemented predicate — Define the precise excluded bookkeeping fields and reference the shared signature — verify locally: contract fixtures distinguish repeats from provenance/context changes.
+
+[INFO] Blob durability cleared — file:src/phctx/store.py:547–577 — No remaining instance of the identified existing-blob synchronization bypass — Retain synchronization on both creation and reuse — verify locally: reverting that reuse barrier fails the persistent directory-fault regression.
+
+[INFO] Exact destinations — file:src/phctx/download.py:48–51 — No foreground blocker in the replacement of wildcard matching with exact hosts — Retain verified enrollment and per-hop address/TLS checks — verify locally: suffix/pattern entries and unapproved neighbouring accounts fail before download.
+
+[INFO] Keychain fallback removal — file:ops/tunnel.sh:17–20 — The identified plaintext cross-application fallback is removed — Keep Keychain as the credential source and test missing credentials explicitly — verify locally: no fallback file is opened during failed startup.
+
+[INFO] Original rendering — file:src/phctx/extract.py:80–98 — The rendered-image path addresses the prior absent visual-return mechanism; no separate foreground blocker established — Preserve original hashes and report rendering/legibility failures honestly — verify locally: scanned page, HEIC, oversized image, and invalid page return bounded results or explicit errors.
+
+[MEDIUM] Worker dependencies — file:src/phctx/worker.py:185–232 — Not a foreground activation blocker while reasoning is disabled, but it inherits R3-01/R3-02 — Use the repaired persisted dependency mechanism before activation — verify locally: unchanged cited IDs cannot admit an aggregate whose population changed.
+
+[INFO] Production credential selection — file:src/phctx/model.py:64–85 — Default production execution selects keyring rather than a file-login symlink — Retain the production/default separation and test real authentication before activation — verify locally: production startup creates no auth.json dependency.
+
+[INFO] Test-only credential configuration — file:src/phctx/config.py:1 — No foreground blocker assigned to the synthetic-evaluation credential hook — Keep it unavailable through production configuration loading — verify locally: a production config cannot select a file-login path.
+
+[LOW] Prompt versus enforcement — file:prompts/foreground.md:1 — A request to echo read tokens cannot close the optional backend path — Align guidance with enforced primary/derived write semantics — verify locally: omit the token intentionally and inspect backend status rather than model wording.
+
+Evidence generation and validation
+
+[HIGH] R3-12 consumed-input digest — file:scripts/build_release.py:32–55 — Foreground acceptance blocker: recursion ignores the digest the parent actually consumed — Compare parent/input/producer digests and pin immutable producer identity — verify locally: rerun the upstream producer and overwrite its manifest; the untouched downstream summary must become invalid.
+
+[HIGH] R3-13 required dependency closure — file:scripts/run_manifest.py:113–165 — Acceptance blocker: omitted input edges are valid by default and recorded metadata dependencies are incomplete — Require typed producer dependencies, including campaign metadata, and validate them recursively — verify locally: summary generation without required inputs is refused.
+
+[INFO] Campaign row identity repaired — file:evals/summarize.py:35–64 — The prior whole-case foreign-model/prompt substitution is now checked — Retain mode-specific matching and keep it separate from manifest provenance — verify locally: replacing all repetitions of one case with another campaign fails.
+
+[MEDIUM] Live attestation requirements — file:scripts/record_live_probe.py:28–53 — No independent denial of the reported live probe, but empty/insufficient artifact sets can still be attested — Require per-probe artifacts and distinguish recording from re-performing a probe — verify locally: a file-integrity PASS without its required verification evidence is refused.
+
+[INFO] Repository-owned runner — file:scripts/engineering_suite.sh:1 — The engineering command is now a committed, hashable driver — Retain it in the input tree — verify locally: modifying the runner invalidates its old manifest.
+
+[MEDIUM] Exact package claim — file:scripts/package_release.py:29–75 — Not a foreground blocker: tracked membership is controlled, but generated report/manifest writes mean archive bytes are not literally untouched HEAD bytes — Distinguish tracked inputs from generated attestations or package Git objects directly — verify locally: compare archive membership and content digests with the declared package policy.
+
+[INFO] Recovery driver — file:scripts/recovery_drill.py:1 — No new foreground blocker established in this supporting change — Preserve explicit synthetic scope and fault-model labels — verify locally: run its declared command under the corrected manifest policy.
+
+[INFO] Evaluation harness — file:evals/harness.py:1 — Frozen-regression execution remains useful but is not target-host acceptance by itself — Retain synthetic isolation and producing-run metadata — verify locally: each result binds its model, mode, prompt, and trace to the producing campaign.
+
+Tests and deferred phone code
+
+[HIGH] Aggregate/repeat test coverage — file:tests/test_invariants.py:154–292 — Foreground blocker coverage is missing for the reproduced non-overlap and representative-movement failures — Add those cases plus token omission and post-save invalidation — verify locally: each fails on 3bc0ad1, passes after repair, and fails with its repair reverted.
+
+[HIGH] Import concurrency coverage — file:tests/test_upgrade_integrity.py:150–190 — Existing marker tests do not establish exclusive same-archive execution or snapshot consistency — Add barrier-controlled reader/writer and changed-option recovery tests — verify locally: premature reopening and mixed-state reads fail.
+
+[HIGH] Dependency-edge coverage — file:tests/test_evidence_binding.py:161–207 — The changed-input test misses a matching upstream-manifest replacement — Add producer-rerun and omitted-dependency regressions — verify locally: unchanged downstream output cannot validate against newly produced inputs.
+
+[INFO] Durability regression — file:tests/test_store_v2.py:297–319 — This is a genuinely adversarial test of the original blob-reuse failure — Retain it — verify locally: removing reuse synchronization makes the second attempt incorrectly succeed.
+
+[MEDIUM] Retirement tests — file:tests/test_apple_mapping.py:1 — Replacement matching improves coverage but must not stand in for import ownership — Add changed-signature recovery and unreplaced-row exposure checks — verify locally: a subset reconciliation cannot clear a wider interrupted import.
+
+[INFO] Security tests — file:tests/test_security_ops.py:1 — Retain the new exact-host and credential-path regressions as scoped controls — Keep runtime tests distinct from textual source assertions — verify locally: reverted matching or credential selection fails the appropriate negative test.
+
+[INFO] File-tool tests — file:tests/test_tools_files.py:1 — Rendering tests support a new retrieval capability, not guaranteed readability of every document — Retain error and original-hash checks — verify locally: rendering never modifies the stored original.
+
+[MEDIUM] R3-14 phone continuation — file:ios/HealthSyncHelper/AnchoredSyncCoordinator.swift:114–128 — Not a foreground blocker: the async wrapper can wait forever when an already-running stream drops its non-observer completion — Register completion waiters or return a bounded busy outcome — verify locally: background refresh joining an active stream always completes or expires cleanly.
+
+[MEDIUM] Phone poison coverage — file:ios/HealthSyncCore/Sources/HealthSyncCore/OutboxStore.swift:119–188 — Not a foreground blocker: poison handling improves, but several public read paths bypass clearPoisonIfPossible — Centralize poison-aware reads before activation — verify locally: all anchor/history/next-entry consumers handle ambiguous publication consistently.
+
+[INFO] Unknown activity preservation — file:ios/HealthSyncCore/Sources/HealthSyncCore/Normalization.swift:1 — No foreground blocker; unknown activities are explicitly outside matching rather than declared Other — Retain raw identifiers — verify locally: unknown values never match a known Other export through fallback.
+
+[MEDIUM] Phone regression scope — file:ios/HealthSyncCore/Tests/HealthSyncCoreTests/HealthSyncCoreTests.swift:1 — Core tests cannot establish coordinator/task behavior on a device — Add the busy-stream continuation case and retain device activation gates — verify locally: test both active-stream joining and expiration races.
+
+[INFO] Swift result artifact — file:ios/test-report/ios_core_swift_test.log:1 — Reported core-test evidence, not foreground or device acceptance — Preserve its run identity — verify locally: bind the exact test driver and source inputs.
+
+[INFO] Type-check artifact — file:ios/test-report/ios_typecheck.log:1 — Type-check success does not establish device scheduling — Preserve that scope — verify locally: do not promote it to an installed-device PASS.
+
+Changed delivery artifacts
+
+The following dispositions account for the remaining changed artifacts. They are supporting evidence or documentation, not independent executions by this reviewer. The current release, structured live probe, and evaluation summary are readable; the problem is the assurance attached to them, not their mere existence.
+
+[LOW] Dictionary semantics — file:delivery/DATA_DICTIONARY.md:1 — Document verified-current versus unverified derived records and the exact repeat policy — Update with the repaired contracts — verify locally: examples match runtime responses.
+
+[LOW] Packaged dictionary — file:src/phctx/DATA_DICTIONARY.md:1 — The runtime/exported copy must not retain obsolete aggregation guidance — Keep both dictionaries identical — verify locally: compare their bytes and examples.
+
+[LOW] Execution ledger — file:delivery/EXECUTION_LEDGER.md:1 — Reported closure cannot override the reproduced counterexamples — Append this disposition without rewriting historical runs — verify locally: open blockers reference failing regressions.
+
+[LOW] Known limitations — file:delivery/KNOWN_LIMITATIONS.md:1 — Older memory/evaluation and blanket DISTINCT guidance remains alongside newer v8 claims — Reconcile current and historical sections and remove unsafe aggregation advice — verify locally: no section says v8 canonical still counts all 291 repeats.
+
+[LOW] User actions — file:delivery/USER_ACTIONS.md:1 — Engineering defects should not be presented as account/device chores — Separate four local blocker classes from deferred integrations — verify locally: the foreground checklist requires no unnecessary Oura/phone activation.
+
+[INFO] Prior review archive — file:delivery/acceptance/consult_round2_f8c218b.txt:1 — Historical review evidence only — Preserve unchanged — verify locally: it is never used as a test PASS.
+
+[INFO] Development results — file:delivery/eval-report/dev_37a24b9/results_all_runs.jsonl:1 — Frozen-regression output, not independently re-judged here — Preserve and bind exact consumed bytes — verify locally: upstream replacement invalidates its summary.
+
+[INFO] Development metadata — file:delivery/eval-report/dev_37a24b9/run_meta.json:1 — This is an actual summarizer input and needs a declared edge — Include it in summary dependencies — verify locally: mutation invalidates acceptance.
+
+[INFO] Holdout-labelled results — file:delivery/eval-report/holdout_37a24b9/results_all_runs.jsonl:1 — Useful regression evidence, not newly blind evidence — Preserve that label and immutable identity — verify locally: summary consumes the recorded digest.
+
+[INFO] Holdout-labelled metadata — file:delivery/eval-report/holdout_37a24b9/run_meta.json:1 — Also a required derived-input dependency — Bind it explicitly — verify locally: changes to model/prompt metadata invalidate the downstream summary.
+
+[INFO] Final case results — file:delivery/eval-report/final_case_results.jsonl:1 — Derived output cannot establish its own input provenance — Bind through the corrected summary graph — verify locally: stale parents invalidate this artifact.
+
+[INFO] Current summary — file:delivery/eval-report/summary.json:1 — The recorded frozen regression passes; that does not prove the missing invariants — Retain it and add adversarial regressions — verify locally: corrected acceptance includes the new negative cases.
+
+[INFO] Renamed historical summary — file:delivery/eval-report/summary_frozen_regression_c519ba9.json:1 — Renaming the prior blind claim is appropriate — Preserve historical results — verify locally: no release treats it as newly withheld evidence.
+
+[MEDIUM] Structured live probe — file:delivery/live-evidence/chatgpt_live_probe.json:1 — Stronger content binding, but still a human attestation — Require appropriate artifact classes and loaded-runtime identity — verify locally: missing required evidence prevents its affected PASS.
+
+[INFO] Live narrative — file:delivery/live-evidence/chatgpt_live_probe.md:20 — Supports observed foreground behavior and honest limitations — Preserve observation date and exact scope — verify locally: re-probe changed capabilities rather than restamping the narrative.
+
+[INFO] Live server log — file:delivery/live-evidence/chatgpt_mcp_server_log_round2.txt:1 — Supporting transport evidence, not semantic correctness proof — Keep redacted and hash-bound — verify locally: correlate probe requests with stored receipts/original checks.
+
+[INFO] Recovery result — file:delivery/recovery-report/recovery_drill.json:1 — Reported synthetic recovery evidence remains useful — Preserve exact fault-model scope — verify locally: distinguish simulated errors from physical power-loss/device tests.
+
+[HIGH] Release disposition — file:delivery/release.json:1 — Acceptance blocker: READY_WITH_GAPS currently relies on incomplete invariants and provenance checks — Regenerate after the four foreground blocker classes clear — verify locally: no open HIGH finding is represented as cleared.
+
+[MEDIUM] Release-gate result — file:delivery/release_gate_result.json:1 — Gate validity is not independent semantic validation of its inputs — Regenerate from corrected evidence — verify locally: stale dependency edges force refusal.
+
+[INFO] Engineering manifest — file:delivery/run-manifests/engineering.json:1 — The private-driver issue is repaired — Retain the committed runner binding — verify locally: changed runner/source invalidates the report.
+
+[INFO] Development manifest — file:delivery/run-manifests/eval-dev.json:1 — Producer identity must not be mutable beneath an accepted parent — Version or content-address it — verify locally: rerunning the campaign invalidates old consumers.
+
+[INFO] Holdout-labelled manifest — file:delivery/run-manifests/eval-holdout.json:1 — Apply the same immutable-producer rule — Preserve prior runs separately — verify locally: parent validation compares the originally consumed digest.
+
+[HIGH] Summary manifest — file:delivery/run-manifests/eval-summary.json:30–44 — Acceptance blocker: only result files are declared, and their recorded edge digests are not enforced — Bind both results and metadata through the repaired validator — verify locally: metadata mutation and producer rerun invalidate this summary.
+
+[INFO] Recovery manifest — file:delivery/run-manifests/recovery.json:1 — Retain its exact driver/output binding without broadening the drill’s meaning — Preserve immutable run identity — verify locally: changed producing inputs invalidate reuse.
+
+[INFO] Engineering log — file:delivery/test-report/p1_p5_engineering_tests.log:1 — A green reported suite is compatible with the uncovered counterexamples — Retain the historical run and append a new campaign after repairs — verify locally: the added tests fail on this pin and on reverted fixes.
+
+5. IDEAL-vs-ACTUAL DIFFERENCE + SUPERIOR REALIZATIONS
+
+First: simplify freshness before optimizing it. The selective overlap rule looks more precise but is not correct for arbitrary SQL. A persisted observation-generation dependency is a better initial implementation: conservative, easy to test, and sufficient for a single-user foreground system. Introduce narrower dependencies only when the actual query predicate and canonicalization inputs can be represented.
+
+Second: separate import recovery from execution ownership. A durable marker says an archive is unfinished; it does not prove who may write it. An exclusive process lock plus a durable full-signature marker solves this without staging the entire archive or adding a distributed coordinator. Snapshot-consistent readers then see either a complete old state or an explicit maintenance refusal.
+
+Third: make repeat resolution a rebuildable projection. Preserve raw source rows, define exactly what differences may be ignored, use one signature implementation, and recompute both affected groups. A forward repair should compare the production marks with that definition and invalidate dependent analytical generations. Do not tune the rule to reproduce the reported count of 279.
+
+Fourth: bind evidence graph edges, not filenames. Every parent must identify the exact input digest and immutable producer it consumed. Required producer-specific dependencies prevent optional declarations from silently omitting material inputs. This is a small local provenance graph, not a request for a general build platform.
+
+Fifth: keep exact-host security and improve enrollment. The correct usability improvement is controlled registration and retry, not widening a name heuristic. A new regional host can remain a disclosed first-use limitation while the rest of foreground use proceeds.
+
+These changes preserve natural capture and one-interface operation. None requires asking the user to manage evidence tokens, classify routine notes manually, or operate a second dashboard.
+
+6. GO / NO-GO
+
+NO-GO for authoritative foreground use at 3bc0ad1. Four local blocker classes remain:
+
+Evidence authority: require retrieval binding for derived writes, stop tokenless current-version stamping, cover aggregate membership rather than cited-row overlap, and persist dependencies for later invalidation. Keep independent primary captures tokenless.
+
+Import isolation: put gate checks and analytical reads in one snapshot, handle catalog/status numerics consistently, and prevent concurrent or changed-signature “resumes” from clearing a wider unfinished import.
+
+Repeat correctness: recompute old and new groups, enforce the actual permitted-difference definition, and repair deployed v8 marks through a new migration with analytical invalidation.
+
+Acceptance provenance: enforce consumed input digests and immutable producer identity, require complete summary dependencies, then regenerate release evidence.
+
+Each class has a concrete counterexample. Clearing them requires failing regressions on this pin, passing results after repair, and failure again when the corresponding repair is reverted—not another ledger-only closure.
+
+What no longer blocks this foreground scope: the identified blob-reuse durability bypass; the removed plaintext tunnel fallback; replacement of wildcard matching with exact hosts; the specific v6 historical-supersession case; the prior per-case foreign-campaign check; and the absence of phone/Oura/background/voice/mobile capabilities you explicitly excluded. The final-retirement-to-marker-delete crash interval is fail-closed under a single matching owner. The eight-second query budget and openly reported incomplete interval merging are bounded limitations, not automatic rejection grounds.
+
+Continued capture of independent user facts and originals is a defensible narrower use. Do not equate that with backend-certified, current aggregate analyses. Fixing the four classes above—not completing the excluded integrations—is the path to foreground GO-WITH-GAPS.
+
+Sources, execution limits, and assumptions. I used the pinned GitHub comparison and the source, contracts, tests, manifests, release reports, and live-probe evidence cited inline, plus official SQLite isolation and OpenAI file-parameter documentation. A container checkout failed DNS, so I did not run the complete repository suite. I executed the isolated SQL/predicate counterexamples on SQLite 3.46.1; the counterexample script states that scope explicitly. I did not inspect the production database, independently classify the 279 suppressed rows, rerun the Mac recovery drill, or re-judge every model trace.
+
+The operating assumptions are your reported completed import and v8 deployment, background reasoning disabled, no active phone or Oura route, and the unchanged secret-storage/no-public-endpoint constraints. No additional production row count would remove the demonstrated code failures; a corrected pin and discriminating regressions would change the verdict.

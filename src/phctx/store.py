@@ -100,6 +100,36 @@ def sniff_mime(data: bytes) -> str:
         return 'application/octet-stream'
 
 
+# Export bookkeeping that differs between two writes of one sample by the source app; everything else must match.
+REPEAT_IGNORED = ('native_id', 'metadata.creation_date', 'metadata.import', 'metadata.source_version')
+
+
+def repeat_signature(raw_json: str) -> str:
+    """Canonical JSON of a stored export sample (its raw_json) without REPEAT_IGNORED fields: two rows with the same
+    signature are one source record written twice. Timezone, device, every other metadata key and child element count."""
+    raw = json.loads(raw_json or '{}')
+    for path in REPEAT_IGNORED:
+        head, _, tail = path.partition('.')
+        if not tail:
+            raw.pop(head, None)
+        elif isinstance(raw.get(head), dict):
+            raw[head].pop(tail, None)
+    return dump(raw)
+
+
+def mark_repeats(c: sqlite3.Connection, source_id: str, key: str) -> None:
+    """Within one export origin_key group, a row whose repeat_signature equals an earlier (smaller id) active row's
+    repeats it: repeat_of = the first such row. Recomputed for the whole (small) group on any change."""
+    rows = c.execute('SELECT id, raw_json FROM observations WHERE origin_key=? AND source_id=? AND deleted=0 '
+                     'ORDER BY id', (key, source_id)).fetchall()
+    first: dict[str, str] = {}
+    for oid, raw in rows:
+        original = first.setdefault(repeat_signature(raw), oid)
+        c.execute('UPDATE observations SET repeat_of=? WHERE id=?', (None if original == oid else original, oid))
+    c.execute('UPDATE observations SET repeat_of=NULL WHERE origin_key=? AND source_id=? AND deleted=1',
+              (key, source_id))
+
+
 def ref_kind(ref: str) -> str:
     if not isinstance(ref, str):
         raise StoreError('missing_evidence', 'Evidence IDs are strings returned by the store.')
@@ -120,8 +150,9 @@ class Store:
     """
     KINDS = {'event', 'routine', 'question', 'analysis', 'note', 'attachment', 'preference'}
     CLOSED_QUESTION = {'closed', 'superseded', 'answered_final'}
+    # Tables whose content an unfinished import changes (sources carries latest_sample_at / coverage).
     OBSERVATION_TABLES = {'observations', 'active_observations', 'canonical_observations', 'canonical_observations_raw',
-                          'observation_catalog', 'supersessions'}
+                          'observation_catalog', 'supersessions', 'sources'}
     PUBLIC_TABLES = {'records', 'active_records', 'observations', 'active_observations', 'canonical_observations',
                      'canonical_observations_raw',
                      'sources', 'objects', 'evidence_links', 'evidence_refs', 'object_pages', 'extractions',
@@ -304,37 +335,55 @@ class Store:
             versions[ref] = v
         return versions
 
-    def read_token(self) -> int:
-        """Change-log sequence at this read. A writer citing evidence passes the token of the read that produced it."""
+    def generation(self) -> int:
+        """Change-log sequence now: every committed record, observation batch, extraction and preference change
+        advances it."""
         with self.connect() as c:
             return c.execute('SELECT coalesce(max(seq),0) FROM changes').fetchone()[0]
 
-    def _changed_since(self, c: sqlite3.Connection, refs: list[str], token: int) -> list[str]:
-        """Cited refs that a reader holding `token` cannot have seen as they are now: a record written after it, an
-        observation inside any batch window (same source, metric, overlapping time) committed after it — which also
-        covers new members of an aggregate over that window — or a page whose original was re-extracted after it.
-        The change log is ordered by a monotonic sequence, not a clock."""
-        batches, records, extracted = [], set(), set()
-        for entity, eid, detail in c.execute('SELECT entity, entity_id, detail FROM changes WHERE seq>?', (token,)):
-            if entity == 'observations':
-                d = json.loads(detail)
-                batches.append((eid, set(d.get('metrics', [])), d.get('start'), d.get('end')))
-            elif entity == 'record':
-                records.add(eid)
-            elif entity == 'extraction':
-                extracted.add(eid)
+    def issue_receipt(self, refs: set[str], observations: bool, seq: int) -> str:
+        """Store what one read returned: `seq` (taken before the read ran), the evidence ids it returned, and whether it
+        read observation data. A derived write cites evidence through receipts, never through a bare sequence."""
+        rid = 'rr_' + uuid.uuid4().hex
+        with self.transaction() as c:
+            c.execute('INSERT INTO read_receipts VALUES(?,?,?,?,?)',
+                      (rid, seq, int(observations), dump(sorted(refs)[:5000]), utcnow()))
+            c.execute('DELETE FROM read_receipts WHERE created_at<?', (utc_in(-7 * 86400),))
+        return rid
+
+    def _bind(self, c: sqlite3.Connection, evidence: list[str], receipts: list[str]) -> tuple[int, bool]:
+        """(earliest read sequence, depends on observations) for evidence cited through `receipts`; refuses a receipt
+        the store did not issue and evidence none of the receipts returned."""
+        rows = c.execute(f'SELECT seq, observations, refs_json FROM read_receipts WHERE id IN '
+                         f'({",".join("?" * len(receipts))})', receipts).fetchall()
+        if len(rows) != len(set(receipts)):
+            raise StoreError('evidence_unbound', 'Unknown or expired read_receipt; read the evidence again.')
+        read = set().union(*(json.loads(r['refs_json']) for r in rows))
+        unread = [e for e in evidence if e not in read and not any(x.startswith(e + '#') for x in read)]
+        if unread:
+            raise StoreError('evidence_unbound', f'Evidence not returned by the cited reads: {", ".join(unread[:5])}. '
+                             'Pass the read_receipt of the read that returned it.')
+        return min(r['seq'] for r in rows), any(r['observations'] for r in rows) or any(
+            ref_kind(e) == 'observation' for e in evidence)
+
+    def _changed_since(self, c: sqlite3.Connection, refs: list[str], seq: int, observations: bool) -> list[str]:
+        """What changed after a read at `seq` that the reader cannot have seen: any observation batch when the evidence
+        depends on observation data (conservative: an aggregate's population, canonical membership or repeat marks
+        can change without touching a cited id), a cited record written after it, a cited page re-extracted after it."""
         stale = []
+        if observations and c.execute("SELECT 1 FROM changes INDEXED BY changes_entity_seq WHERE entity='observations' "
+                                      'AND seq>? LIMIT 1', (seq,)).fetchone():
+            stale.append('observations')
         for ref in refs:
             kind = ref_kind(ref)
             if kind == 'record':
-                hit = ref in records
-            elif kind == 'observation':
-                o = c.execute('SELECT source_id, metric, start_at, end_at FROM observations WHERE id=?', (ref,)).fetchone()
-                hit = bool(o) and any(src == o[0] and o[1] in metrics and lo and hi and lo <= o[3] and o[2] <= hi
-                                      for src, metrics, lo, hi in batches)
+                entity, eid = 'record', ref
+            elif kind == 'object' and '#p' in ref:
+                entity, eid = 'extraction', ref[4:].partition('#p')[0]
             else:
-                hit = '#p' in ref and ref[4:].partition('#p')[0] in extracted
-            if hit:
+                continue
+            if c.execute('SELECT 1 FROM changes INDEXED BY changes_entity_seq WHERE entity=? AND seq>? AND entity_id=? '
+                         'LIMIT 1', (entity, seq, eid)).fetchone():
                 stale.append(ref)
         return stale
 
@@ -351,7 +400,10 @@ class Store:
                    timezone_name: str = 'America/Chicago', payload: dict | None = None,
                    source_id: str = 'user', source_key: str | None = None,
                    object_sha: str | None = None, supersedes: str | None = None,
-                   evidence_ids: list[str] | None = None, read_token: int | None = None) -> dict:
+                   evidence_ids: list[str] | None = None, read_receipts: list[str] | None = None) -> dict:
+        """With read_receipts the cited evidence is bound to the reads that returned it and the dependency is kept
+        (evidence.bound). Without, the record is stored with its evidence unverified (tools require receipts for any
+        derived write; trusted internal writers may omit them)."""
         if kind not in self.KINDS:
             raise StoreError('invalid_kind', 'Unsupported context kind.')
         nonempty(text, 'text')
@@ -365,14 +417,15 @@ class Store:
             raise StoreError('invalid_argument', 'At most 100 evidence IDs.')
         body = dict(op='record', kind=kind, text=text, at=at, tz=timezone_name, payload=payload,
                     source=source_id, source_key=source_key, object=object_sha,
-                    supersedes=supersedes, evidence=evidence_ids, read_token=read_token)
+                    supersedes=supersedes, evidence=evidence_ids, receipts=sorted(set(read_receipts or [])))
 
         def write(c: sqlite3.Connection) -> dict:
             self._source(c, source_id)
             versions = self._evidence_versions(c, evidence_ids)
-            if read_token is not None and (stale := self._changed_since(c, evidence_ids, read_token)):
+            bound = self._bind(c, evidence_ids, read_receipts) if read_receipts else None
+            if bound and (stale := self._changed_since(c, evidence_ids, *bound)):
                 raise StoreError('stale_evidence', f'Evidence changed after it was read ({", ".join(stale[:5])}); '
-                                 're-read it and write again with the new read_token.')
+                                 're-read it and write again with the new read_receipt.')
             if supersedes:
                 old = c.execute('SELECT * FROM active_records WHERE id=?', (supersedes,)).fetchone()
                 if not old or old['kind'] != kind or old['source_id'] != source_id:
@@ -387,6 +440,8 @@ class Store:
             c.executemany('INSERT INTO evidence_links VALUES(?,?)',
                           [(rid, x) for x in evidence_ids if ref_kind(x) == 'record'])
             c.executemany('INSERT INTO evidence_refs VALUES(?,?,?)', [(rid, r, v) for r, v in versions.items()])
+            if bound:
+                c.execute('INSERT INTO record_dependencies VALUES(?,?,?)', (rid, bound[0], int(bound[1])))
             local = datetime.fromisoformat(at).astimezone(ZoneInfo(timezone_name)).isoformat(timespec='seconds')
             out = {'record_id': rid, 'kind': kind, 'occurred_at': at, 'occurred_at_local': local,
                    'evidence_ids': evidence_ids}
@@ -406,9 +461,15 @@ class Store:
         r['superseded_by'] = newer[0] if newer else None
         refs = {x['ref_id']: x['ref_version'] for x in
                 c.execute('SELECT ref_id, ref_version FROM evidence_refs WHERE record_id=?', (r['id'],))}
-        if refs:
+        dep = c.execute('SELECT seq, observations FROM record_dependencies WHERE record_id=?', (r['id'],)).fetchone()
+        if refs or dep:
             stale = self._stale_refs(c, refs)
-            r['evidence'] = {'ids': sorted(refs), 'stale_ids': stale, 'current': not stale}
+            if dep:
+                stale += [x for x in self._changed_since(c, [], dep['seq'], bool(dep['observations'])) if x not in stale]
+            r['evidence'] = {'ids': sorted(refs), 'stale_ids': stale, 'bound': dep is not None,
+                             'current': dep is not None and not stale}
+            if dep is None:
+                r['evidence']['note'] = 'written without a read receipt: freshness unverified'
         if r['object_sha']:
             ex = c.execute('SELECT status, page_count, method FROM extractions WHERE object_sha=?',
                            (r['object_sha'],)).fetchone()
@@ -647,7 +708,7 @@ class Store:
         if parameters is not None and (not isinstance(parameters, list) or len(parameters) > 100):
             raise StoreError('invalid_argument', 'parameters must be a list of at most 100 values.')
         # Read-only connection AND query_only AND authorizer. String-prefix checks are insufficient.
-        c = sqlite3.connect(self.db.as_uri() + '?mode=ro', uri=True)
+        c = sqlite3.connect(self.db.as_uri() + '?mode=ro', uri=True, isolation_level=None)
         c.execute('PRAGMA query_only=ON')
         c.enable_load_extension(False)
         c.setlimit(sqlite3.SQLITE_LIMIT_LENGTH, 1_048_576)
@@ -657,6 +718,9 @@ class Store:
         deadline = time.monotonic() + 8.0  # multi-year aggregates over ~2M rows; still bounded
         c.set_progress_handler(lambda: int(time.monotonic() > deadline), 1000)
 
+        # One read transaction: the maintenance gate and the query see the same WAL snapshot, so an import that starts
+        # between them cannot hand this query a mixed state.
+        c.execute('BEGIN')
         gated = c.execute("SELECT value FROM meta WHERE key='import_in_progress'").fetchone() is not None
         touched: set[str] = set()
 
@@ -690,7 +754,7 @@ class Store:
                 if encoded_bytes > 240_000:
                     raise StoreError('result_too_large', 'Narrow columns or page the requested range.')
                 rows.append(list(row))
-            result = {'columns': columns, 'rows': rows,
+            result = {'columns': columns, 'rows': rows, 'reads_observations': bool(touched & self.OBSERVATION_TABLES),
                       'truncated': truncated, 'max_rows': limit,
                       'query_sha256': hashlib.sha256((sql + dump(parameters or [])).encode()).hexdigest()}
             if len(dump(result).encode()) > 256000:
@@ -776,8 +840,10 @@ class Store:
                 oid = 'obs_' + hashlib.sha256((source_id + '\0' + s['native_id']).encode()).hexdigest()
                 origin = s.get('origin_key')
                 pair = (s['metric'], s.get('unit') or '')
-                prev = c.execute("SELECT metric, coalesce(unit,''), deleted, start_at, end_at FROM observations "
-                                 'WHERE id=?', (oid,)).fetchone()
+                prev = c.execute("SELECT metric, coalesce(unit,''), deleted, start_at, end_at, origin_key "
+                                 'FROM observations WHERE id=?', (oid,)).fetchone()
+                if prev and prev[5] and not live:
+                    touched.add(prev[5])  # the group this row leaves must be re-resolved too
                 if prev and not prev[2]:
                     moved = (prev[0], prev[1]) != pair
                     bump(prev[0], prev[1], -moved)
@@ -808,20 +874,19 @@ class Store:
                 nonempty(sid, 'deleted_id', 200)
                 # A deletion-only object has no measurement body and stays outside active data.
                 oid = 'obs_' + hashlib.sha256((source_id + '\0' + sid).encode()).hexdigest()
-                prev = c.execute("SELECT metric, coalesce(unit,''), deleted, start_at, end_at FROM observations "
-                                 'WHERE id=?', (oid,)).fetchone()
+                prev = c.execute("SELECT metric, coalesce(unit,''), deleted, start_at, end_at, origin_key "
+                                 'FROM observations WHERE id=?', (oid,)).fetchone()
                 if prev and not prev[2]:
                     bump(prev[0], prev[1], -1)
                     leave(prev)
-                    if not live and (k := c.execute('SELECT origin_key FROM observations WHERE id=?',
-                                                    (oid,)).fetchone()[0]):
-                        touched.add(k)
+                    if prev[5] and not live:
+                        touched.add(prev[5])
                 c.execute('''INSERT INTO observations(id,source_id,native_id,metric,start_at,end_at,timezone,value_num,
                     value_text,unit,raw_json,deleted,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
                     ON CONFLICT(source_id,native_id) DO UPDATE SET deleted=1,updated_at=excluded.updated_at''',
                     (oid, source_id, sid, 'tombstone', now, now, 'UTC', None, None, None, '{}', 1, now))
             for k in touched:
-                self._mark_repeats(c, source_id, k)
+                mark_repeats(c, source_id, k)
             # Any deletion or correction may remove the latest sample; one seek on obs_source_end, not a scan.
             latest = c.execute('SELECT max(end_at) FROM observations WHERE source_id=? AND deleted=0',
                                (source_id,)).fetchone()[0]
@@ -839,21 +904,6 @@ class Store:
                 out.update(_extra(c))
             return out
         return self._mutate(request_id, body, write)
-
-    REPEAT_FIELDS = ('start_at', 'end_at', 'value_num', 'value_text', 'unit', 'source_name')
-
-    def _mark_repeats(self, c: sqlite3.Connection, source_id: str, key: str) -> None:
-        """Within one export origin_key group, a row whose measured fields and device equal an earlier (smaller id)
-        active row repeats it: repeat_of = the first such row. Recomputed for the whole (small) group on any change."""
-        rows = c.execute('SELECT id, ' + ', '.join(self.REPEAT_FIELDS) + ", json_extract(raw_json, '$.device') "
-                         'FROM observations WHERE origin_key=? AND source_id=? AND deleted=0 ORDER BY id',
-                         (key, source_id)).fetchall()
-        first: dict[tuple, str] = {}
-        for oid, *fields in rows:
-            original = first.setdefault(tuple(fields), oid)
-            c.execute('UPDATE observations SET repeat_of=? WHERE id=?', (None if original == oid else original, oid))
-        c.execute('UPDATE observations SET repeat_of=NULL WHERE origin_key=? AND source_id=? AND deleted=1',
-                  (key, source_id))
 
     def _apply_catalog(self, c: sqlite3.Connection, source_id: str, delta: dict, shrink: set) -> None:
         """Maintain observation_catalog in O(page): count deltas are exact and the range only widens. A pair that
@@ -877,14 +927,20 @@ class Store:
 
     def source_status(self) -> dict:
         with self.connect() as c:
-            rows = []
-            for r in c.execute('SELECT * FROM sources ORDER BY id'):
-                row = dict(r)
-                row['coverage'] = json.loads(row.pop('coverage_json'))
-                row['active_observations'] = c.execute(
-                    'SELECT coalesce(sum(n),0) FROM observation_catalog WHERE source_id=?', (r['id'],)).fetchone()[0]
-                rows.append(row)
-            importing = c.execute("SELECT value FROM meta WHERE key='import_in_progress'").fetchone()
+            c.execute('BEGIN')  # counts and the maintenance marker from one snapshot
+            return self._source_status(c)
+
+    def _source_status(self, c: sqlite3.Connection) -> dict:
+        importing = c.execute("SELECT value FROM meta WHERE key='import_in_progress'").fetchone()
+        rows = []
+        for r in c.execute('SELECT * FROM sources ORDER BY id'):
+            row = dict(r)
+            row['coverage'] = json.loads(row.pop('coverage_json'))
+            row['active_observations'] = c.execute(
+                'SELECT coalesce(sum(n),0) FROM observation_catalog WHERE source_id=?', (r['id'],)).fetchone()[0]
+            if importing:  # mid-import numbers mix two parser generations: withhold them, keep identity and state
+                row.update(active_observations=None, latest_sample_at=None, coverage={'withheld': 'import_in_progress'})
+            rows.append(row)
         out = {'checked_at': utcnow(), 'sources': rows,
                'note': 'latest_sample_at is not complete coverage; permission-denied can look like empty data. '
                        'apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides '
@@ -894,7 +950,7 @@ class Store:
                        'recorded zone use the importing timezone.'}
         if importing:
             out['observation_reads'] = ('blocked: an Apple import is in progress (old and new parser rows overlap); '
-                                        'observation queries refuse until it finishes')
+                                        'observation queries refuse and counts are withheld until it finishes')
         return out
 
     # ---- preferences ---------------------------------------------------------------------
@@ -927,11 +983,11 @@ class Store:
         return bool(row) and json.loads(row[0]).get('state', 'open') not in self.CLOSED_QUESTION
 
     def queue_insight(self, *, request_id: str, candidate: dict, ttl_days: int | None = None,
-                      fence: Callable[[sqlite3.Connection], None] | None = None, read_token: int | None = None) -> dict:
+                      fence: Callable[[sqlite3.Connection], None] | None = None, since_seq: int | None = None) -> dict:
         """Local background writer only. Silence is an output, not a persisted health conclusion.
 
         `fence` runs first inside the same transaction; raising there (e.g. lease lost) drops the whole write.
-        `read_token` (taken before the investigation began) rejects evidence that changed during it."""
+        `since_seq` (the generation before the investigation began) rejects evidence that changed during it."""
         if candidate.get('decision') == 'silence':
             return {'status': 'silent', 'queued': False}
         qid, evidence = self._candidate(candidate)
@@ -940,7 +996,7 @@ class Store:
         def write(c: sqlite3.Connection) -> dict:
             if fence:
                 fence(c)
-            versions, fingerprint, verdict = self._gate(c, candidate, qid, evidence, read_token)
+            versions, fingerprint, verdict = self._gate(c, candidate, qid, evidence, since_seq)
             if verdict:
                 return verdict
             iid = 'ins_' + uuid.uuid4().hex
@@ -964,14 +1020,15 @@ class Store:
         return candidate.get('question_id'), evidence
 
     def _gate(self, c: sqlite3.Connection, candidate: dict, qid: str | None, evidence: list[str],
-              read_token: int | None = None) -> tuple[dict[str, str], str, dict | None]:
+              since_seq: int | None = None) -> tuple[dict[str, str], str, dict | None]:
         """(current evidence versions, fingerprint, why a real insight would not be queued now or None to queue)."""
         if qid and not self._question_open(c, qid):
             raise StoreError('missing_question', 'Question reference is not an active open stored question.')
         versions = self._evidence_versions(c, evidence)
         read = candidate.get('evidence_versions') or {}
         if any((versions[r] if r in versions else self._ref_version(c, r)) != v for r, v in read.items()) or (
-                read_token is not None and self._changed_since(c, evidence, read_token)):
+                since_seq is not None and self._changed_since(
+                    c, evidence, since_seq, any(ref_kind(e) == 'observation' for e in evidence))):
             raise StoreError('stale_evidence', 'Evidence changed after it was read; re-read and re-investigate.')
         fingerprint = hashlib.sha256(dump({'question_id': qid, 'evidence': versions,
                                            'topic': candidate.get('topic', 'unspecified')}).encode()).hexdigest()
@@ -991,7 +1048,7 @@ class Store:
         return versions, fingerprint, None
 
     def queue_shadow(self, *, request_id: str, candidate: dict,
-                     fence: Callable[[sqlite3.Connection], None] | None = None, read_token: int | None = None) -> dict:
+                     fence: Callable[[sqlite3.Connection], None] | None = None, since_seq: int | None = None) -> dict:
         """Shadow mode: record what the gate would have done, in shadow_insights only. Never reaches the outbox,
         pending_insights, bootstrap, real-insight dedup or the attention budget."""
         if candidate.get('decision') == 'silence':
@@ -1001,7 +1058,7 @@ class Store:
         def write(c: sqlite3.Connection) -> dict:
             if fence:
                 fence(c)
-            versions, _, verdict = self._gate(c, candidate, qid, evidence, read_token)
+            versions, _, verdict = self._gate(c, candidate, qid, evidence, since_seq)
             sid = 'shd_' + uuid.uuid4().hex
             c.execute('INSERT INTO shadow_insights VALUES(?,?,?,?,?,?,?)',
                       (sid, qid, dump(candidate), dump(versions), int(verdict is None),
@@ -1181,6 +1238,8 @@ class Store:
     def bootstrap(self) -> dict:
         """Starting index, not a final evidence filter; the model may search/read/query freely."""
         with self.connect() as c:
+            c.execute('BEGIN')  # catalog, source status and the maintenance marker from one snapshot
+            status = self._source_status(c)
             context = [self._decorate(c, r) for r in c.execute(
                 "SELECT * FROM active_records WHERE kind IN ('routine','question','note','preference') "
                 "ORDER BY occurred_at DESC LIMIT 20")]
@@ -1188,7 +1247,7 @@ class Store:
                 "SELECT * FROM active_records WHERE kind IN ('event','attachment','analysis') "
                 'ORDER BY occurred_at DESC LIMIT 10')]
             counts = {k: n for k, n in c.execute('SELECT kind, count(*) FROM active_records GROUP BY kind')}
-            metrics = [dict(r) for r in c.execute(
+            metrics = [] if 'observation_reads' in status else [dict(r) for r in c.execute(
                 'SELECT source_id, metric, unit, n, first_at, last_at FROM observation_catalog '
                 'ORDER BY source_id, metric LIMIT 300')]
             change_seq = c.execute('SELECT coalesce(max(seq),0) FROM changes').fetchone()[0]
@@ -1199,7 +1258,7 @@ class Store:
         background = {'first_worker_run_at': first, 'last_worker_run_at': last, 'observed_days': observed,
                       'push_to_existing_chat_threads': 'unsupported: proactive items wait in the local outbox and '
                                                        'are offered at the next conversation'}
-        return {'preferences': self.preferences(), 'source_status': self.source_status(),
+        return {'preferences': self.preferences(), 'source_status': status,
                 'record_counts': counts, 'observation_catalog': metrics,
                 'context_index': context, 'recent': recent, 'pending': self.pending_insights(),
                 'background': background,

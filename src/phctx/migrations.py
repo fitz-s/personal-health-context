@@ -5,7 +5,7 @@ import hashlib
 import json
 import sqlite3
 
-TARGET = 8
+TARGET = 10
 
 
 def statements(sql: str):
@@ -280,7 +280,38 @@ UPDATE observations SET repeat_of = (SELECT d.id FROM observations d INDEXED BY 
                   (hashlib.sha256(text.encode()).hexdigest(), sha, page))
 
 
-STEPS = {2: _v2, 3: _v3, 4: _v4, 5: _v5, 6: _v6, 7: _v7, 8: _v8}
+def _v9(c: sqlite3.Connection) -> None:
+    # v8 marked repeats on measured columns + device only, which also hid rows differing in timezone or other metadata.
+    # Re-resolve every export group that has more than one active row with the shared signature (store.repeat_signature,
+    # which ignores only creation/import bookkeeping). A change of canonical membership is an observation change.
+    from .store import mark_repeats, utcnow
+    c.execute("UPDATE observations SET repeat_of=NULL WHERE repeat_of IS NOT NULL")
+    keys = [k for (k,) in c.execute("SELECT origin_key FROM observations WHERE source_id='apple_health_export' "
+                                    "AND deleted=0 AND origin_key IS NOT NULL GROUP BY origin_key HAVING count(*) > 1")]
+    for k in keys:
+        mark_repeats(c, 'apple_health_export', k)
+    c.execute("INSERT INTO changes(entity, entity_id, detail, at) VALUES('observations', 'apple_health_export', ?, ?)",
+              (json.dumps({'repeat_resolution': 'v9', 'groups': len(keys)}), utcnow()))
+
+
+def _v10(c: sqlite3.Connection) -> None:
+    # Evidence authority: a read issues a receipt (the change-log sequence before it ran, the evidence ids it returned,
+    # whether it read observation data); a derived write names its receipts and its dependency is kept, so a later read
+    # can tell an analysis whose observation population changed after it was written.
+    run(c, """
+CREATE TABLE IF NOT EXISTS read_receipts(
+ id TEXT PRIMARY KEY, seq INTEGER NOT NULL, observations INTEGER NOT NULL CHECK(observations IN(0,1)),
+ refs_json TEXT NOT NULL, created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS record_dependencies(
+ record_id TEXT PRIMARY KEY REFERENCES records(id), seq INTEGER NOT NULL,
+ observations INTEGER NOT NULL CHECK(observations IN(0,1))
+);
+CREATE INDEX IF NOT EXISTS changes_entity_seq ON changes(entity, seq);
+""")
+
+
+STEPS = {2: _v2, 3: _v3, 4: _v4, 5: _v5, 6: _v6, 7: _v7, 8: _v8, 9: _v9, 10: _v10}
 
 
 def apply(c: sqlite3.Connection, current: int, now: str) -> int:

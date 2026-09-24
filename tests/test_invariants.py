@@ -174,6 +174,20 @@ class RepeatRecordTests(Base):
         self.batch(EXPORT, deleted=['x2:a' if first == oid(EXPORT, 'x2:a') else 'x2:b'])  # the kept copy goes away
         self.assertEqual(self.counts(), ((2, 10.0), 2))  # its repeat now stands in for it
 
+    def test_moving_the_representative_to_another_key_unhides_its_old_peer(self):
+        a, b = sorted(['x2:a', 'x2:b'], key=lambda n: oid(EXPORT, n))  # a is the representative (smaller id)
+        self.batch(EXPORT, [self.row(a, 't1'), self.row(b, 't2')])
+        self.assertEqual(self.counts(), ((1, 5.0), 2))
+        moved = dict(self.row(a, 't1'), origin_key='SYNTHETIC-other-key', start_at=hour(5), end_at=hour(6))
+        self.batch(EXPORT, [moved])
+        self.assertEqual(self.counts(), ((2, 10.0), 2))
+
+    def test_timezone_or_other_metadata_differences_are_not_repeats(self):
+        base = self.row('x2:a', 't1')
+        self.batch(EXPORT, [base, dict(self.row('x2:b', 't2'), timezone='Asia/Tokyo'),
+                            dict(self.row('x2:c', 't3'), metadata={'creation_date': 't3', 'HKMotionContext': '1'})])
+        self.assertEqual(self.counts(), ((3, 15.0), 3))
+
 class ChangeDetailTests(Base):
     def test_deletion_only_change_names_the_removed_metric(self):
         """F26: a revisit router keyed on metrics must see deletions."""
@@ -234,42 +248,73 @@ class EvidenceBindingTests(Base):
 
 
 
-class ReadTokenTests(Base):
-    """R2-07/R2-08: a foreground analysis is bound to the read that produced it, by change-log sequence."""
+class ReadReceiptTests(Base):
+    """R3-01/02/09/10: a derived write is bound to the reads that returned its evidence; its dependency is kept."""
 
     def setUp(self):
         super().setUp()
         self.s.register_source('synthetic:watch', 'SYNTHETIC watch')
         self.t = Tools(ToolContext(store=self.s))
 
-    def analysis(self, token, ids):
-        return self.t.call('context_capture', {'request_id': self.rid(), 'kind': 'analysis',
-                                               'text': 'SYNTHETIC weekly mean', 'occurred_at': AT,
-                                               'evidence_ids': ids, 'read_token': token})
+    def obs(self, nid, h, v):
+        self.batch('synthetic:watch', [dict(native_id=nid, metric='SYNTHETIC.m', start_at=hour(h), end_at=hour(h),
+                                            value_num=v)])
 
-    def test_changed_observation_after_the_read_is_refused(self):
-        self.batch('synthetic:watch', [dict(native_id='a', metric='SYNTHETIC.m', start_at=hour(1), value_num=1.0)])
-        read = self.t.call('context_query', {'sql': 'SELECT id FROM observations'}).data
-        self.batch('synthetic:watch', [dict(native_id='a', metric='SYNTHETIC.m', start_at=hour(1), value_num=2.0)])
-        out = self.analysis(read['read_token'], [read['rows'][0][0]])
+    def analysis(self, receipts, ids, kind='analysis'):
+        args = {'request_id': self.rid(), 'kind': kind, 'text': 'SYNTHETIC daily mean', 'occurred_at': AT,
+                'evidence_ids': ids}
+        if receipts is not None:
+            args['read_receipts'] = receipts
+        return self.t.call('context_capture', args)
+
+    def query(self, sql='SELECT id, value_num FROM canonical_observations'):
+        return self.t.call('context_query', {'sql': sql}).data
+
+    def test_a_disjoint_new_member_of_the_aggregate_makes_it_stale(self):
+        self.obs('a', 9, 10.0)
+        read = self.query()  # daily mean over one row = 10
+        self.obs('b', 11, 30.0)  # disjoint interval, same day: the mean is now 20
+        out = self.analysis([read['read_receipt']], [read['rows'][0][0]])
         self.assertEqual(out.data['error'], 'stale_evidence')
-        fresh = self.t.call('context_query', {'sql': 'SELECT 1'}).data['read_token']
-        self.assertFalse(self.analysis(fresh, [read['rows'][0][0]]).is_error)
 
-    def test_a_new_member_of_the_aggregated_window_invalidates_old_members(self):
-        self.batch('synthetic:watch', [dict(native_id='a', metric='SYNTHETIC.m', start_at=hour(1), end_at=hour(2),
-                                            value_num=1.0)])
-        read = self.t.call('context_query', {'sql': 'SELECT id FROM observations'}).data
-        # a second sample lands in the same window: the mean over [hour1, hour3) the model computed is now wrong
-        self.batch('synthetic:watch', [dict(native_id='b', metric='SYNTHETIC.m', start_at=hour(1), end_at=hour(3),
-                                            value_num=9.0)])
-        self.assertEqual(self.analysis(read['read_token'], [read['rows'][0][0]]).data['error'], 'stale_evidence')
-        # a batch of another metric, or of this metric at another time, does not (the check is per batch window,
-        # so a batch mixing both would conservatively refuse)
-        read = self.t.call('context_query', {'sql': 'SELECT 1'}).data
-        self.batch('synthetic:watch', [dict(native_id='c', metric='SYNTHETIC.other', start_at=hour(1), value_num=1.0)])
-        self.batch('synthetic:watch', [dict(native_id='d', metric='SYNTHETIC.m', start_at=hour(40), value_num=1.0)])
-        self.assertFalse(self.analysis(read['read_token'], [oid('synthetic:watch', 'a')]).is_error)
+    def test_deleting_a_non_cited_member_makes_it_stale(self):
+        self.obs('a', 9, 10.0)
+        self.obs('b', 11, 30.0)
+        read = self.query()
+        self.batch('synthetic:watch', deleted=['b'])
+        self.assertEqual(self.analysis([read['read_receipt']], [oid('synthetic:watch', 'a')]).data['error'],
+                         'stale_evidence')
+
+    def test_a_saved_analysis_turns_stale_when_its_population_changes_later(self):
+        self.obs('a', 9, 10.0)
+        read = self.query()
+        rid = self.analysis([read['read_receipt']], [read['rows'][0][0]]).data['record_id']
+        self.assertTrue(self.s.get_records([rid])['records'][0]['evidence']['current'])
+        self.obs('b', 11, 30.0)
+        ev = self.s.get_records([rid])['records'][0]['evidence']
+        self.assertEqual((ev['current'], ev['stale_ids']), (False, ['observations']))
+
+    def test_derived_writes_need_a_receipt_that_returned_the_evidence(self):
+        self.obs('a', 9, 10.0)
+        read = self.query()
+        unrelated = self.query('SELECT 1')['read_receipt']
+        for receipts, code in ((None, 'evidence_unbound'), ([unrelated], 'evidence_unbound'),
+                               (['rr_' + '0' * 32], 'evidence_unbound')):
+            self.assertEqual(self.analysis(receipts, [read['rows'][0][0]]).data['error'], code, receipts)
+        self.assertEqual(self.analysis(None, []).data['error'], 'evidence_unbound')  # an analysis always binds
+        self.assertFalse(self.analysis([read['read_receipt']], [read['rows'][0][0]]).is_error)
+
+    def test_primary_facts_need_no_read(self):
+        out = self.analysis(None, [], kind='event')
+        self.assertFalse(out.is_error, out.data)
+        self.assertNotIn('evidence', self.s.get_records([out.data['record_id']])['records'][0])
+
+    def test_record_evidence_is_stale_when_a_newer_record_supersedes_it_after_the_read(self):
+        rec = self.s.put_record(request_id=self.rid(), kind='note', text='SYNTHETIC v1', occurred_at=AT)['record_id']
+        read = self.t.call('context_read', {'record_ids': [rec]}).data
+        self.s.put_record(request_id=self.rid(), kind='note', text='SYNTHETIC v2', occurred_at=AT, supersedes=rec)
+        out = self.analysis([read['read_receipt']], [rec], kind='note')
+        self.assertIn(out.data['error'], {'stale_evidence', 'missing_evidence'})
 
     def test_re_extracted_page_after_the_read_is_refused(self):
         sha = self.s.put_attachment_bytes(request_id=self.rid(), data=b'SYNTHETIC scan', filename='s.txt',
@@ -277,14 +322,13 @@ class ReadTokenTests(Base):
         self.s.set_extraction(sha, status='done', method='fixture', pages=['SYNTHETIC first'])
         read = self.t.call('context_read_original', {'object_sha256': sha, 'mode': 'pages'}).data
         self.s.set_extraction(sha, status='done', method='fixture', pages=['SYNTHETIC corrected'])
-        self.assertEqual(self.analysis(read['read_token'], [f'obj:{sha}#p1']).data['error'], 'stale_evidence')
+        self.assertEqual(self.analysis([read['read_receipt']], [f'obj:{sha}#p1']).data['error'], 'stale_evidence')
 
-    def test_every_read_tool_returns_a_token_and_writes_do_not(self):
+    def test_every_read_tool_returns_a_receipt_and_writes_do_not(self):
         for name, args in (('context_bootstrap', {}), ('context_search', {}), ('context_query', {'sql': 'SELECT 1'})):
-            self.assertIsInstance(self.t.call(name, args).data['read_token'], int, name)
-        out = self.t.call('context_capture', {'request_id': self.rid(), 'kind': 'note', 'text': 'SYNTHETIC',
-                                              'occurred_at': AT})
-        self.assertNotIn('read_token', out.data)
+            self.assertTrue(self.t.call(name, args).data['read_receipt'].startswith('rr_'), name)
+        out = self.analysis(None, [], kind='note')
+        self.assertNotIn('read_receipt', out.data)
 
 class PostCommitTruthTests(Base):
     def test_errors_after_original_commit_still_return_the_committed_receipt(self):

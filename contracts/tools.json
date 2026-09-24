@@ -191,7 +191,7 @@
     },
     {
       "name": "context_capture",
-      "description": "在已验证允许的来源上下文中保存自然输入或重要分析；返回COMMIT回执。混合受限vendor会话不能使用本工具。 When citing evidence_ids, pass the read_token of the read that produced them.",
+      "description": "在已验证允许的来源上下文中保存自然输入或重要分析；返回COMMIT回执。混合受限vendor会话不能使用本工具。 When citing evidence_ids or writing an analysis, pass read_receipts from the reads that returned that evidence.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -236,10 +236,14 @@
             },
             "maxItems": 100
           },
-          "read_token": {
-            "type": "integer",
-            "minimum": 0,
-            "description": "read_token returned by the read (search/read/query/read_original/bootstrap) whose results the evidence_ids come from. With it, the write is refused as stale_evidence if any cited item changed after that read; re-read and write again."
+          "read_receipts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^rr_[0-9a-f]{32}$"
+            },
+            "maxItems": 20,
+            "description": "read_receipt of each read (bootstrap/search/read/query/read_original) whose results this write uses. Required when evidence_ids is given or kind is analysis; refused as stale_evidence if that evidence changed after the read (for observation data: any new observation batch)."
           }
         },
         "required": [
@@ -259,7 +263,7 @@
     },
     {
       "name": "context_revise",
-      "description": "新增一条修订并保留历史；仅可修订当前记录、不能以此绕过来源政策。 When citing evidence_ids, pass the read_token of the read that produced them.",
+      "description": "新增一条修订并保留历史；仅可修订当前记录、不能以此绕过来源政策。 When citing evidence_ids or writing an analysis, pass read_receipts from the reads that returned that evidence.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -309,10 +313,14 @@
             "minLength": 1,
             "maxLength": 200
           },
-          "read_token": {
-            "type": "integer",
-            "minimum": 0,
-            "description": "read_token returned by the read (search/read/query/read_original/bootstrap) whose results the evidence_ids come from. With it, the write is refused as stale_evidence if any cited item changed after that read; re-read and write again."
+          "read_receipts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^rr_[0-9a-f]{32}$"
+            },
+            "maxItems": 20,
+            "description": "read_receipt of each read (bootstrap/search/read/query/read_original) whose results this write uses. Required when evidence_ids is given or kind is analysis; refused as stale_evidence if that evidence changed after the read (for observation data: any new observation batch)."
           }
         },
         "required": [
