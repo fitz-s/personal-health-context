@@ -17,13 +17,12 @@ Dedicated device channel. It is NOT the ChatGPT MCP tunnel and grants no read/qu
 `POST /v1/batches`, header `Authorization: Bearer <device_token>`, body = `contracts/apple_batch.schema.json` object.
 - `installation_id` must equal the token's installation (else 403 `installation_mismatch`).
 - Stream ordering: per (installation_id, stream). `sequence` starts at 0; `previous_batch_id` is null for sequence 0, else the batch_id of sequence-1.
-- 200 ACK: `{"batch_id","request_hash","committed":true,"upserted":N,"deleted":N,"filtered_restricted":N,"server_time"}`. Only after this may the phone delete the outbox entry.
+- 200 ACK: `{"batch_id","request_hash","committed":true,"upserted":N,"deleted":N,"server_time"}`. Only after this may the phone delete the outbox entry.
 - Replay of an already committed batch_id with identical body → the SAME stored ACK (200).
 - Same batch_id, different body → 409 `{"error":"batch_conflict"}` (phone must not silently drop; mark for operator attention).
 - Wrong predecessor / future sequence → 409 `{"error":"sequence_gap","expected_sequence":N,"expected_previous_batch_id":"..."|null}`. Phone resends from the expected sequence.
 - 401 `token_invalid` (revoked/unknown) → stop uploading, keep outbox, show "re-pair needed" in the setup screen.
 - 413 body > 8 MiB; 422 schema violation (`{"error":"invalid_batch","detail":"..."}`); 503 `storage_unavailable` (disk full / DB busy) → retry with backoff, keep outbox.
-- Samples whose `source_bundle_id`/`source_name` identify a restricted vendor (e.g. Oura: bundle ids containing `ouraring`, names containing `Oura`) are dropped before persistence and only counted in `filtered_restricted`. The phone also pre-filters them (never uploads their values); the server filter is authoritative.
 - `deleted_ids` are HealthKit UUIDs of deleted objects (HKDeletedObject.uuid). Unknown UUID → tombstone, never a negative value.
 
 `GET /v1/status` with bearer token → `{"server_time","streams":{"<stream>":{"last_sequence":N,"last_batch_id":"..."}}}` for resync after reinstall/anchor loss.

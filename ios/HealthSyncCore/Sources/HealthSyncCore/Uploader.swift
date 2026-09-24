@@ -32,21 +32,19 @@ public struct BatchAcknowledgement: Codable, Equatable, Sendable {
     public let committed: Bool
     public let upserted: Int?
     public let deleted: Int?
-    public let filteredRestricted: Int?
     public let serverTime: String?
     enum CodingKeys: String, CodingKey {
         case batchID = "batch_id", requestHash = "request_hash", committed, upserted, deleted
-        case filteredRestricted = "filtered_restricted", serverTime = "server_time"
+        case serverTime = "server_time"
     }
 
     public init(batchID: String, requestHash: String, committed: Bool, upserted: Int? = nil, deleted: Int? = nil,
-                filteredRestricted: Int? = nil, serverTime: String? = nil) {
+                serverTime: String? = nil) {
         self.batchID = batchID
         self.requestHash = requestHash
         self.committed = committed
         self.upserted = upserted
         self.deleted = deleted
-        self.filteredRestricted = filteredRestricted
         self.serverTime = serverTime
     }
 }

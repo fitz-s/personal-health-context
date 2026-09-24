@@ -110,11 +110,9 @@ with sqlite3.connect(db) as connection:
     oura = connection.execute("SELECT count(*) FROM active_observations WHERE source_id=? AND (source_name LIKE '%Oura%' OR raw_json LIKE '%Oura%')", (source,)).fetchone()[0]
     receipts = [json.loads(row[0]) for row in connection.execute(
         'SELECT result_json FROM receipts WHERE request_id LIKE ?', (f'hk:{installation}:%',))]
-filtered_counts = sorted(item.get('filtered_restricted') for item in receipts)
-result = {'active_observations': active, 'oura_observations': oura,
-          'batch_receipts': len(receipts), 'server_filtered_restricted_counts': filtered_counts}
+result = {'active_observations': active, 'oura_observations': oura, 'batch_receipts': len(receipts)}
 print(json.dumps(result, sort_keys=True))
-if active != 3 or oura != 0 or len(receipts) != 3 or filtered_counts != [0, 0, 0]:
+if active != 3 or oura != 1 or len(receipts) != 3:
     print('database assertion failed', file=sys.stderr)
     sys.exit(1)
 PY

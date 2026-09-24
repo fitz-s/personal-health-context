@@ -70,6 +70,13 @@ private func enqueue(_ store: OutboxStore, stream: String = "HKQuantityTypeIdent
     #expect(Set(sampleObject.keys).isSubset(of: allowedSampleKeys))
 }
 
+@Test func batchAcknowledgementDecodesWithoutOptionalFields() throws {
+    let ack = try JSONDecoder().decode(BatchAcknowledgement.self,
+                                       from: Data(#"{"batch_id":"batch-1","request_hash":"hash","committed":true}"#.utf8))
+    #expect(ack.batchID == "batch-1")
+    #expect(ack.committed)
+}
+
 @Test func queryTimeEncodingKeepsExplicitOffset() {
     let value = ISO8601OffsetDateFormatter().string(from: Date(timeIntervalSince1970: 0),
                                                    timeZone: TimeZone(secondsFromGMT: -5 * 3600)!)
@@ -148,13 +155,16 @@ private func enqueue(_ store: OutboxStore, stream: String = "HKQuantityTypeIdent
     try? FileManager.default.removeItem(at: directory)
 }
 
-@Test func restrictedSourcesAreFilteredBeforeQueueing() {
-    let allowed = sample(bundle: "com.apple.health", name: "Health")
-    let bundleRestricted = sample(bundle: "com.ouraring.oura", name: "Ring")
-    let nameRestricted = sample(bundle: "vendor.device", name: "Oura Sync")
-    var filter = RestrictedSourceFilter()
-    #expect(filter.filter([allowed, bundleRestricted, nameRestricted]) == [allowed])
-    #expect(filter.filteredCount == 2)
+@Test func ouraSourceNameIsPreservedInOutbox() async throws {
+    let (store, directory) = try makeStore()
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let oura = sample(bundle: "com.ouraring.oura", name: "Oura Sync")
+    let entry = try await store.enqueue(installationID: "installation-test", stream: "metric",
+                                        nextAnchor: Data([1]), queryCompletedAt: "2026-09-23T10:00:00-05:00",
+                                        samples: [oura], deletedIDs: [])
+    #expect(entry.batch.samples == [oura])
+    let queued = try await store.nextEntry(stream: "metric")
+    #expect(queued?.batch.samples == [oura])
 }
 
 @Test func retryBackoffCapsAndPersistsAttemptState() async throws {
@@ -330,27 +340,6 @@ func failedIndexWriteKeepsPageUnacknowledged(op: FileOp) async throws {
     #expect(throws: (any Error).self) { _ = try OutboxStore(directory: directory) }
     try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: index.path)
     #expect(try Data(contentsOf: index) == before)
-}
-
-// MARK: - F16 one provenance policy
-
-@Test(arguments: [
-    ("source name", sample(bundle: "vendor.app", name: "My OURA ring")),
-    ("bundle id", sample(bundle: "com.ouraring.oura", name: "Ring")),
-    ("device name", sample(bundle: "vendor.app", name: "Ring", device: ["name": .string("Oura Gen3")])),
-    ("device manufacturer", sample(bundle: "vendor.app", name: "Ring", device: ["manufacturer": .string("Oura Health Oy")])),
-    ("device model", sample(bundle: "vendor.app", name: "Ring", device: ["model": .string("oura-gen4")])),
-    ("metadata key", sample(bundle: "vendor.app", name: "Ring", metadata: ["OuraSampleID": .number(7)])),
-    ("metadata value", sample(bundle: "vendor.app", name: "Ring", metadata: ["origin": .string("synced from Oura")])),
-    ("nested metadata value", sample(bundle: "vendor.app", name: "Ring",
-                                     metadata: ["chain": .array([.object(["app": .string("OuRa")])])]))
-])
-func restrictedMarkerIsFilteredBeforeOutbox(marker: String, restricted: HealthSample) {
-    let allowed = sample(bundle: "com.apple.health", name: "Apple Watch", device: ["name": .string("Apple Watch")],
-                         metadata: ["HKTimeZone": .string("America/Chicago")])
-    var filter = RestrictedSourceFilter()
-    #expect(filter.filter([allowed, restricted]) == [allowed], "marker: \(marker)")
-    #expect(filter.filteredCount == 1, "marker: \(marker)")
 }
 
 // MARK: - F31 drain reentrancy

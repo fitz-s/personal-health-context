@@ -48,8 +48,9 @@ The stored key is only meaningful under one formula. Any change to this section 
   reappear). Implemented as the table `supersessions(origin_key PRIMARY KEY, live_observation_id)`; export rows are
   canonical iff their origin_key has no supersession row.
 
-## Restricted provenance (both producers, before any persistence)
-A sample is restricted (Oura) if **any** of these contain `oura` (case-insensitive): source name, bundle id, device
-name/manufacturer/model, any metadata key or value. The phone drops it before writing the outbox; the Mac drops it
-again at ingest. Workout routes are persisted only when their parent Workout is permitted. ECG CSVs have no parent
-record in the export: they are checked on their own header text (device, source) instead.
+## Oura
+`source_id` = `oura` (API v2, `phctx.oura`): one observation per Oura document; `native_id` = `<collection>:<document id>`
+(time series: `<collection>:<timestamp>`), `metric` = `oura.<collection>`, `value_num` = the collection's headline number
+(daily scores, sleep `total_sleep_duration` s, workout `calories` kcal, heart rate `bpm`), the whole document in `raw`.
+Daily documents span the local day. Oura entries mirrored into Apple Health keep their Apple provenance
+(`source_name` Oura) and are stored like any other sample (owner decision 2026-09-24).

@@ -1,6 +1,6 @@
 # Personal Context — background policy
 
-Use the same evidence standards and capable-model policy as foreground.md. You are running a bounded investigation, not composing a daily report. Only authorized durable sources are supplied to this path. Do not fetch or persist prohibited Oura/vendor data.
+Use the same evidence standards and capable-model policy as foreground.md. You are running a bounded investigation, not composing a daily report. Only durable sources are supplied to this path (Apple Health, Oura, user records).
 
 Read source coverage and current preferences. Changes in synchronization, missing permissions, device switch and timestamp drift are not health changes. Inspect the current question and previous analysis before revisiting it, then retrieve more relevant evidence as needed; the initial index is not a hard retrieval boundary.
 

@@ -22,10 +22,7 @@ Each test below was run and seen failing against the previous code before the fi
   and the anchored queries both derive their type list from these tables. Tests: `quantityUnitsMatchExportXML`,
   `sleepCategoryWireFieldsMatchExportXML` and `workoutWireFieldsMatchExportXML` parse synthetic export.xml rows;
   `tablesMatchHealthKitSDK` checks the tables against the SDK's HealthKit enum values and HKUnit strings.
-- F16 one provenance policy: `RestrictedSourceFilter` drops a sample when its source name, bundle id, any device
-  field, or any metadata key or value (nested included) contains `oura`, case-insensitively. This runs before
-  enqueue. Test: `restrictedMarkerIsFilteredBeforeOutbox`, one case per marker. The interop probe also shows that
-  source-name, device-only and metadata-only markers leave no bytes containing "oura" in any outbox file.
+- Oura-origin samples are uploaded as-is since 2026-09-24, per owner decision.
 - F30 outbox durability: all file I/O goes through `OutboxFiles` (`POSIXFiles` in production). Write, fsync of the
   temp file, rename, fsync of the directory, removal and index writes now propagate their errors; nothing is
   ignored. The in-memory index changes only after the durable index write. An index file that exists but can't be
@@ -50,7 +47,7 @@ Each test below was run and seen failing against the previous code before the fi
 
 - No iOS Simulator/device build, app installation, signing, provisioning, entitlement validation, or real HealthKit permission/data flow was possible without Xcode.app and an iOS SDK.
 - Background delivery, BGAppRefresh scheduling, device lock behavior, app termination/relaunch, HealthKit deletion tombstones, token revocation/re-pair UX, and LAN reconnect behavior require signed real-device tests in `BUILD_ON_DEVICE.md`.
-- The local real Python-ingest interoperability probe passed using only a disposable synthetic store and loopback TLS server. It exercised pairing, DER leaf pinning (including wrong-pin rejection), two sequential batches on one stream, another stream, replay ACK, authenticated status, and pre-outbox restricted filtering (source name, device-only, metadata-only). Full output: `ios/test-report/interop.log`; rerun with `bash ios/test-report/run-interop.sh` from repository root.
+- The local real Python-ingest interoperability probe passed using only a disposable synthetic store and loopback TLS server. It exercised pairing, DER leaf pinning (including wrong-pin rejection), two sequential batches on one stream, another stream, replay ACK, authenticated status, and preservation of an Oura-origin sample in the outbox. Full output: `ios/test-report/interop.log`; rerun with `bash ios/test-report/run-interop.sh` from repository root.
 - The interop probe is host/macOS validation, not an iOS SDK or device test.
 - macOS type-check does not prove iOS SDK compatibility or iOS runtime behavior.
 - `AnchoredSyncCoordinator` has no automated test here: it needs a live `HKHealthStore`. Its paging decision and wire mapping are covered through `PageDecision` and `Normalization`. Draining 501 or 1,001 real HealthKit changes after bootstrap without another observer event still needs a device run.
@@ -59,4 +56,4 @@ Each test below was run and seen failing against the previous code before the fi
 
 ## Data handling
 
-The implementation contains no fabricated Health measurements or health-value logging. The client pins the certificate leaf SHA-256, stores the paired device token and installation ID in Keychain, requests HealthKit read permissions only, and filters restricted-source samples before outbox persistence. Outbox data is protected with `completeUntilFirstUserAuthentication` on iOS; actual lock/unlock behavior still needs device verification.
+The implementation contains no fabricated Health measurements or health-value logging. The client pins the certificate leaf SHA-256, stores the paired device token and installation ID in Keychain, requests HealthKit read permissions only, and preserves HealthKit samples in the outbox as-is. Outbox data is protected with `completeUntilFirstUserAuthentication` on iOS; actual lock/unlock behavior still needs device verification.

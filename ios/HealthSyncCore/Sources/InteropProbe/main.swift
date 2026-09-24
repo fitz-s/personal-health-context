@@ -58,34 +58,26 @@ struct InteropProbe {
         let streamA = "SyntheticMetricA"
         let streamB = "SyntheticMetricB"
         let completedAt = ISO8601OffsetDateFormatter().string(from: Date(), timeZone: TimeZone(secondsFromGMT: 0)!)
-        let allowedA = sample(id: UUID().uuidString, metric: streamA, name: "Synthetic Watch", value: 61)
-        let blockedOura = sample(id: UUID().uuidString, metric: streamA, name: "Oura Synthetic", value: 999)
-        let blockedDevice = sample(id: UUID().uuidString, metric: streamA, name: "Synthetic Ring", value: 998,
-                                   device: ["manufacturer": .string("Oura Synthetic Oy")])
-        let blockedMetadata = sample(id: UUID().uuidString, metric: streamA, name: "Synthetic Ring", value: 997,
-                                     metadata: ["synced_from": .string("oura synthetic")])
-        let filteredA = filter([allowedA, blockedOura, blockedDevice, blockedMetadata])
-        guard filteredA.filtered == 3, filteredA.samples == [allowedA] else {
-            throw ProbeError.restrictedFilterMismatch
-        }
+        let ouraSample = sample(id: UUID().uuidString, metric: streamA, name: "Oura Synthetic", value: 999,
+                                device: ["manufacturer": .string("Oura Synthetic Oy")],
+                                metadata: ["synced_from": .string("oura synthetic")])
         let first = try await store.enqueue(installationID: installationID, stream: streamA, nextAnchor: Data([1]),
-                                            queryCompletedAt: completedAt, samples: filteredA.samples,
+                                            queryCompletedAt: completedAt, samples: [ouraSample],
                                             deletedIDs: [], coverage: ["interop_synthetic": .bool(true)])
+        guard first.batch.samples == [ouraSample] else { throw ProbeError.ouraSampleMissing }
         let second = try await store.enqueue(installationID: installationID, stream: streamA, nextAnchor: Data([2]),
                                              queryCompletedAt: completedAt,
-                                             samples: filter([sample(id: UUID().uuidString, metric: streamA,
-                                                                     name: "Synthetic Watch", value: 62)]).samples,
+                                             samples: [sample(id: UUID().uuidString, metric: streamA,
+                                                              name: "Synthetic Watch", value: 62)],
                                              deletedIDs: [], coverage: ["interop_synthetic": .bool(true)])
         let otherStream = try await store.enqueue(installationID: installationID, stream: streamB,
                                                   nextAnchor: Data([3]), queryCompletedAt: completedAt,
-                                                  samples: filter([sample(id: UUID().uuidString, metric: streamB,
-                                                                          name: "Synthetic Watch", value: 1)]).samples,
+                                                  samples: [sample(id: UUID().uuidString, metric: streamB,
+                                                                   name: "Synthetic Watch", value: 1)],
                                                   deletedIDs: [], coverage: ["interop_synthetic": .bool(true)])
-        let written = try FileManager.default.contentsOfDirectory(at: outboxURL, includingPropertiesForKeys: nil)
-            .map { try Data(contentsOf: $0) }
-        guard !written.contains(where: { String(decoding: $0, as: UTF8.self).range(of: "oura", options: .caseInsensitive) != nil })
-        else { throw ProbeError.restrictedSampleQueued }
-        print("PASS: source-name, device-only and metadata-only restricted samples removed before durable outbox")
+        let queued = try await store.nextEntry(stream: streamA)
+        guard queued?.batch.samples == [ouraSample] else { throw ProbeError.ouraSampleMissing }
+        print("PASS: Oura-origin sample persisted unchanged in durable outbox")
 
         let engine = SyncEngine(store: store, uploader: uploader, token: { pair.deviceToken })
         await engine.drain()
@@ -118,14 +110,10 @@ struct InteropProbe {
                      unit: "count", sourceBundleID: "synthetic.test", sourceName: name, device: device, metadata: metadata)
     }
 
-    private static func filter(_ samples: [HealthSample]) -> (samples: [HealthSample], filtered: Int) {
-        var restricted = RestrictedSourceFilter()
-        return (restricted.filter(samples), restricted.filteredCount)
-    }
 }
 
 enum ProbeError: Error, CustomStringConvertible {
-    case usage, localOnly, wrongPinAccepted, installationMismatch, restrictedFilterMismatch, restrictedSampleQueued, pendingEntriesRemain
+    case usage, localOnly, wrongPinAccepted, installationMismatch, ouraSampleMissing, pendingEntriesRemain
     case acknowledgementMissing(String), replayNotAcknowledged, statusMismatch
 
     var description: String {
@@ -134,8 +122,7 @@ enum ProbeError: Error, CustomStringConvertible {
         case .localOnly: return "interop probe only permits loopback host and explicit disposable outbox path"
         case .wrongPinAccepted: return "wrong certificate pin was accepted"
         case .installationMismatch: return "pairing returned a different installation id"
-        case .restrictedFilterMismatch: return "restricted-source filter did not remove expected synthetic sample"
-        case .restrictedSampleQueued: return "restricted source entered durable outbox"
+        case .ouraSampleMissing: return "Oura-origin sample was not preserved in durable outbox"
         case .pendingEntriesRemain: return "outbox still has pending entries after drain"
         case .acknowledgementMissing(let stream): return "missing final ACK checkpoint for stream \(stream)"
         case .replayNotAcknowledged: return "identical batch replay did not return committed ACK"

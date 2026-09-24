@@ -164,8 +164,6 @@ public final class AnchoredSyncCoordinator: @unchecked Sendable {
                 Task {
                     do {
                         let converted = (samples ?? []).compactMap { self.mapSample($0) }
-                        var filter = RestrictedSourceFilter()
-                        let allowed = filter.filter(converted)
                         let deletedIDs = (deleted ?? []).map { $0.uuid.uuidString }
                         let anchorData = try NSKeyedArchiver.archivedData(withRootObject: newAnchor, requiringSecureCoding: true)
                         let timestamp = ISO8601OffsetDateFormatter().string(from: Date())
@@ -173,9 +171,8 @@ public final class AnchoredSyncCoordinator: @unchecked Sendable {
                                                 deleted: deletedIDs.count)
                         _ = try await self.outbox.enqueue(installationID: self.installationID, stream: stream,
                                                           nextAnchor: anchorData, queryCompletedAt: timestamp,
-                                                          samples: allowed, deletedIDs: deletedIDs,
-                                                          coverage: ["filtered_restricted": .number(Double(filter.filteredCount)),
-                                                                     "initial_history_days": .number(30),
+                                                          samples: converted, deletedIDs: deletedIDs,
+                                                          coverage: ["initial_history_days": .number(30),
                                                                      "initial_history_start_epoch": .number(history.startEpoch ?? lowerBound.timeIntervalSince1970),
                                                                      "initial_history_complete": .bool(page.historyComplete),
                                                                      "limited_to_page_size": .bool(page.queryAgain)])
@@ -212,7 +209,7 @@ public final class AnchoredSyncCoordinator: @unchecked Sendable {
         var number: Double?
         var text: String?
         var unit: String?
-        // HealthKit metadata travels whole: the restricted-provenance filter must see every key and value.
+        // Preserve HealthKit metadata without dropping provenance from the uploaded sample.
         var metadata: [String: JSONValue] = (object.metadata ?? [:]).mapValues { value in
             switch value {
             case let text as String: return .string(text)
