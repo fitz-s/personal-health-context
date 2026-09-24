@@ -109,7 +109,7 @@ class ConsentServerTests(unittest.TestCase):
         import urllib.request
         from phctx import oura
         stored = {f'phctx-{n}-{k}': f'SYNTHETIC-{n}-{k}' for n in ('whoop', 'oura') for k in ('client-id', 'client-secret')}
-        urls, exchanged = [], []
+        urls, exchanged, pages = [], [], []
 
         def browse(url):  # stands in for the owner approving in the browser
             urls.append(url)
@@ -120,7 +120,7 @@ class ConsentServerTests(unittest.TestCase):
                         cb = q['redirect_uri'][0] + '?' + urllib.parse.urlencode({'code': 'SYNTHETIC-code-' + q['client_id'][0],
                                                                                   'state': q['state'][0]})
                         direct = urllib.request.build_opener(urllib.request.ProxyHandler({}))  # bypass any HTTP proxy
-                        direct.open(cb.replace('localhost', '127.0.0.1'), timeout=10).read()
+                        pages.append(direct.open(cb.replace('localhost', '127.0.0.1'), timeout=10).read().decode())
                 threading.Thread(target=approve).start()
 
         def post(p, form):
@@ -132,6 +132,32 @@ class ConsentServerTests(unittest.TestCase):
                 patch('builtins.print'):
             out = oauth.login([whoop.PROVIDER, oura.PROVIDER], open_browser=browse, timeout=30)
         self.assertEqual(out, {'whoop': 'connected', 'oura': 'connected'})
+        states = {urllib.parse.urlsplit(u).netloc: urllib.parse.parse_qs(urllib.parse.urlsplit(u).query)['state'][0]
+                  for u in urls}
+        self.assertEqual(len(states['api.prod.whoop.com']), 8)  # WHOOP requires an 8-character state
         self.assertEqual(sorted(exchanged), [('oura', 'SYNTHETIC-code-SYNTHETIC-oura-client-id'),
                                              ('whoop', 'SYNTHETIC-code-SYNTHETIC-whoop-client-id')])
         self.assertEqual(stored['phctx-oura-refresh-token'], 'SYNTHETIC-r-oura')
+        self.assertTrue(all('consent received' in page for page in pages))
+
+    def test_a_vendor_error_is_reported_as_not_connected(self):
+        import threading
+        import urllib.parse
+        import urllib.request
+        stored = {f'phctx-whoop-{k}': f'SYNTHETIC-{k}' for k in ('client-id', 'client-secret')}
+        pages, threads = [], []
+
+        def browse(url):
+            q = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)
+            cb = (q['redirect_uri'][0] + '?' + urllib.parse.urlencode({'error': 'request_unauthorized',
+                                                                       'state': q['state'][0]}))
+            direct = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+            threads.append(threading.Thread(target=lambda: pages.append(
+                direct.open(cb.replace('localhost', '127.0.0.1'), timeout=10).read().decode())))
+            threads[-1].start()
+        with patch.object(oauth, 'keychain_get', stored.get), patch.object(oauth, 'PORT', 47898), \
+                patch('builtins.print'):
+            out = oauth.login([whoop.PROVIDER], open_browser=browse, timeout=30)
+        self.assertEqual(out, {'whoop': 'consent_request_unauthorized'})
+        threads[0].join(10)
+        self.assertIn('NOT connected (request_unauthorized)', pages[0])

@@ -20,7 +20,7 @@ SOURCE = 'whoop'
 PROVIDER = oauth.Provider('whoop', 'https://api.prod.whoop.com/oauth/oauth2/auth',
                           'https://api.prod.whoop.com/oauth/oauth2/token',
                           'offline read:recovery read:cycles read:sleep read:workout read:profile read:body_measurement',
-                          refresh_scope='offline')
+                          refresh_scope='offline', state_chars=8)
 FIRST_DAY = '2015-01-01T00:00:00Z'  # before the first WHOOP strap
 REREAD_DAYS = 14
 

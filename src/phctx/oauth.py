@@ -35,6 +35,7 @@ class Provider:
     token_url: str
     scopes: str
     refresh_scope: str | None = None  # WHOOP asks for scope=offline on refresh
+    state_chars: int = 22  # WHOOP requires an 8-character state
 
     @property
     def redirect(self) -> str:
@@ -70,7 +71,7 @@ def connected(p: Provider) -> bool:
 def login(providers: list[Provider], open_browser=webbrowser.open, timeout: float = 600) -> dict:
     """One-time owner consent for each provider on one localhost server (all redirects share the port). Prints each
     consent URL, to open in the browser that holds the vendor session; returns once every provider answered or timed out."""
-    pending = {p.name: (p, *client(p), secrets.token_urlsafe(16)) for p in providers}
+    pending = {p.name: (p, *client(p), secrets.token_urlsafe(p.state_chars)[:p.state_chars]) for p in providers}
     got: dict[str, dict] = {}
 
     class Callback(http.server.BaseHTTPRequestHandler):
@@ -84,7 +85,11 @@ def login(providers: list[Provider], open_browser=webbrowser.open, timeout: floa
             self.send_response(200 if ok else 400)
             self.send_header('Content-Type', 'text/plain; charset=utf-8')
             self.end_headers()
-            self.wfile.write(f'{name} connected; you can close this tab.'.encode() if ok else b'Unexpected request.')
+            # The code has not been exchanged yet, so this page only says whether consent came back; the CLI reports
+            # the final outcome.
+            msg = (f'{name}: consent received, finishing on the Mac.' if ok and got[name]['code'] else
+                   f'{name}: NOT connected ({got[name]["error"] or "no code"}).' if ok else 'Unexpected request.')
+            self.wfile.write(msg.encode())
 
         def log_message(self, *a):  # no request logging: the query carries the authorization code
             pass
