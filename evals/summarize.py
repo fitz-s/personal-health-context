@@ -3,8 +3,11 @@
 
 A case counts PASS only if every run of it passed. Status FAIL (exit 1) unless every critical case has at least
 CRITICAL_RUNS distinct runs, no case mixes runs of different prompts or models (a re-run into an old --out dir),
-dev and holdout run_meta hashes match, and evals/score.py exits 0. Row
-prompt_sha256 values are the ones recorded per run, never rewritten.
+no row's model_id disagrees with its own campaign's run_meta.json (a whole case quietly summarized from another
+model's campaign), no row's prompt_sha256 differs from its own campaign's recorded prompt hash for that row's mode (a whole case
+swapped in from a different prompt campaign without mixing tuples within itself), dev and holdout
+run_meta hashes match, and evals/score.py exits 0. Row prompt_sha256 values are the ones recorded per run, never
+rewritten.
 """
 from __future__ import annotations
 
@@ -29,14 +32,28 @@ def main() -> int:
             r = json.loads(line)
             if cases[r['case_id']]['split'] == ('dev' if d == dev_dir else 'holdout'):
                 per_case[r['case_id']].append(r)
+    meta = json.loads((dev_dir / 'run_meta.json').read_text())
+    hmeta = json.loads((hold_dir / 'run_meta.json').read_text())
+    expect_model = {'dev': meta['model'], 'holdout': hmeta['model']}
+
+    # Each row must carry its own campaign's recorded prompt hash for its mode: a case summarized from another
+    # prompt campaign carries a hash its campaign never recorded (checked per row, not by comparing splits).
+    campaign_prompts = {split: {'foreground': m['hashes']['prompts/foreground.md'],
+                                'background': m['hashes']['prompts/background.md']}
+                        for split, m in (('dev', meta), ('holdout', hmeta))}
+
     rows, buckets = [], collections.defaultdict(lambda: {'passed': 0, 'total': 0})
-    hard, short, mixed = [], [], []
+    hard, short, mixed, foreign_rows, foreign_prompt_cases = [], [], [], [], []
     for cid, c in cases.items():
         runs = per_case.get(cid, [])
         if c['severity'] == 'critical' and len({r.get('run') for r in runs}) < CRITICAL_RUNS:
             short.append(cid)
         if len({(r.get('prompt_sha256'), r.get('model_id')) for r in runs}) > 1:
             mixed.append(cid)
+        if any(r.get('model_id') != expect_model[c['split']] for r in runs):
+            foreign_rows.append(cid)
+        if any(r.get('prompt_sha256') != campaign_prompts[c['split']].get(r.get('mode')) for r in runs):
+            foreign_prompt_cases.append(cid)
         status = 'NOT_RUN' if not runs else ('PASS' if all(r['status'] == 'PASS' for r in runs) else 'FAIL')
         h = any(r.get('hard_failure') for r in runs)
         if h or (c['severity'] == 'critical' and status == 'FAIL'):
@@ -54,8 +71,6 @@ def main() -> int:
     for b in buckets.values():
         b['rate'] = round(b['passed'] / b['total'], 3)
     below = [k for k, t in TARGETS.items() if buckets[k]['rate'] < t]
-    meta = json.loads((dev_dir / 'run_meta.json').read_text())
-    hmeta = json.loads((hold_dir / 'run_meta.json').read_text())
     same = meta['hashes'] == hmeta['hashes']
     res = out.parent / 'final_case_results.jsonl'
     res.write_text(''.join(json.dumps(r, ensure_ascii=False) + '\n' for r in rows))
@@ -64,13 +79,14 @@ def main() -> int:
         scored = json.loads(score.stdout or '{}')
     except ValueError:
         scored = {'unparseable': score.stdout[:500]}
-    ok = (not hard and not below and not short and not mixed and same and score.returncode == 0
-          and all(r['status'] != 'NOT_RUN' for r in rows))
+    ok = (not hard and not below and not short and not mixed and not foreign_rows and not foreign_prompt_cases
+          and same and score.returncode == 0 and all(r['status'] != 'NOT_RUN' for r in rows))
     status = 'PASS' if ok else 'FAIL'
     summary = {'status': status, 'model': meta['model'], 'judge_model': meta['judge_model'], 'backend': meta['backend'],
                'dev_round': str(dev_dir.name), 'holdout_round': str(hold_dir.name),
                'hashes_dev': meta['hashes'], 'hashes_holdout': hmeta['hashes'],
                'same_code_and_prompt_for_holdout': same, 'insufficient_runs': short, 'mixed_campaign_cases': mixed,
+               'foreign_rows': foreign_rows, 'foreign_prompt_cases': foreign_prompt_cases,
                'required_critical_runs': CRITICAL_RUNS,
                'buckets': dict(buckets), 'targets': TARGETS, 'below_targets': below, 'hard_failure_cases': hard,
                'failing_cases': [r for r in rows if r['status'] != 'PASS'],
@@ -81,6 +97,7 @@ def main() -> int:
                         f'{hard or "none"}. Host is Codex CLI, not the ChatGPT client.')}
     out.write_text(json.dumps(summary, ensure_ascii=False, indent=1))
     print(json.dumps({k: summary[k] for k in ('status', 'below_targets', 'hard_failure_cases', 'insufficient_runs', 'mixed_campaign_cases',
+                                               'foreign_rows', 'foreign_prompt_cases',
                                                'same_code_and_prompt_for_holdout', 'note')},
                      ensure_ascii=False, indent=1))
     return 0 if ok else 1

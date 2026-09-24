@@ -79,7 +79,7 @@ private struct OutboxIndex: Codable { var streams: [String: StreamCheckpoint] = 
 private struct OutboxResyncJournal: Codable { let entries: [OutboxEntry] }
 
 public enum OutboxError: Error, Equatable {
-    case missingEntry(String), invalidAck, sequenceGapCannotResync, conflictingBatchID, outboxLimitReached
+    case missingEntry(String), invalidAck, sequenceGapCannotResync, conflictingBatchID, outboxLimitReached, poisoned
 }
 
 public actor OutboxStore {
@@ -88,6 +88,10 @@ public actor OutboxStore {
     private let encoder: JSONEncoder
     private let decoder = JSONDecoder()
     private var index: OutboxIndex
+    // Set when a rename published a file but the directory fsync confirming that publication then failed:
+    // the destination is visible but its durability is unconfirmed, so reads must not trust it until a
+    // directory fsync succeeds.
+    private var poisoned = false
 
     public init(directory: URL, files: any OutboxFiles = POSIXFiles()) throws {
         self.directory = directory
@@ -135,6 +139,7 @@ public actor OutboxStore {
 
     public func enqueue(installationID: String, stream: String, nextAnchor: Data, queryCompletedAt: String,
                         samples: [HealthSample], deletedIDs: [String], coverage: [String: JSONValue] = [:]) throws -> OutboxEntry {
+        try clearPoisonIfPossible()
         let pending = try allEntries(stream: stream).filter { $0.state != .acked }
         guard !pending.contains(where: { $0.state == .conflict }) else { throw OutboxError.sequenceGapCannotResync }
         guard pending.count < 20, samples.count <= 5_000, deletedIDs.count <= 5_000 else { throw OutboxError.outboxLimitReached }
@@ -153,7 +158,7 @@ public actor OutboxStore {
         let url = entryURL(batchID: batch.batchID)
         guard !FileManager.default.fileExists(atPath: url.path) else { throw OutboxError.conflictingBatchID }
         // The payload and corresponding anchor are durable in the same outbox record.
-        try Self.atomicWrite(try encoder.encode(entry), to: url, files: files)
+        try publish(try encoder.encode(entry), to: url)
         #if os(iOS)
         try Self.protect(url)
         #endif
@@ -161,7 +166,8 @@ public actor OutboxStore {
     }
 
     public func entries(stream: String? = nil) throws -> [OutboxEntry] {
-        try allEntries(stream: stream).sorted { $0.stream == $1.stream ? $0.sequence < $1.sequence : $0.stream < $1.stream }
+        try clearPoisonIfPossible()
+        return try allEntries(stream: stream).sorted { $0.stream == $1.stream ? $0.sequence < $1.sequence : $0.stream < $1.stream }
     }
 
     public func nextEntry(stream: String) throws -> OutboxEntry? {
@@ -171,6 +177,7 @@ public actor OutboxStore {
     }
 
     public func anchor(for stream: String) throws -> Data? {
+        try clearPoisonIfPossible()
         if let latest = try allEntries(stream: stream).filter({ $0.state != .acked }).max(by: { $0.sequence < $1.sequence }) {
             return latest.nextAnchor
         }
@@ -230,7 +237,7 @@ public actor OutboxStore {
             throw OutboxError.sequenceGapCannotResync
         }
         let journalURL = directory.appendingPathComponent("resync-journal.json")
-        try Self.atomicWrite(try encoder.encode(OutboxResyncJournal(entries: entries)), to: journalURL, files: files)
+        try publish(try encoder.encode(OutboxResyncJournal(entries: entries)), to: journalURL)
         #if os(iOS)
         try Self.protect(journalURL)
         #endif
@@ -249,6 +256,31 @@ public actor OutboxStore {
 
     public func checkpoint(for stream: String) -> StreamCheckpoint { index.streams[stream] ?? StreamCheckpoint() }
 
+    /// Retries the directory fsync a prior ambiguous publication left unconfirmed. Success clears the poison;
+    /// failure keeps every enqueue/anchor/entries call throwing until a later call retries and succeeds.
+    private func clearPoisonIfPossible() throws {
+        guard poisoned else { return }
+        do {
+            try files.sync(directory)
+            poisoned = false
+        } catch {
+            throw OutboxError.poisoned
+        }
+    }
+
+    /// Writes durably, then poisons the store if the rename succeeded but the directory fsync confirming it
+    /// did not — the destination is visible on disk with its durability unconfirmed. The original error is
+    /// always rethrown unchanged; poisoning is a side effect callers observe on their next call.
+    private func publish(_ data: Data, to destination: URL) throws {
+        var renamedBeforeFailure = false
+        do {
+            try Self.atomicWrite(data, to: destination, files: files, ambiguousOnFailure: &renamedBeforeFailure)
+        } catch {
+            if renamedBeforeFailure { poisoned = true }
+            throw error
+        }
+    }
+
     private func load(batchID: String) throws -> OutboxEntry {
         let url = entryURL(batchID: batchID)
         guard FileManager.default.fileExists(atPath: url.path) else { throw OutboxError.missingEntry(batchID) }
@@ -257,7 +289,7 @@ public actor OutboxStore {
 
     private func save(_ entry: OutboxEntry) throws {
         let url = entryURL(batchID: entry.batch.batchID)
-        try Self.atomicWrite(try encoder.encode(entry), to: url, files: files)
+        try publish(try encoder.encode(entry), to: url)
         #if os(iOS)
         try Self.protect(url)
         #endif
@@ -274,7 +306,7 @@ public actor OutboxStore {
 
     private func persist(_ index: OutboxIndex) throws {
         let url = directory.appendingPathComponent("index.json")
-        try Self.atomicWrite(try encoder.encode(index), to: url, files: files)
+        try publish(try encoder.encode(index), to: url)
         #if os(iOS)
         try Self.protect(url)
         #endif
@@ -304,6 +336,14 @@ public actor OutboxStore {
     }
 
     private static func atomicWrite(_ data: Data, to destination: URL, files: any OutboxFiles) throws {
+        var ambiguousOnFailure = false
+        try atomicWrite(data, to: destination, files: files, ambiguousOnFailure: &ambiguousOnFailure)
+    }
+
+    /// `ambiguousOnFailure` is set just before the final directory fsync: if that fsync is what throws, the
+    /// rename already succeeded and publication is ambiguous rather than cleanly rolled back.
+    private static func atomicWrite(_ data: Data, to destination: URL, files: any OutboxFiles,
+                                    ambiguousOnFailure: inout Bool) throws {
         let temporary = destination.deletingLastPathComponent().appendingPathComponent(".\(UUID().uuidString).tmp")
         do {
             try files.write(data, to: temporary)
@@ -313,6 +353,7 @@ public actor OutboxStore {
             try? files.remove(temporary)
             throw error
         }
+        ambiguousOnFailure = true
         try files.sync(destination.deletingLastPathComponent())
     }
 

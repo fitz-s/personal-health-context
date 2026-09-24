@@ -57,8 +57,13 @@ public enum Normalization {
 
     public static func unit(forQuantity type: String) -> String? { quantityUnits.first { $0.type == type }?.unit }
 
+    /// A raw value absent from `workoutActivities` (unknown to this table, e.g. a newer OS's activity type)
+    /// is not the same fact as the known `HKWorkoutActivityTypeOther` (raw 3000): inventing that equivalence
+    /// would let an unsupported activity match an export row it was never produced by. Preserve the raw value
+    /// in a string that can never equal a known export.xml `workoutActivityType`.
     public static func workoutActivity(_ rawValue: UInt) -> String {
-        "HKWorkoutActivityType" + (workoutActivities[rawValue] ?? "Other")
+        guard let name = workoutActivities[rawValue] else { return "HKWorkoutActivityTypeUnknown(\(rawValue))" }
+        return "HKWorkoutActivityType" + name
     }
 
     /// Category wire fields: the raw int in `value_num`, the export.xml string in `value_text`, unit "".

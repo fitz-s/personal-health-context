@@ -3,8 +3,12 @@
 
 Every PASS points at a file under delivery/ with its SHA-256 AND a run manifest (delivery/run-manifests/*.json,
 written by scripts/run_manifest.py) whose recorded tree hashes equal the current tree and whose evidence hash equals
-the file now. Otherwise the check is downgraded to NOT_RUN. Statuses for checks that need the user's account/device
-stay BLOCKED/NOT_RUN with the reason. Then run scripts/release_gate.py yourself.
+the file now; a manifest's own declared `inputs` (scripts/run_manifest.py --input) must each still validate the
+same way, recursively, or the whole binding is refused. Otherwise the check is downgraded to NOT_RUN. Live checks
+(chatgpt_*, single_interface) instead read delivery/live-evidence/chatgpt_live_probe.json — written by
+scripts/record_live_probe.py — and PASS only while its structural inputs and artifacts match the current tree and
+its needed probes read PASS. Statuses for checks that need the user's account/device stay BLOCKED/NOT_RUN with the
+reason. Then run scripts/release_gate.py yourself.
 """
 from __future__ import annotations
 
@@ -26,24 +30,70 @@ def sha(rel: str) -> str:
     return hashlib.sha256((D / rel).read_bytes()).hexdigest()
 
 
+def _inputs_valid(record: dict, cur: dict, seen: frozenset[str]) -> bool:
+    """Every entry in record['inputs'] is itself still a clean, current binding, recursively (cycle-safe: a
+    manifest name already in `seen` is treated as invalid rather than re-descended into)."""
+    for rel, meta in record.get('inputs', {}).items():
+        mname = meta.get('manifest')
+        if not mname or mname in seen:
+            return False
+        mpath = D / 'run-manifests' / mname
+        if not mpath.is_file():
+            return False
+        try:
+            r = json.loads(mpath.read_text())
+        except (json.JSONDecodeError, OSError):
+            return False
+        f = D / rel
+        if not f.is_file() or hashlib.sha256(f.read_bytes()).hexdigest() != r.get('evidence', {}).get(rel):
+            return False
+        if r.get('hashes') != cur or r.get('exit_code') != 0 or r.get('tree_changed_during_run'):
+            return False
+        if not _inputs_valid(r, cur, seen | {mname}):
+            return False
+    return True
+
+
 def binding(evidence: str) -> str | None:
-    """Name of a clean, successful run manifest that produced this exact evidence from the current tree."""
+    """Name of a clean, successful run manifest that produced this exact evidence from the current tree, whose
+    declared inputs (if any) are themselves still validly bound, recursively."""
     cur, digest = tree_hashes(), sha(evidence)
     for m in sorted((D / 'run-manifests').glob('*.json')):
         r = json.loads(m.read_text())
         if (r.get('evidence', {}).get(evidence) == digest and r.get('hashes') == cur and r.get('exit_code') == 0
-                and not r.get('tree_changed_during_run')):
+                and not r.get('tree_changed_during_run') and _inputs_valid(r, cur, frozenset({m.name}))):
             return m.name
     return None
 
 
-def live(evidence: str, notes: str) -> dict:
-    """A check observed by hand in the user's ChatGPT (no command can re-run it): PASS only while the evidence names
-    the revision it was observed on and that revision's src tree equals the current one."""
-    text = (D / evidence).read_text()
-    ok = f'src-tree:{src_tree()[:16]}' in text
-    return check('PASS_LIVE' if ok else 'NOT_RUN', evidence,
-                 notes if ok else f'Live evidence was observed on an older src tree; re-probe. {notes}')
+LIVE_INPUT_KEYS = ('src', 'contracts', 'prompts', 'ops')
+LIVE_PROBES = {
+    'chatgpt_read_write': ('write', 'fresh_read'),
+    'chatgpt_files': ('file_image', 'file_pdf'),
+    'fresh_conversation': ('fresh_read',),
+    'single_interface': ('write', 'fresh_read', 'file_image', 'file_pdf', 'real_data_investigation'),
+}
+
+
+def live(kind: str, notes: str) -> dict:
+    """A check observed by hand in the user's ChatGPT (no command can re-run it): PASS only while
+    delivery/live-evidence/chatgpt_live_probe.json binds its structural inputs (src, contracts, prompts, ops) to
+    the current tree, every artifact it lists still hashes as recorded, and every probe `kind` needs reads PASS."""
+    probe = json.loads((D / LIVE).read_text())
+    cur = tree_hashes()
+    inputs = probe.get('inputs', {})
+    reasons = [f'input {k} does not match the current tree' for k in LIVE_INPUT_KEYS if inputs.get(k) != cur.get(k)]
+    for rel, digest in probe.get('artifacts', {}).items():
+        f = D / rel
+        if not f.is_file() or hashlib.sha256(f.read_bytes()).hexdigest() != digest:
+            reasons.append(f'artifact {rel} missing or changed')
+    probes = probe.get('probes', {})
+    failed = [name for name in LIVE_PROBES[kind] if probes.get(name) != 'PASS']
+    if failed:
+        reasons.append(f'probe(s) not PASS: {", ".join(failed)}')
+    ok = not reasons
+    return check('PASS_LIVE' if ok else 'NOT_RUN', LIVE,
+                 notes if ok else f'Live probe check failed: {"; ".join(reasons)}. {notes}')
 
 
 def src_tree() -> str:
@@ -55,7 +105,7 @@ def check(status: str, evidence: str | None, notes: str) -> dict:
     if evidence is not None and not (D / evidence).is_file():
         raise SystemExit(f'missing evidence file: {evidence}')
     if status == 'PASS_LIVE':
-        status, notes = 'PASS', f'{notes} [live observation, src-tree bound]'
+        status, notes = 'PASS', f'{notes} [live observation, bound to delivery/{LIVE}]'
     elif status == 'PASS':
         bound = binding(evidence) if evidence else None
         if not bound:
@@ -70,7 +120,7 @@ def load(rel: str) -> dict:
     return json.loads((D / rel).read_text())
 
 
-LIVE = 'live-evidence/chatgpt_live_probe.md'
+LIVE = 'live-evidence/chatgpt_live_probe.json'
 
 
 def main() -> int:
@@ -103,10 +153,11 @@ def main() -> int:
                                'recovery-report/recovery_drill.json',
                                'Online snapshot during writes → verify → restore into new root → counts match; '
                                'production paths also restored (recovery-report/production_local_restore.log).'),
-        'chatgpt_read_write': live(LIVE, 'ChatGPT web wrote a capture (committed receipt) and read it back.'),
-        'chatgpt_files': live(LIVE, 'Photo and 2-page PDF saved from ChatGPT with local SHA-256 == stored SHA-256; '
-                                    'pages readable.'),
-        'fresh_conversation': live(LIVE, 'A new ChatGPT chat found the earlier capture by content.'),
+        'chatgpt_read_write': live('chatgpt_read_write',
+                                   'ChatGPT web wrote a capture (committed receipt) and read it back.'),
+        'chatgpt_files': live('chatgpt_files', 'Photo and 2-page PDF saved from ChatGPT with local SHA-256 == '
+                                               'stored SHA-256; pages readable.'),
+        'fresh_conversation': live('fresh_conversation', 'A new ChatGPT chat found the earlier capture by content.'),
         'apple_device_sync': check('BLOCKED', None, 'Helper not built: needs Xcode licence (sudo), Apple ID signing and '
                                                     'the iPhone — deferred by the user. Swift core tests + TLS interop '
                                                     'pass; full export backfill is in production.'),
@@ -129,8 +180,9 @@ def main() -> int:
                                           'AES-256-GCM archive written to iCloud Drive, read back, decrypted, restored '
                                           'into a new root (synthetic data); tamper rejected. Production cloud backup '
                                           'is opt-in (USER_ACTIONS §5).'),
-        'single_interface': live(LIVE, 'ChatGPT is the only daily interface: write, read, files, fresh chat, real-data '
-                                       'investigation observed live. The iPhone helper is a one-time setup screen.'),
+        'single_interface': live('single_interface',
+                                 'ChatGPT is the only daily interface: write, read, files, fresh chat, real-data '
+                                 'investigation observed live. The iPhone helper is a one-time setup screen.'),
     }
     gaps = [f'{k}: {v["status"]} — {v["notes"]}' for k, v in checks.items() if v['status'] != 'PASS']
     core = ['unit_regression', 'auth_and_policy', 'durable_capture', 'original_file_integrity', 'local_restore']

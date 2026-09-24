@@ -285,6 +285,25 @@ func failedIndexWriteKeepsPageUnacknowledged(op: FileOp) async throws {
     #expect(try await reopened.nextEntry(stream: entry.stream)?.batch.batchID == entry.batch.batchID)
 }
 
+@Test func ambiguousDirectoryPublicationPoisonsStoreUntilRecovered() async throws {
+    let (store, files, directory) = try faultyStore()
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let first = try await enqueue(store)
+    // The rename succeeds (the file becomes visible) but the fsync confirming that publication does not:
+    // this is the ambiguous case, distinct from a write/sync/move failure that rolls back cleanly.
+    files.arm(.sync, isDirectory)
+    await #expect(throws: InjectedFault.self) { try await enqueue(store, stream: "HKQuantityTypeIdentifierStepCount") }
+    // While poisoned, reads must not treat the ambiguously-published entry's anchor as committed, nor
+    // pretend the store is otherwise readable.
+    await #expect(throws: OutboxError.poisoned) { try await store.anchor(for: "HKQuantityTypeIdentifierStepCount") }
+    await #expect(throws: OutboxError.poisoned) { try await store.entries() }
+    await #expect(throws: OutboxError.poisoned) { try await enqueue(store, stream: "HKQuantityTypeIdentifierHeartRate") }
+    // Once the directory fsync can be confirmed again, the poison clears and normal access resumes.
+    files.disarm()
+    #expect(try await store.anchor(for: first.stream) == Data([1, 2, 3]))
+    #expect(try await store.entries().count == 2)
+}
+
 @Test func unreadableIndexFailsOpenInsteadOfResettingCheckpoints() async throws {
     let (store, directory) = try makeStore()
     defer { try? FileManager.default.removeItem(at: directory) }
@@ -523,8 +542,10 @@ private final class ExportRows: NSObject, XMLParserDelegate {
         #expect(wire.num == seconds)
         #expect(wire.unit == "s")
     }
-    #expect(Normalization.workoutActivity(81) == "HKWorkoutActivityTypeOther")
-    #expect(Normalization.workoutActivity(9_999) == "HKWorkoutActivityTypeOther")
+    // An unknown raw value is not the known Other category: it preserves the raw value instead, so it can
+    // never equal an export.xml row's `workoutActivityType` and false-match during equivalence hashing.
+    #expect(Normalization.workoutActivity(81) == "HKWorkoutActivityTypeUnknown(81)")
+    #expect(Normalization.workoutActivity(9_999) == "HKWorkoutActivityTypeUnknown(9999)")
 }
 
 #if canImport(HealthKit)

@@ -22,6 +22,7 @@ from phctx.config import Config
 from phctx.store import Store, StoreError
 
 ROOT = Path(__file__).resolve().parents[1]
+PROMPTS = {'src': 'a' * 64, 'prompts/foreground.md': 'p' * 64, 'prompts/background.md': 'q' * 64}
 sys.path[:0] = [str(ROOT / 'scripts'), str(ROOT / 'evals'), str(ROOT / 'tests')]
 from test_tools_files import make_certificate  # noqa: E402
 
@@ -608,7 +609,7 @@ class SummarizeTests(Tmp):
     def setUp(self):
         super().setUp()
         self.cases = [json.loads(x) for x in (ROOT / 'evals/cases.jsonl').read_text().splitlines() if x.strip()]
-        self.meta = {'model': 'm', 'judge_model': 'j', 'backend': 'b', 'hashes': {'src': 'a' * 64}}
+        self.meta = {'model': 'm', 'judge_model': 'j', 'backend': 'b', 'hashes': PROMPTS}
 
     def write(self, drop=None, hold_hashes=None, trace_id='t'):
         for split in ('dev', 'holdout'):
@@ -624,7 +625,7 @@ class SummarizeTests(Tmp):
                     if (c['id'], i) == drop:
                         continue
                     rows.append({'case_id': c['id'], 'run': i + 1, 'status': 'PASS', 'hard_failure': False,
-                                 'reason': 'SYNTHETIC ok', 'model_id': 'm', 'prompt_sha256': 'p' * 64,
+                                 'reason': 'SYNTHETIC ok', 'model_id': 'm', 'prompt_sha256': 'p' * 64, 'mode': 'foreground',
                                  'trace_id': trace_id, 'evidence_file': 'e.json'})
             (d / 'results_all_runs.jsonl').write_text(''.join(json.dumps(r) + '\n' for r in rows))
 
@@ -659,7 +660,7 @@ class SummarizeTests(Tmp):
         self.assertEqual(s['mixed_campaign_cases'], [crit['id']])
 
     def test_hash_mismatch_fails(self):
-        self.write(hold_hashes={'src': 'b' * 64})
+        self.write(hold_hashes=dict(PROMPTS, src='b' * 64))
         self.assertEqual(self.run_summary()[0], 1)
 
     def test_scorer_failure_fails(self):

@@ -71,17 +71,28 @@ public final class AnchoredSyncCoordinator: @unchecked Sendable {
             self.scheduleBackgroundRefresh()
             let identifier = UUID().uuidString
             self.lock.lock(); self.backgroundTasks[identifier] = refresh; self.lock.unlock()
-            refresh.expirationHandler = { [weak self] in
+            // Only the side that actually removes the task from the map has won the race to complete it, so
+            // expiration and the durable-work completion below can never both call setTaskCompleted.
+            let finish: (Bool) -> Void = { [weak self] success in
                 guard let self else { return }
-                self.lock.lock(); self.backgroundTasks.removeValue(forKey: identifier); self.lock.unlock()
-                refresh.setTaskCompleted(success: false)
+                self.lock.lock()
+                let won = self.backgroundTasks.removeValue(forKey: identifier) != nil
+                self.lock.unlock()
+                if won { refresh.setTaskCompleted(success: success) }
             }
+            refresh.expirationHandler = { finish(false) }
             Task {
                 await self.engine.drain()
-                // A page refused while the outbox was full kept its anchor; re-query now that uploads made room.
-                for type in self.supportedTypes() { self.fetchPage(type: type, stream: type.identifier, completion: {}) }
-                self.lock.lock(); self.backgroundTasks.removeValue(forKey: identifier); self.lock.unlock()
-                refresh.setTaskCompleted(success: true)
+                // A page refused while the outbox was full kept its anchor; re-query now that uploads made room,
+                // and await every stream's page fetch before completing so a fetch in flight is durable work
+                // the task waits for rather than fire-and-forget.
+                await withTaskGroup(of: Void.self) { group in
+                    for type in self.supportedTypes() {
+                        group.addTask { await self.fetchPage(type: type, stream: type.identifier) }
+                    }
+                }
+                await self.engine.drain()
+                finish(true)
             }
         }
     }
@@ -97,6 +108,14 @@ public final class AnchoredSyncCoordinator: @unchecked Sendable {
         lock.lock()
         pageLimitReached.insert(stream)
         lock.unlock()
+    }
+
+    /// Awaitable wrapper around the completion-based query below, for callers (background refresh) that must
+    /// wait for the durable work rather than fire it and move on.
+    private func fetchPage(type: HKSampleType, stream: String) async {
+        await withCheckedContinuation { continuation in
+            fetchPage(type: type, stream: stream) { continuation.resume() }
+        }
     }
 
     private func fetchPage(type: HKSampleType, stream: String, isObserver: Bool = false,
