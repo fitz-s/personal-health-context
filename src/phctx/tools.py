@@ -19,7 +19,7 @@ import re
 from urllib.parse import urlsplit
 
 from . import download, extract
-from .store import Store, StoreError, dump, ref_kind
+from .store import Store, StoreError, dump
 
 log = logging.getLogger('phctx.tools')
 EVIDENCE_ID = re.compile(r'\b((rec|obs)_[0-9a-f]{32,64}|obj:[0-9a-f]{64}(#p[1-9][0-9]{0,4})?)\b')
@@ -42,26 +42,15 @@ class ToolContext:
     run_extraction: bool = True
 
 
-RECORD_TABLES = frozenset({'records', 'active_records'})
-PAGE_TABLES = frozenset({'object_pages'})
-
-
 def delivered(name: str, data: dict) -> set[str]:
     """Evidence ids whose content this read returned, as each handler shapes its result: record bodies, page text,
     original bytes. Ids that returned content merely mentions (a payload's pointers, evidence lists, history, an
-    index entry) are not delivered, and neither is a query cell naming a kind of item the query never read."""
+    index entry) are not delivered. A query delivers none: table access does not say where a cell came from (a literal,
+    a pointer column), so its receipt certifies the result as a whole — an observation-dependent one by dependency."""
     if name == 'context_bootstrap':
         return {r['id'] for k in ('context_index', 'recent') for r in data[k]}
     if name in {'context_search', 'context_read'}:
         return {r['id'] for r in data['records']}
-    if name == 'context_query':
-        read = set(data['tables_read'])
-        kinds = {'observation': bool(read & Store.OBSERVATION_TABLES), 'record': bool(read & RECORD_TABLES),
-                 'object': bool(read & PAGE_TABLES)}
-        # An id counts only if the query read that kind of item. A cell may list several observation ids
-        # (GROUP_CONCAT(id, ',')); record/page ids must fill the cell, so a record's text naming one does not count.
-        return {m.group() for row in data['rows'] for v in row if isinstance(v, str) for m in EVIDENCE_ID.finditer(v)
-                if kinds[k := ref_kind(m.group())] and (k == 'observation' or m.group() == v)}
     if name == 'context_read_original':
         if 'pages' in data:
             return set(data['evidence_ids'])

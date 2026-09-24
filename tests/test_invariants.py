@@ -281,7 +281,7 @@ class ReadReceiptTests(Base):
         self.obs('a', 9, 10.0)
         read = self.query()  # daily mean over one row = 10
         self.obs('b', 11, 30.0)  # disjoint interval, same day: the mean is now 20
-        out = self.analysis([read['read_receipt']], [read['rows'][0][0]])
+        out = self.analysis([read['read_receipt']], [])
         self.assertEqual(out.data['error'], 'stale_evidence')
 
     def test_deleting_a_non_cited_member_makes_it_stale(self):
@@ -289,13 +289,12 @@ class ReadReceiptTests(Base):
         self.obs('b', 11, 30.0)
         read = self.query()
         self.batch('synthetic:watch', deleted=['b'])
-        self.assertEqual(self.analysis([read['read_receipt']], [oid('synthetic:watch', 'a')]).data['error'],
-                         'stale_evidence')
+        self.assertEqual(self.analysis([read['read_receipt']], []).data['error'], 'stale_evidence')
 
     def test_a_saved_analysis_turns_stale_when_its_population_changes_later(self):
         self.obs('a', 9, 10.0)
         read = self.query()
-        rid = self.analysis([read['read_receipt']], [read['rows'][0][0]]).data['record_id']
+        rid = self.analysis([read['read_receipt']], []).data['record_id']
         self.assertTrue(self.s.get_records([rid])['records'][0]['evidence']['current'])
         self.obs('b', 11, 30.0)
         ev = self.s.get_records([rid])['records'][0]['evidence']
@@ -306,10 +305,11 @@ class ReadReceiptTests(Base):
         read = self.query()
         unrelated = self.query('SELECT 1')['read_receipt']
         for receipts, code in ((None, 'evidence_unbound'), ([unrelated], 'evidence_unbound'),
+                               ([read['read_receipt']], 'evidence_unbound'),  # a query delivers no individual row
                                (['rr_' + '0' * 32], 'evidence_unbound')):
             self.assertEqual(self.analysis(receipts, [read['rows'][0][0]]).data['error'], code, receipts)
         self.assertEqual(self.analysis(None, []).data['error'], 'evidence_unbound')  # an analysis always binds
-        self.assertFalse(self.analysis([read['read_receipt']], [read['rows'][0][0]]).is_error)
+        self.assertFalse(self.analysis([read['read_receipt']], []).is_error)
 
     def test_ids_a_record_only_mentions_do_not_bind(self):
         self.obs('a', 9, 10.0)
@@ -320,25 +320,41 @@ class ReadReceiptTests(Base):
         self.assertEqual(self.analysis([read['read_receipt']], [a]).data['error'], 'evidence_unbound')
         self.assertFalse(self.analysis([read['read_receipt']], [note], kind='note').is_error)
 
-    def test_a_query_cell_naming_an_unread_kind_does_not_bind(self):
-        self.obs('a', 9, 10.0)
-        a = oid('synthetic:watch', 'a')
-        for sql in ('SELECT ?', 'SELECT ? FROM records'):  # a literal id, not a row read from observations
-            read = self.t.call('context_query', {'sql': sql, 'parameters': [a]}).data
-            self.assertEqual(self.analysis([read['read_receipt']], [a]).data['error'], 'evidence_unbound', sql)
-
-    def test_ids_concatenated_in_one_cell_bind(self):
+    def test_a_query_cell_never_delivers_an_id(self):
+        """R5-01: table access says nothing about where a cell came from."""
         self.obs('a', 9, 10.0)
         self.obs('b', 11, 30.0)
-        read = self.query("SELECT avg(value_num), group_concat(id, ',') FROM canonical_observations")
-        ids = sorted(oid('synthetic:watch', n) for n in 'ab')
-        self.assertEqual(self.ev(self.analysis([read['read_receipt']], ids)), (True, True))
+        a, b = oid('synthetic:watch', 'a'), oid('synthetic:watch', 'b')
+        q = self.s.put_record(request_id=self.rid(), kind='note', text='SYNTHETIC q', occurred_at=AT)['record_id']
+        p = self.s.put_record(request_id=self.rid(), kind='note', text=q, occurred_at=AT)['record_id']
+        for sql, params, cited, kind in (
+                ('SELECT ? FROM observations WHERE id = ?', [b, a], b, 'analysis'),
+                ("SELECT avg(value_num), group_concat(id, ',') FROM canonical_observations", [], a, 'analysis'),
+                ('SELECT text FROM records WHERE id = ?', [p], q, 'note')):
+            read = self.t.call('context_query', {'sql': sql, 'parameters': params}).data
+            self.assertEqual(self.analysis([read['read_receipt']], [cited], kind=kind).data['error'],
+                             'evidence_unbound', sql)
 
-    def test_a_record_id_inside_record_text_does_not_bind(self):
-        other = self.s.put_record(request_id=self.rid(), kind='note', text='SYNTHETIC other', occurred_at=AT)['record_id']
-        self.s.put_record(request_id=self.rid(), kind='note', text=f'SYNTHETIC see {other}', occurred_at=AT)
-        read = self.query("SELECT text FROM records WHERE text LIKE 'SYNTHETIC see%'")
-        self.assertEqual(self.analysis([read['read_receipt']], [other], kind='note').data['error'], 'evidence_unbound')
+    def test_an_evidence_free_analysis_cannot_verify_its_child(self):
+        """R5-02: an analysis whose reads certified nothing stays unverified through inheritance."""
+        parent = self.analysis([self.query('SELECT 1')['read_receipt']], []).data['record_id']
+        read = self.t.call('context_read', {'record_ids': [parent]}).data
+        child = self.analysis([read['read_receipt']], [parent])
+        self.assertEqual(self.ev(child), (False, False))
+        read = self.t.call('context_read', {'record_ids': [child.data['record_id']]}).data
+        self.assertEqual(self.ev(self.analysis([read['read_receipt']], [child.data['record_id']])), (False, False))
+
+    def test_page_text_binds_the_page_not_the_original(self):
+        """R5-03: re-extraction must reach an analysis of the page text."""
+        sha = self.s.put_attachment_bytes(request_id=self.rid(), data=b'SYNTHETIC scan', filename='s.txt',
+                                          mime='text/plain', text='SYNTHETIC file', occurred_at=AT)['object_sha256']
+        self.s.set_extraction(sha, status='done', method='fixture', pages=['SYNTHETIC first'])
+        pages = self.t.call('context_read_original', {'object_sha256': sha, 'mode': 'pages'}).data
+        self.assertEqual(self.analysis([pages['read_receipt']], [f'obj:{sha}']).data['error'], 'evidence_unbound')
+        out = self.analysis([pages['read_receipt']], [f'obj:{sha}#p1'])
+        self.assertEqual(self.ev(out), (True, True))
+        self.s.set_extraction(sha, status='done', method='fixture', pages=['SYNTHETIC corrected'])
+        self.assertFalse(self.s.get_records([out.data['record_id']])['records'][0]['evidence']['current'])
 
     def ev(self, out):
         self.assertFalse(out.is_error, out.data)
@@ -391,7 +407,7 @@ class ReadReceiptTests(Base):
         self.obs('a', 9, 10.0)
         read = self.query()
         for _ in range(2):
-            self.assertEqual(self.ev(self.analysis([read['read_receipt']], [read['rows'][0][0]])), (True, True))
+            self.assertEqual(self.ev(self.analysis([read['read_receipt']], [])), (True, True))
 
     def test_returned_original_bytes_are_delivered_evidence(self):
         sha = self.s.put_attachment_bytes(request_id=self.rid(), data=b'SYNTHETIC scan', filename='s.txt',

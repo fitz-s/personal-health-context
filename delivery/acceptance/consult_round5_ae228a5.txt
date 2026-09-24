@@ -1,0 +1,205 @@
+NO-GO at ae228a5 for the foreground product’s present evidence-authority guarantee. Confidence: high. Three concrete paths still allow an analysis to receive stronger binding or freshness than its actual reads support. The normal parent→child invalidation and fresh re-derivation paths are repaired; the remaining failures are narrower.
+
+model_eval=NOT_RUN is not what blocks acceptance. Acceptance through current ChatGPT web conversations is defensible for this foreground-only scope, supplemented by deterministic local regressions. Spending Codex quota or rerunning the old campaign is not a prerequisite. The blocker is that the backend still certifies the counterexamples below.
+
+Approach and disposition of R4-01–R4-06
+
+The architecture remains CORRECT-BUT-SUBOPTIMAL. SQLite, immutable originals, private transport, and one conversational interface are appropriate. The remaining design mistake is treating a query touched a table as proof that a particular returned identifier came from that table’s corresponding record. Table authorization and result provenance are different properties.
+
+The acceptance standard also needs a precise boundary: a receipt can certify what was delivered and whether its dependencies remain valid. It cannot prove that the model understood the evidence or that its conclusion logically follows. I am not requiring single-use receipts, an infallible model, or a new general-purpose SQL analyzer. The failures here concern the narrower mechanical guarantee the code explicitly claims.
+
+Round 4 findingRound 5 verdict
+
+R4-01: delivered versus mentioned evidencePartially cleared. context_read, search, and bootstrap no longer recursively promote payload pointers. Arbitrary SQL cells can still promote unread observations or records.
+
+R4-02: inherited freshnessPartially cleared. Properly bound parents propagate staleness, and stale parents are rejected. An unverified analysis with neither references nor a dependency row is mistakenly treated as a primary fact during inheritance.
+
+R4-03: meaningless certificationCleared for the direct SELECT 1 case. The analysis itself is unverified. Its subsequent promotion through a child remains an R4-02 failure.
+
+R4-04: bootstrap dependencyCleared for the identified defect. Bootstrap receipts are explicitly observation-dependent, and the regression checks later invalidation.
+
+R4-05: partial execution and infrastructure classificationPartially cleared. Captured partial tool traces are preserved, and observed hard violations take precedence. Some unmet completion requirements are still incorrectly treated as observed violations after a pre-execution quota refusal.
+
+R4-06: summarizer erasing failuresCleared for the identified precedence defect. A FAIL run remains a failed case; infrastructure labels no longer remove it before scoring.
+
+These dispositions are grounded in the new handler and freshness logic, the direct/inherited-evidence tests, and the classifier/summarizer changes.
+
+The strongest counterargument is your live evidence: the normal aggregate, child, stale-parent rejection, and re-derivation sequence passed in ChatGPT. I accept that evidence for those paths. In particular, I am not repeating the old claim that simply reading a parent through context_read authorizes its observation IDs—that path is now correctly refused. The remaining SQL path and evidence-free-parent case are not exercised by those probes.
+
+Remaining findings
+
+1. SQL table access still certifies identifiers whose underlying data was not delivered
+
+[BLOCKER] R5-01 result provenance — file:src/phctx/tools.py:57–64 — Blocks foreground evidence authority because table-kind membership permits SQL literals and pointer cells to certify unread observations or records — Stop minting ID-level evidence from arbitrary result strings; certify the query result itself or use trusted reads that actually return the referenced bodies — verify locally: Round5Acceptance.test_same_kind_literal_does_not_deliver_observation and test_entire_record_text_cell_is_not_target_record_provenance.
+
+The new query branch checks the kind of tables authorized and the shape of each result cell. It does not establish the origin of that cell. The following sequence passes those checks:
+
+Create two existing observations, A and B. Then execute:
+
+SQL
+
+SELECT ? AS claimed_id
+FROM observations
+WHERE id = ?;
+
+Use parameters [B, A]. The statement returns the supplied string B while selecting A. It does not return B’s measurement data. Nevertheless, tables_read contains observations, so delivered() includes B. Capturing an analysis with evidence_ids=[B] and this receipt succeeds; the analysis reads bound=true, current=true. I reproduced that result in an isolated SQLite execution of the pinned predicates.
+
+There is a corresponding record case without a parameterized identifier. Store record P whose entire text is the ID of another record Q. Then:
+
+SQL
+
+SELECT text FROM records WHERE id = ?;
+
+With P as the parameter, the returned text cell equals Q’s ID. Because the query read records and the identifier fills the cell, delivered() certifies Q—even though Q’s body was not returned. The current test uses text such as "SYNTHETIC see rec_..."; it correctly rejects that longer string but does not test the exact-ID cell.
+
+The observation-kind check is broader still: Store.OBSERVATION_TABLES includes sources and observation_catalog, so a literal observation ID selected from source metadata can also be certified. That set is appropriate for conservative dependency invalidation; it is not evidence that a particular observation body was delivered.
+
+This limitation follows from the mechanism, not a SQLite anomaly. SQLite’s authorizer operates while statements are compiled and reports table/column access; it does not establish row-level or expression-level provenance for each returned cell. It can report a table read even when the query extracts no column values from that table. SQLite
+
+Do not fix this with another regular expression or by disallowing only SELECT ?. Literals, concatenation, JSON extraction, expressions, and joins all separate table access from result provenance.
+
+The smallest reliable decomposition is to let arbitrary SQL receipts certify the query result as a result, while ID-level evidence comes from a trusted record/observation read—or from an additional handler-owned payload that actually delivers the referenced bodies. Genuine aggregate results do not need every population ID enumerated to remain observation-dependent. GROUP_CONCAT can remain useful descriptive output without automatically becoming proof that every identifier-looking substring is delivered evidence.
+
+This is an integrity boundary failure, not a bypass of the read-only SQL authorization or a demonstrated exposure of secret tables.
+
+2. An evidence-free unverified analysis becomes verified when cited by a child
+
+[BLOCKER] R5-02 unverified inheritance — file:src/phctx/store.py:379–396 — Blocks foreground freshness because _freshness returns the primary-fact sentinel for an analysis with no references or dependency row, allowing a child to become verified — Make _freshness distinguish primary facts from evidence-free analyses and propagate (False, []) for the latter — verify locally: Round5Acceptance.test_evidence_free_unverified_parent_cannot_verify_child.
+
+The direct R4-03 repair works:
+
+Read SELECT 1.
+
+Save analysis P with that receipt and no evidence_ids.
+
+_bind returns None.
+
+_decorate recognizes kind='analysis' and displays P as bound=false, current=false.
+
+The inheritance path uses a different decision. _freshness(P) sees no evidence_refs and no record_dependencies, immediately returns None, and never checks P’s kind. Its caller interprets that return value as “primary fact,” not “unverified derivation.”
+
+Now read P normally through context_read, then save child analysis C citing P and the returned receipt. C receives a dependency row; when _freshness(C) visits P, it ignores P’s None result. C becomes bound=true, current=true. A grandchild can inherit that incorrect certification.
+
+My isolated reproduction produced:
+
+Recordboundcurrent
+
+Evidence-free parent Pfalsefalse
+
+Child C citing Ptruetrue
+
+Grandchild citing Ctruetrue
+
+The existing unverified-parent test uses a legacy parent that has an evidence reference but no receipt. That parent enters the nonempty-reference branch and correctly propagates bound=false. It does not cover a parent with neither references nor a dependency row.
+
+The fix is local and does not require redesigning the dependency graph. At the early return, inspect the record kind: a genuine primary fact may return None; an analysis without verified dependencies must return an explicit unverified result. Make _decorate, _bind, and recursive inheritance use the same authoritative classification.
+
+This change should also make already-stored descendants of such parents read unverified. Preserve their content and history; do not delete them.
+
+Revising the broader R4-02 claim: the ordinary valid-parent path is repaired. My positive control confirmed that a properly observation-bound parent and child both become stale after a population change, stale-parent recitation is refused, and a newly derived parent from current data can support a current child. That behavior should be preserved. Receipt reuse across multiple analyses is also legitimate and should remain allowed.
+
+3. A derived-page receipt can be promoted to an immutable-original dependency
+
+[BLOCKER] R5-03 dependency downgrade — file:src/phctx/store.py:365–368 — Blocks document-analysis freshness because a receipt delivering extracted page text can authorize the parent original reference and thereby discard extraction-version dependence — Require exact delivered references or retain the page dependency internally when allowing a broader display citation — verify locally: Round5Acceptance.test_page_text_receipt_cannot_drop_extraction_dependency.
+
+delivered() now correctly distinguishes page text from original bytes: text/pages return page IDs, while bytes or a rendered original return the original reference. _bind then weakens that distinction:
+
+Python
+
+Run
+
+e not in read and not any(x.startswith(e + '#') for x in read)
+
+A requested evidence ID obj:<sha> is accepted when the receipt contains only obj:<sha>#p1. The caller did not receive original bytes or a rendered original; it received replaceable extracted text. Nevertheless, the stored dependency becomes the immutable original.
+
+Concrete sequence:
+
+Store an original and extracted page text V1.
+
+Read context_read_original(mode="pages"); receive the page reference and receipt.
+
+Save analysis P citing only obj:<sha>, using that page receipt.
+
+Save child C citing P.
+
+Re-extract the page as V2, leaving the original bytes unchanged.
+
+P and C remain bound=true, current=true. I reproduced that outcome. Their references resolve to "immutable", and their dependency rows are not observation-dependent; the changed page hash is absent from the stored dependency chain.
+
+This is not asking the store to detect a model’s misunderstanding. It is asking the store not to replace the dependency on the data actually delivered—derived page text—with a weaker dependency chosen by citation spelling.
+
+The smallest fix is to remove the implicit page-to-original promotion for evidence binding. A page-text receipt should authorize its page reference. A receipt from actual original bytes or page_image can continue authorizing the immutable-original reference. Alternatively, allow the root citation for presentation while retaining the page-text version as an internal dependency. Either approach preserves usable citations without allowing the extraction dependency to disappear.
+
+4. Evaluation precedence no longer hides FAIL, but incomplete success conditions can still create false FAIL
+
+[MEDIUM] R5-04 incomplete-turn postconditions — file:evals/harness.py:249–276 and 359–367 — Does not block foreground use while model evaluation remains NOT_RUN, but a pre-execution quota refusal can be labelled a hard behavioral failure because an expected save is absent — Distinguish observed invariants from postconditions requiring a completed turn — verify locally: Round5Acceptance.test_quota_before_a_turn_is_not_failure_to_save.
+
+Revising R4-06: the failure-erasure defect is fixed. classify() prioritizes failed hard checks; the summarizer retains any FAIL run and its hard-failure flag. The test with one observed violation plus two timeouts directly checks the previous counterexample.
+
+Revising part of R4-05: ModelError now carries captured tool traces, the timeout path parses captured stdout, and quota exhaustion has a distinct code. The foreground wrapper can therefore retain completed tool calls observed before an interrupted process. That is a substantive repair.
+
+The remaining classification problem is the meaning of a hard automatic check. For real_synthetic_photo, original_saved_hash_matches is hard. If quota is exhausted before execution, there is naturally no saved object. classify() exempts only model_turn_completed; it treats the missing expected object as an observed hard violation and returns FAIL. The same distinction affects other positive completion requirements, such as an expected saved event.
+
+My isolated check returned FAIL with original_saved_hash_matches as the failed hard check, despite specifying a pre-execution quota refusal and no effects.
+
+Add an explicit distinction such as requires_completed_turn versus an invariant observable during partial execution. “No prohibited write occurred” remains meaningful during an interrupted turn. “The requested original was saved” is not a behavioral failure when the provider never allowed execution. Preserve all partial evidence and never weaken the corrected precedence for actual observed violations.
+
+This is a prerequisite for interpreting a future automated campaign correctly—not a demand to run that campaign now.
+
+Validation: what the new tests and live probes establish
+
+The committed engineering log records 324 tests passing. I read the relevant regression implementations; I did not rerun that suite or independently execute the reported mutation campaign.
+
+The tests are genuinely discriminating for their particular cases. They now exercise payload-pointer refusal, different-kind SQL literals, nontrivial record text containing an ID, valid parent→child invalidation, stale-parent refusal, a legacy unverified parent with references, direct constant-query non-certification, bootstrap invalidation, and receipt reuse. The remaining counterexamples are outside those tested cases—not evidence that the existing tests are worthless.
+
+In particular:
+
+Existing testMissing adjacent case
+
+An observation ID selected from records cannot bindAn observation ID supplied as a literal while selecting from observations or sources
+
+"SYNTHETIC see rec_X" does not bind XA text cell equal to rec_X does bind X
+
+An unverified parent with evidence references leaves its child unverifiedAn unverified analysis with no references and no dependency row leaves its child verified
+
+A page citation invalidates after re-extractionThe same page receipt used to cite the root original drops that dependency
+
+The live report demonstrates meaningful end-to-end behavior, including rejection of a reference-only context_read receipt, correct parent/child invalidation, and successful fresh re-derivation. The population-change probe used a committed no-op tombstone batch, which is appropriate for exercising the deliberately conservative generation rule. It does not test the empty-parent branch or SQL result provenance.
+
+I executed isolated synthetic SQLite reproductions of the identified predicates, along with positive controls. The positive controls passed: the old direct-inheritance failure is repaired, and fresh re-derivation works. The negative cases produced the incorrect certifications described above. These were not a complete checkout execution or a test against your production archive.
+
+Security, migration, concurrency, and scope
+
+The remaining provenance issue does not bypass the SQL write prohibition, download destination controls, or secret-table allowlist. It undermines the evidence certificate. No change in this comparison warrants reopening the previously accepted import-lock/snapshot or original-blob durability findings.
+
+The write-time ordering remains appropriate: binding and freshness validation occur within the mutation transaction. The failures above reproduce without a race; stronger locking will not repair them. Conversely, a generation change during a read may conservatively require rereading. That is preferable to certifying a mismatched population, and it does not prevent legitimate re-derivation from current receipts.
+
+Existing attestations need consideration when repairing the code. Fixing _freshness’s empty-analysis branch will automatically downgrade affected descendants on subsequent reads. Previously accepted SQL-derived IDs and page-to-root promotions are different: their stored dependency rows may no longer retain enough information to prove which delivery path created them. Introduce a binding-rule version or otherwise mark ambiguous older certifications unverified unless retained receipt evidence establishes their provenance. Preserve the records and original files. This does not require reimporting the Apple observation archive.
+
+The additional Round 4 hardening is appropriately narrow: the release builder now rejects missing/invalid campaign directory names before requiring summary inputs. The current release continues to mark the historical model campaign NOT_RUN rather than promote it to current evidence.
+
+Decision and smallest clearing work
+
+Foreground GO-WITH-GAPS is defensible with model_eval=NOT_RUN and acceptance through live ChatGPT conversations. It is not defensible at this pin with the three false-certification paths left active.
+
+The clearing work is limited:
+
+Separate arbitrary SQL-result certification from ID-level delivered evidence.
+
+Make an evidence-free analysis explicitly unverified in _freshness, including inheritance.
+
+Preserve extracted-page dependencies instead of implicitly converting them into immutable-original dependencies.
+
+Run the deterministic regressions first, then replay those negative cases and the existing successful re-derivation flow through ChatGPT. No Codex campaign is required. Keep the classifier postcondition issue as a tracked prerequisite for any future automated evaluation.
+
+I supplied repo-ready regression tests. After saving that file in the repository root, the intended command is:
+
+Bash
+
+PYTHONPATH=src:evals .venv/bin/python test_round5_acceptance.py
+
+Those tests use temporary synthetic stores and do not call a model or external service. The file was syntax-checked here, but not executed against a checkout. The independently executed material is the isolated reproduction script, with its results.
+
+Sources and limits. I used the pinned 72f27da...ae228a5 comparison, the cited tool/store/model/evaluation implementations and tests, the release and live-probe artifacts, and SQLite’s official authorizer documentation. Container access to GitHub failed DNS resolution, so source review used the GitHub connector and executable checks used transcribed predicates with a reduced synthetic schema on SQLite 3.46.1. I did not inspect production records, rerun the Mac recovery drill, verify every reported mutation, or invoke Codex.
+
+The load-bearing assumptions remain your foreground-only scope and unchanged persistence/security constraints. The missing model campaign is an accepted coverage gap; false bound/current certification is the remaining release blocker.

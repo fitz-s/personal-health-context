@@ -5,7 +5,7 @@ import hashlib
 import json
 import sqlite3
 
-TARGET = 10
+TARGET = 11
 
 
 def statements(sql: str):
@@ -313,7 +313,17 @@ CREATE INDEX IF NOT EXISTS changes_entity_seq ON changes(entity, seq);
 """)
 
 
-STEPS = {2: _v2, 3: _v3, 4: _v4, 5: _v5, 6: _v6, 7: _v7, 8: _v8, 9: _v9, 10: _v10}
+def _v11(c: sqlite3.Connection) -> None:
+    # Binding rules tightened: no read delivers individual observations, and page text binds its page, not the
+    # original. A dependency stored under the old rules for a record citing an observation or a whole original cannot
+    # show which read delivered it, so that record becomes freshness-unverified (content and history kept).
+    run(c, """
+DELETE FROM record_dependencies WHERE record_id IN (SELECT record_id FROM evidence_refs
+ WHERE ref_id LIKE 'obs\\_%' ESCAPE '\\' OR (ref_id LIKE 'obj:%' AND ref_id NOT LIKE '%#p%'));
+""")
+
+
+STEPS = {2: _v2, 3: _v3, 4: _v4, 5: _v5, 6: _v6, 7: _v7, 8: _v8, 9: _v9, 10: _v10, 11: _v11}
 
 
 def apply(c: sqlite3.Connection, current: int, now: str) -> int:

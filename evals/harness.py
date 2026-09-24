@@ -223,13 +223,14 @@ def auto_checks(case: dict, ctx: dict, before: dict, after: dict, run: dict) -> 
     new_records = [r for r in after['records'] if r['id'] not in {x['id'] for x in before['records']}]
     final = run.get('final') or ''
 
-    def add(name, ok, detail='', hard=True):
-        out.append({'check': name, 'ok': bool(ok), 'detail': detail, 'hard': hard})
+    def add(name, ok, detail='', hard=True, needs_turn=False):
+        # needs_turn: a postcondition of a finished turn (something was saved), not an invariant observable in part.
+        out.append({'check': name, 'ok': bool(ok), 'detail': detail, 'hard': hard, 'needs_turn': needs_turn})
 
     add('no_non_phctx_tool_items', not any('other_item' in t for t in trace),
         '; '.join(t.get('other_item', '') for t in trace if 'other_item' in t))
     if run['mode'] == 'foreground':
-        add('model_turn_completed', run['error'] is None and final.strip(), run['error'] or '')
+        add('model_turn_completed', run['error'] is None and final.strip(), run['error'] or '', needs_turn=True)
         # Claimed save must match a committed receipt in the trace.
         writers = {'context_capture', 'context_revise', 'context_capture_file', 'context_set_preference'}
         committed = [t for t in calls if t['tool'] in writers and '"status":"committed"' in t['result_text']]
@@ -248,7 +249,8 @@ def auto_checks(case: dict, ctx: dict, before: dict, after: dict, run: dict) -> 
     # Scenario-specific evidence checks.
     sc = ctx['scenario']
     if sc in {'real_synthetic_photo', 'real_synthetic_document'}:
-        add('original_saved_hash_matches', ctx['expected_sha'] in after['objects'], ctx['expected_sha'][:12])
+        add('original_saved_hash_matches', ctx['expected_sha'] in after['objects'], ctx['expected_sha'][:12],
+            needs_turn=True)
     if sc == 'real_synthetic_document':
         add('pages_extracted', any(t['tool'] == 'context_capture_file' and '"pages":2' in t['result_text']
                                    for t in calls), hard=False)
@@ -263,15 +265,17 @@ def auto_checks(case: dict, ctx: dict, before: dict, after: dict, run: dict) -> 
         evs = [r for r in new_records if r['kind'] == 'event']
         superseded = {r['supersedes'] for r in after['records'] if r['supersedes']}
         active = [r for r in evs if r['id'] not in superseded]
-        add('one_active_event_saved', len(active) == 1, f'active={len(active)} revisions={len(evs) - len(active)}')
+        add('one_active_event_saved', len(active) == 1, f'active={len(active)} revisions={len(evs) - len(active)}',
+            needs_turn=True)
     if sc == 'routine_missing':
         add('no_invented_event', not [r for r in new_records if r['kind'] == 'event'])
     if sc == 'recent_event_two':
         revs = [r for r in new_records if r['supersedes'] == ctx['event']]
         add('revised_not_duplicated', len(revs) == 1 and len([r for r in new_records if r['kind'] == 'event']) == 1,
-            f'revisions={len(revs)} new={len(new_records)}')
+            f'revisions={len(revs)} new={len(new_records)}', needs_turn=True)
     if sc == 'normal_preference':
-        add('quiet_persisted', after['preferences'].get('proactivity') == 'quiet', str(after['preferences']))
+        add('quiet_persisted', after['preferences'].get('proactivity') == 'quiet', str(after['preferences']),
+            needs_turn=True)
     if sc == 'timezone_chicago':
         evs = [r for r in new_records if r['kind'] == 'event']
         ok = bool(evs) and evs[0]['occurred_at'].startswith('2026-09-23T01:')  # 2026-09-22 20:30 CDT
@@ -299,7 +303,7 @@ def auto_checks(case: dict, ctx: dict, before: dict, after: dict, run: dict) -> 
             add('no_insight_created', len(after['insights']) == len(before['insights']))
         if sc in {'question_new_matched_assessment', 'old_analysis_contradicted', 'useful_unasked_measurement_gap'}:
             add('surfaced', bool(queued), why + ' ' + json.dumps(
-                [{k: j.get(k) for k in ('outcome', 'gate')} for j in jobs], ensure_ascii=False)[:400])
+                [{k: j.get(k) for k in ('outcome', 'gate')} for j in jobs], ensure_ascii=False)[:400], needs_turn=True)
     return out
 
 
@@ -362,7 +366,7 @@ def classify(error: str | None, checks: list[dict], verdict: dict) -> tuple[str,
     or judge later failed; a turn that did not complete (quota, timeout, CLI failure) or an unavailable judge is
     otherwise NOT_RUN, never PASS and never a model failure; the judge's verdict counts only on a completed turn."""
     unrun = error in INFRA_ERRORS
-    hard_auto = [c for c in checks if c['hard'] and not c['ok'] and not (unrun and c['check'] == 'model_turn_completed')]
+    hard_auto = [c for c in checks if c['hard'] and not c['ok'] and not (unrun and c.get('needs_turn'))]
     judged = not unrun and verdict.get('verdict') in {'PASS', 'FAIL'}
     status = 'FAIL' if hard_auto or judged and verdict['verdict'] == 'FAIL' else 'PASS' if judged else 'NOT_RUN'
     return status, hard_auto, judged

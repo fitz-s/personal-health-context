@@ -688,12 +688,13 @@ class SummarizeTests(Tmp):
     def test_harness_classification_precedence(self):
         from harness import classify
         bad = [{'check': 'no_write', 'ok': False, 'hard': True}]
-        turn = [{'check': 'model_turn_completed', 'ok': False, 'hard': True}]
+        turn = [{'check': 'model_turn_completed', 'ok': False, 'hard': True, 'needs_turn': True},
+                {'check': 'original_saved_hash_matches', 'ok': False, 'hard': True, 'needs_turn': True}]
         err = {'verdict': 'ERROR', 'reason': 'judge_failed:model_call_failed'}
         cases = [(('model_timeout', bad, err), 'FAIL'), ((None, bad, err), 'FAIL'),
                  (('model_quota_exhausted', turn, err), 'NOT_RUN'), ((None, [], err), 'NOT_RUN'),
                  (('model_call_failed', [], {'verdict': 'PASS'}), 'NOT_RUN'), ((None, [], {'verdict': 'PASS'}), 'PASS'),
-                 ((None, [], {'verdict': 'FAIL'}), 'FAIL')]
+                 ((None, [], {'verdict': 'FAIL'}), 'FAIL'), ((None, turn, {'verdict': 'PASS'}), 'FAIL')]
         for args, want in cases:
             self.assertEqual(classify(*args)[0], want, args)
 

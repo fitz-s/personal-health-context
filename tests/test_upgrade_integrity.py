@@ -248,6 +248,31 @@ class UpgradeTests(unittest.TestCase):
         self.assertEqual(active, [{'BiologicalSex': 'A'}])
         self.assertEqual(total, 3)  # A, B, A again; the repeated A is not a fourth
 
+    def test_v11_unverifies_certifications_the_new_binding_rules_cannot_reproduce(self):
+        s = Store(self.base / 'live', 'synthetic')
+        s.register_source('synthetic:watch', 'SYNTHETIC watch')
+        s.ingest_batch(request_id='SYNTHETIC-b', source_id='synthetic:watch', cursor='c', deleted_ids=[], samples=[
+            dict(native_id='a', metric='SYNTHETIC.m', start_at='2026-09-01T00:00:00+00:00', value_num=1.0)])
+        obs = 'obs_' + hashlib.sha256(b'synthetic:watch\0a').hexdigest()
+        page = s.put_attachment_bytes(request_id='SYNTHETIC-o', data=b'SYNTHETIC scan', filename='s.txt',
+                                      mime='text/plain', text='SYNTHETIC', occurred_at='2026-09-20T12:00:00-05:00')
+        s.set_extraction(page['object_sha256'], status='done', method='fixture', pages=['SYNTHETIC p1'])
+        kept = {}
+        for name, ev in (('obs', [obs]), ('original', [f"obj:{page['object_sha256']}"]),
+                         ('page', [f"obj:{page['object_sha256']}#p1"]), ('aggregate', [])):
+            rid = s.put_record(request_id=f'SYNTHETIC-{name}', kind='analysis', text='SYNTHETIC', evidence_ids=ev,
+                               occurred_at='2026-09-20T12:00:00-05:00')['record_id']
+            with s.transaction() as c:  # a dependency the v10 rules stored
+                c.execute('INSERT INTO record_dependencies VALUES(?, 0, 1)', (rid,))
+            kept[name] = rid
+        with s.transaction() as c:
+            c.execute("UPDATE meta SET value='10' WHERE key='schema_version'")
+            c.execute('DELETE FROM migrations WHERE version>10')
+        s = Store(self.base / 'live', 'synthetic')
+        got = {r['id']: r['evidence']['bound'] for r in s.get_records(list(kept.values()))['records']}
+        self.assertEqual({n: got[r] for n, r in kept.items()},
+                         {'obs': False, 'original': False, 'page': True, 'aggregate': True})
+
     def test_legacy_shadow_insights_leave_the_outbox_on_upgrade(self):
         s = Store(self.base / 'live', 'synthetic')
         q = s.put_record(request_id='q', kind='question', text='SYNTHETIC q', occurred_at='2026-01-01T00:00:00Z')

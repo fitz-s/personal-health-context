@@ -363,7 +363,13 @@ class Store:
         if len(rows) != len(set(receipts)):
             raise StoreError('evidence_unbound', 'Unknown or expired read_receipt; read the evidence again.')
         read = set().union(*(json.loads(r['refs_json']) for r in rows))
-        unread = [e for e in evidence if e not in read and not any(x.startswith(e + '#') for x in read)]
+        # Exact ids only: page text read as obj:<sha>#p<n> binds that page (whose extraction can change), never the
+        # immutable original obj:<sha>, which only returned bytes or a rendered page deliver.
+        unread = [e for e in evidence if e not in read]
+        if any(ref_kind(e) == 'observation' for e in unread):
+            raise StoreError('evidence_unbound', 'No read delivers individual observations: a context_query receipt '
+                             'certifies its result as a whole. Omit observation ids from evidence_ids and pass the '
+                             'query read_receipt; its dependency makes the analysis stale when observations change.')
         if unread:
             raise StoreError('evidence_unbound', f'Evidence not returned by the cited reads: {", ".join(unread[:5])}. '
                              'Pass the read_receipt of the read that returned it.')
@@ -383,8 +389,9 @@ class Store:
         refs = {x['ref_id']: x['ref_version'] for x in
                 c.execute('SELECT ref_id, ref_version FROM evidence_refs WHERE record_id=?', (rid,))}
         dep = c.execute('SELECT seq, observations FROM record_dependencies WHERE record_id=?', (rid,)).fetchone()
-        if not refs and not dep:
-            return None
+        if not refs and not dep:  # a primary fact; an analysis with nothing certified is an unverified derivation
+            kind = c.execute('SELECT kind FROM records WHERE id=?', (rid,)).fetchone()
+            return (False, []) if kind and kind[0] == 'analysis' else None
         stale = self._stale_refs(c, refs)
         if dep:
             stale += [x for x in self._changed_since(c, [], dep['seq'], bool(dep['observations'])) if x not in stale]
@@ -494,11 +501,8 @@ class Store:
                                            (r['id'],))]
             r['evidence'] = {'ids': ids, 'stale_ids': f[1], 'bound': f[0], 'current': f[0] and not f[1]}
             if not f[0]:
-                r['evidence']['note'] = ('freshness unverified: written without a read receipt that delivered its '
-                                         'evidence, or it cites an unverified derivation')
-        elif r['kind'] == 'analysis':  # an analysis whose reads certified nothing is stored, never shown as verified
-            r['evidence'] = {'ids': [], 'stale_ids': [], 'bound': False, 'current': False,
-                             'note': 'freshness unverified: no read delivered evidence this analysis depends on'}
+                r['evidence']['note'] = ('freshness unverified: no read receipt certified what it depends on, or it '
+                                         'cites an unverified derivation')
         if r['object_sha']:
             ex = c.execute('SELECT status, page_count, method FROM extractions WHERE object_sha=?',
                            (r['object_sha'],)).fetchone()
