@@ -36,3 +36,18 @@ Runtime key read from Keychain `phctx-tunnel-key` only (the WebCodex file fallba
 Observed file hosts: ChatGPT used five regional storage accounts across this day's uploads (`oaisdmntpr` +
 northcentralus, centralus, nznorth, westus2, indiasocentral). Exact hosts only (consult round 2, R2-10): each new
 region is refused once, with "nothing saved" and the host logged, until added; `ops/status.sh` lists any pending.
+
+## Round 3 — evidence receipts on the final tree (commit a330512, schema v10, 2026-09-24 08:25–08:40 CDT)
+
+Tunnel restarted on a330512 (MCP server started after the last source change). ChatGPT model setting shown: "Extra High".
+
+| Probe | ChatGPT conversation | Server / DB evidence | Result |
+|---|---|---|---|
+| Stale tool schema is refused, not bypassed | chat 1: read December 2025 resting HR, save the mean as an analysis citing the evidence | ChatGPT still held the tool schema cached at app creation (no `read_receipts`): `tool=context_capture status=error:evidence_unbound`; the model said the analysis was NOT saved (receipt check: committed=false) and named the schema mismatch | fail-closed as designed |
+| Tool refresh | Settings → Plugins → Personal Health Context → Information → Refresh | "Tools refreshed." | done |
+| Analysis with read receipts | chat 2 (new): same request, told to pass the read's `read_receipt` | `context_query` ×2, `tool=context_capture status=ok`; record `rec_7120bfded2fe42119a94de0a1e9773f6` (kind analysis) with 10 evidence refs and a stored dependency (`record_dependencies`: seq 1916, observations=1); read back in ChatGPT: `bound: true, current: true, stale_ids: []` | PASS |
+| Fresh conversation read | chat 3 (new): "find the analysis containing phctx-probe-r3b; is its evidence current?" | `context_search` + `context_read`; ChatGPT returned `rec_7120bfded2fe42119a94de0a1e9773f6`, the text, `current = true`, no stale ids | PASS |
+| Photo + PDF originals, page image | chat 4 (new): synthetic PNG + 2-page PDF, save both, render PDF page 2 with `page_image`. First attempt: hosts `oaisdmntprsoutheastus3`, `oaisdmntprsouthcentralus` refused ("nothing was saved"); ChatGPT kept "not saved" separate from "read from the existing server original" and rendered page 2 of the already-stored PDF (Test Analyte D 41 U/L, 10–40, H). Hosts added; retry: `oaisdmntprkoreacentral` refused once more, then both saved | `file_saved sha=89d93e860685 size=157`, `file_saved sha=ad7af05ff1c4 size=1371`; records `rec_72db4aa014694a43a095871f3c1571b6`, `rec_e78e624e683349309561d68e2e621eb1`; stored blob SHA-256 = local SHA-256 for both; `context_read_original mode=page_image` ok | PASS |
+
+Regional file hosts observed today: 8 (`oaisdmntpr` + northcentralus, centralus, nznorth, westus2, indiasocentral, southeastus3,
+southcentralus, koreacentral). Each first use of a new region fails with "nothing saved" until the exact host is added.
