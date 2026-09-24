@@ -35,6 +35,8 @@ from phctx import model, worker  # noqa: E402
 from phctx.config import Config  # noqa: E402
 from phctx.store import Store  # noqa: E402
 
+# Synthetic-only harness: uses the developer's file login (symlinked, never copied); production uses the keyring.
+EVAL_AUTH = Path(os.environ.get('PHCTX_CODEX_AUTH', '~/.codex/auth.json')).expanduser()
 CASES = [json.loads(x) for f in ('cases.jsonl', 'cases_scale.jsonl') if (ROOT / 'evals' / f).exists()
          for x in (ROOT / 'evals' / f).read_text().splitlines() if x.strip()]
 FOREGROUND = (ROOT / 'prompts' / 'foreground.md').read_text()
@@ -153,7 +155,7 @@ def foreground(case: dict, store: Store, ctx: dict, cfgp: Path, model_id: str, w
         text, trace = model.run_codex(prompt, model_id=model_id, config_path=str(cfgp),
                                       profile=ctx.get('profile', 'full'), developer_instructions=FOREGROUND,
                                       images=[ctx['attach_image']] if ctx.get('attach_image') else None,
-                                      timeout=600, cwd=str(work), result_cap=60000)
+                                      timeout=600, cwd=str(work), result_cap=60000, file_auth=EVAL_AUTH)
         err = None
     except model.ModelError as e:
         text, trace, err = '', [], e.code
@@ -168,7 +170,7 @@ def background(case: dict, store: Store, ctx: dict, cfgp: Path, model_id: str, w
     """Run the real worker once. The fixture's writes are the 'new evidence' since the last watermark."""
     cfg = Config(profile='synthetic', root=store.root, model_enabled=True, model_backend='codex_cli',
                  model_id=model_id, worker_mode='live', daily_call_cap=ctx.get('daily_call_cap', 50),
-                 minimum_semantic_interval_seconds=0)
+                 minimum_semantic_interval_seconds=0, codex_file_auth=EVAL_AUTH)
     if ctx.get('new_obs'):
         fixtures.watch(store, ctx['new_obs'])
     t0 = time.time()
@@ -335,7 +337,7 @@ def judge(case: dict, run: dict, diff: dict, checks: list[dict], judge_model: st
     try:
         text, _ = model.run_codex(JUDGE_RUBRIC + '\n\nEVIDENCE PACKET:\n' + json.dumps(packet, ensure_ascii=False),
                                   model_id=judge_model, config_path=None, output_schema=JUDGE_SCHEMA, timeout=600,
-                                  cwd=str(work / 'judge'), reasoning_effort='high')
+                                  cwd=str(work / 'judge'), reasoning_effort='high', file_auth=EVAL_AUTH)
         return json.loads(text)
     except (model.ModelError, ValueError) as e:
         return {'verdict': 'ERROR', 'hard_failure': False, 'reason': f'judge_failed:{getattr(e, "code", e)}',

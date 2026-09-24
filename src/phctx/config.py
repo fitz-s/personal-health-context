@@ -43,6 +43,7 @@ class Config:
     ingest_host: str = '0.0.0.0'
     ingest_port: int = 47821
     source: Path | None = None
+    codex_file_auth: Path | None = None  # synthetic eval harness only; never read from config (production: keyring)
 
     def __post_init__(self) -> None:
         if self.backup_dir is None:

@@ -124,15 +124,22 @@ class Tools:
         if mode in {'text', 'pages'}:
             out = self.s.read_pages(object_sha256, start_page or 1, end_page)
             return {**out, 'versions': self.s.read_versions(out['evidence_ids'])}
+        if mode == 'page_image':
+            jpg, meta = extract.render(self.s, object_sha256, start_page or 1)
+            return Result({**meta, 'object_sha256': object_sha256, 'derived': 'rendered view; the original is unchanged',
+                           'cite_as': f'obj:{object_sha256}', 'versions': self.s.read_versions([f'obj:{object_sha256}'])},
+                          image=(jpg, 'image/jpeg'))
         data = self.s.read_object(object_sha256)
         if len(data) > FILE_RETURN_CAP:
             return Result({'error': 'file_too_large_to_return', 'size': len(data),
-                           'message': 'Use mode=text/pages for this original.'}, True)
+                           'message': 'Use mode=text/pages, or mode=page_image for a page or image view.'}, True)
         meta = {'object_sha256': object_sha256, 'size': len(data), 'mime': info['mime'],
                 'filename': info['filename'], 'verified_sha256': hashlib.sha256(data).hexdigest() == object_sha256,
                 'versions': self.s.read_versions([f'obj:{object_sha256}'])}
         if info['mime'].startswith('image/') and info['mime'] != 'image/heic':
             return Result(meta, image=(data, info['mime']))
+        if info['mime'] == 'image/heic':
+            meta['hint'] = 'The host may not display HEIC; mode=page_image returns a JPEG view.'
         meta['base64'] = base64.b64encode(data).decode()
         return meta
 

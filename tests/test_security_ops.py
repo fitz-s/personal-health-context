@@ -311,7 +311,7 @@ class ExtractIsolationTests(Tmp):
         self.assertEqual(order, ['limits', 'parse'])
 
 
-# ---- F21/F22: Codex auth is symlinked, never copied; owned temp dirs are removed ---------------------
+# ---- F21/F22/R2-18: Codex auth comes from the keyring, never a file; owned temp dirs are removed -----
 FAKE_CODEX = '''#!{py}
 import json, os, sys, time
 a = sys.argv
@@ -320,8 +320,8 @@ auth = os.path.join(home, 'auth.json')
 secret = open(os.environ['FAKE_SECRET_FILE']).read()
 copies = [os.path.join(d, f) for d, _, fs in os.walk(os.environ['FAKE_SCAN']) for f in fs
           if not os.path.islink(os.path.join(d, f)) and secret in open(os.path.join(d, f), errors='ignore').read()]
-json.dump({{'home': home, 'out': out, 'work': work, 'link': os.path.islink(auth),
-           'target': os.path.realpath(auth), 'copies': copies}}, open(os.environ['FAKE_LOG'], 'w'))
+json.dump({{'home': home, 'out': out, 'work': work, 'auth_file': os.path.lexists(auth),
+           'config': open(os.path.join(home, 'config.toml')).read(), 'copies': copies}}, open(os.environ['FAKE_LOG'], 'w'))
 sys.stdin.read()
 time.sleep(float(os.environ.get('FAKE_SLEEP', '0')))
 open(out, 'w').write('{{"final": "SYNTHETIC"}}')
@@ -354,16 +354,24 @@ class CodexHomeTests(Tmp):
         return model.run_codex('SYNTHETIC prompt', model_id='m', config_path=None,
                                output_schema={'type': 'object'}, **kw)
 
+    def test_eval_file_login_is_a_symlink_never_a_copy(self):
+        self.run_codex(file_auth=self.auth)
+        seen = json.loads(self.log.read_text())
+        self.assertTrue(seen['auth_file'])
+        self.assertIn('cli_auth_credentials_store = "file"', seen['config'])
+        self.assertEqual(seen['copies'], [])
+        self.assertEqual(list(self.scan.iterdir()), [])
+
     def assert_clean(self):
         seen = json.loads(self.log.read_text())
-        self.assertTrue(seen['link'])
-        self.assertEqual(seen['target'], str(self.auth.resolve()))
+        self.assertFalse(seen['auth_file'])  # no auth.json in any form: the keyring holds the login
+        self.assertIn('cli_auth_credentials_store = "keyring"', seen['config'])
         self.assertEqual(seen['copies'], [])
         for k in ('home', 'work', 'out'):
             self.assertFalse(Path(seen[k]).exists(), k)
         self.assertEqual(list(self.scan.iterdir()), [])
 
-    def test_success_symlinks_auth_and_leaves_nothing(self):
+    def test_success_uses_the_keyring_and_leaves_nothing(self):
         text, _ = self.run_codex()
         self.assertEqual(json.loads(text), {'final': 'SYNTHETIC'})
         self.assert_clean()

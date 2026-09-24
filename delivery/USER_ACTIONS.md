@@ -23,7 +23,8 @@ Oura 镜像条目会被自动过滤并只计数。这只是历史回填，持续
 
 ## 4. 后台推理是否启用（隐私/配额决定）
 现在后台 worker 已运行但**不调用模型**（`[model] enabled = false`，shadow 模式）。可选：
-- A. 用你已登录的 Codex（ChatGPT 账户，无新增付费）做后台调查：在 `~/.config/phctx/config.toml` 设
+- A. 用你已登录的 Codex（ChatGPT 账户，无新增付费）做后台调查：先让 Codex 把登录存进 Keychain（本系统只从 Keychain 取，不读 auth.json）：
+  在 `~/.codex/config.toml` 加 `cli_auth_credentials_store = "keyring"`，再运行 `codex login`。然后在 `~/.config/phctx/config.toml` 设
   `enabled = true`、`backend = "codex_cli"`、`model_id = "gpt-5.6-sol"`。这会把**你本地已授权的健康记录**（经只读工具）发送给 OpenAI，并消耗你的 ChatGPT/Codex 配额；默认每日上限 12 次。
 - B. 保持关闭：前台对话照常可用，后台只做同步/抽取/调度，不会有主动发现。
 

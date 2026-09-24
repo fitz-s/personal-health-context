@@ -43,6 +43,62 @@ def _child(path: str) -> None:
     print(json.dumps({'pages': pages, 'total_pages': len(reader.pages)}))
 
 
+RENDER_PX = 1600  # longest side of a rendered page/image returned to the model
+
+
+def _page_child(src: str, page: int, dst: str) -> None:
+    """Inside the limited child: write page `page` (1-based) of a PDF as a one-page PDF at dst."""
+    _limits()
+    from pypdf import PdfReader, PdfWriter
+    reader = PdfReader(src)
+    if not 1 <= page <= len(reader.pages):
+        print(json.dumps({'error': 'page_out_of_range', 'total_pages': len(reader.pages)}))
+        return
+    w = PdfWriter()
+    w.add_page(reader.pages[page - 1])
+    with open(dst, 'wb') as f:
+        w.write(f)
+    print(json.dumps({'total_pages': len(reader.pages)}))
+
+
+def render(store: Store, sha: str, page: int = 1) -> tuple[bytes, dict]:
+    """A bounded JPEG of one PDF page, or of an image the model cannot take as is (HEIC, oversized): the visual path
+    for scanned documents. The original bytes are unchanged; this is a derived view, never stored."""
+    import tempfile
+    mime = store.object_info(sha)['mime']
+    if mime != 'application/pdf' and not mime.startswith('image/'):
+        raise StoreError('not_renderable', f'Originals of type {mime} have no visual rendering; use mode=text/file.')
+    env = {'PATH': '/usr/bin:/bin', 'PYTHONPATH': SRC, 'HOME': os.environ.get('HOME', '/')}
+    with tempfile.TemporaryDirectory(prefix='phctx-render-') as d:
+        src, total = str(store.blobs / sha), None
+        if mime == 'application/pdf':
+            one = os.path.join(d, 'page.pdf')
+            try:
+                proc = subprocess.run([sys.executable, '-I', '-c', 'import sys; sys.path.insert(0, sys.argv[4]); '
+                                       'from phctx.extract import _page_child; _page_child(sys.argv[1], int(sys.argv[2]), '
+                                       'sys.argv[3])', src, str(page), one, SRC],
+                                      capture_output=True, text=True, timeout=TIMEOUT_S + 5, env=env)
+                out = json.loads(proc.stdout or '{}')
+            except (subprocess.TimeoutExpired, ValueError) as e:
+                raise StoreError('render_failed', 'The page could not be split out of the PDF.') from e
+            if out.get('error'):
+                raise StoreError(out['error'], f'The PDF has {out["total_pages"]} pages.')
+            if proc.returncode != 0 or not os.path.exists(one):
+                raise StoreError('render_failed', 'The page could not be split out of the PDF.')
+            src, total = one, out['total_pages']
+        elif page != 1:
+            raise StoreError('page_out_of_range', 'An image has one page.')
+        jpg = os.path.join(d, 'page.jpg')
+        try:
+            proc = subprocess.run(['/usr/bin/sips', '-s', 'format', 'jpeg', '-Z', str(RENDER_PX), src, '--out', jpg],
+                                  capture_output=True, timeout=TIMEOUT_S, env=env)
+        except subprocess.TimeoutExpired as e:
+            raise StoreError('render_failed', 'Rendering timed out.') from e
+        if proc.returncode != 0 or not os.path.exists(jpg):
+            raise StoreError('render_failed', 'The original could not be rendered.')
+        return Path(jpg).read_bytes(), {'page': page, 'total_pages': total, 'max_side_px': RENDER_PX}
+
+
 def extract(store: Store, sha: str) -> dict:
     info = store.object_info(sha)
     mime = info['mime']

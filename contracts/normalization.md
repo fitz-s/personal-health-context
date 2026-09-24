@@ -18,7 +18,9 @@ sha256 of canonical JSON `[metric, start_utc, end_utc, value, unit, source]` whe
   precision while HealthKit dates carry fractions, so both producers must meet at the second.
 - `source`: source name, whitespace-trimmed.
 - `unit`: normalized — `Cal`→`kcal`, `count/min`→`count/min`, `min`→`min`, `%`→`%`; unknown units pass through
-  unchanged. Category samples use unit `""`.
+  unchanged. Values are NOT converted between compatible units: an export written in a unit other than the one the
+  helper requests for that type does not match its live copy (both stay; the live-sync activation test must cover the
+  requested units per type). Category samples use unit `""`.
 - `value`:
   - Quantity samples: `round(value_num, 4)`.
   - Category samples (metric starts with `HKCategoryTypeIdentifier`): the **XML identifier string** of the category
@@ -28,13 +30,19 @@ sha256 of canonical JSON `[metric, start_utc, end_utc, value, unit, source]` whe
   - Workouts (metric `HKWorkoutTypeIdentifier`): `[activity_type_string, round(duration_seconds)]`, where
     activity_type_string is the XML form, e.g. `HKWorkoutActivityTypeRunning`. The helper sends it in `value_text`
     and duration seconds in `value_num`; the importer takes `workoutActivityType` and converts `duration` +
-    `durationUnit` to seconds.
+    `durationUnit` to seconds. A raw activity value the helper's table does not know is sent as
+    `HKWorkoutActivityTypeUnknown(<raw>)`, never as the known `...Other`, so it matches no export row rather than a
+    wrong one.
+- The key is an equivalence heuristic, not an identity proof: two distinct samples with the same metric, whole-second
+  window, rounded value, unit and source share it. Export rows that share it are all kept (distinct native_id);
+  `canonical_observations` hides only exact repeats of one source record (every measured field and the device equal).
 
 ## Formula versioning
 The stored key is only meaningful under one formula. Any change to this section bumps the store migration that recomputes
 `origin_key` for every stored row and rebuilds `supersessions` (v6 for this version).
 
 ## Supersession (which copy is canonical)
+- A relation, once made, is history: migrations that re-key rows carry each relation to the export row's new key.
 - A live row supersedes any export row with the same `origin_key`, in **either arrival order**, and a live
   **tombstone** keeps that supersession (the user deleted the sample on the phone; the backfill copy must not
   reappear). Implemented as the table `supersessions(origin_key PRIMARY KEY, live_observation_id)`; export rows are
@@ -43,4 +51,5 @@ The stored key is only meaningful under one formula. Any change to this section 
 ## Restricted provenance (both producers, before any persistence)
 A sample is restricted (Oura) if **any** of these contain `oura` (case-insensitive): source name, bundle id, device
 name/manufacturer/model, any metadata key or value. The phone drops it before writing the outbox; the Mac drops it
-again at ingest. Workout routes / ECG files are persisted only when their parent record is permitted.
+again at ingest. Workout routes are persisted only when their parent Workout is permitted. ECG CSVs have no parent
+record in the export: they are checked on their own header text (device, source) instead.

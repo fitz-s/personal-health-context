@@ -61,12 +61,16 @@ CODEX_FEATURES_OFF = ['shell_tool', 'browser_use', 'browser_use_external', 'comp
                       'remote_plugin', 'skill_search']
 
 
-def _codex_home(home: str, mcp_python: str, config_path: str | None, profile: str) -> None:
-    """Isolated CODEX_HOME: a SYMLINK to the user's existing auth (never a copy) plus this project's MCP server."""
-    auth = Path(os.environ.get('PHCTX_CODEX_AUTH', '~/.codex/auth.json')).expanduser()
-    if not auth.is_file():
-        raise ModelError('codex_auth_missing')
-    os.symlink(auth.resolve(), Path(home) / 'auth.json')
+def _codex_home(home: str, mcp_python: str, config_path: str | None, profile: str, file_auth: Path | None) -> None:
+    """Isolated CODEX_HOME holding only this project's MCP server. Production (the background worker) takes the login
+    from the OS keyring (cli_auth_credentials_store = "keyring": fails closed, independent of CODEX_HOME), so no
+    auth.json is read, copied or linked. `file_auth` is for the synthetic eval harness only: a SYMLINK to that file."""
+    store = 'keyring'
+    if file_auth is not None:
+        if not file_auth.is_file():
+            raise ModelError('codex_auth_missing')
+        os.symlink(file_auth.resolve(), Path(home) / 'auth.json')
+        store = 'file'
     server = '' if config_path is None else (
         '[mcp_servers.phctx]\n'
         # Stands in for the user approving the host's write confirmation (ChatGPT asks before write tools);
@@ -77,14 +81,15 @@ def _codex_home(home: str, mcp_python: str, config_path: str | None, profile: st
         f'env = {{ PHCTX_CONFIG = {json.dumps(config_path)}, PYTHONPATH = {json.dumps(str(ROOT / "src"))} }}\n'
         'tool_timeout_sec = 120\n')
     (Path(home) / 'config.toml').write_text(
-        'web_search = "disabled"\n' + server +
+        f'cli_auth_credentials_store = "{store}"\nweb_search = "disabled"\n' + server +
         '[features]\n' + ''.join(f'{f} = false\n' for f in CODEX_FEATURES_OFF))
 
 
 def run_codex(prompt: str, *, model_id: str, config_path: str | None, profile: str = 'readonly',
               output_schema: dict | None = None, timeout: int = 900, cwd: str | None = None,
               developer_instructions: str | None = None, images: list[str] | None = None,
-              reasoning_effort: str | None = None, result_cap: int = 4000) -> tuple[str, list[dict]]:
+              reasoning_effort: str | None = None, result_cap: int = 4000,
+              file_auth: Path | None = None) -> tuple[str, list[dict]]:
     """Run one Codex exec turn against the phctx MCP server. Returns (final_message, tool_trace).
 
     `cwd` is only Codex's working directory; the final message, schema and CODEX_HOME live in owned private
@@ -96,7 +101,7 @@ def run_codex(prompt: str, *, model_id: str, config_path: str | None, profile: s
     home = tempfile.mkdtemp(prefix='phctx-codex-')
     own = tempfile.mkdtemp(prefix='phctx-codex-work-')
     try:
-        _codex_home(home, str(ROOT / '.venv' / 'bin' / 'python'), config_path, profile)
+        _codex_home(home, str(ROOT / '.venv' / 'bin' / 'python'), config_path, profile, file_auth)
         last = Path(own) / 'last_message.txt'
         cmd = [exe, 'exec', '--skip-git-repo-check', '--ephemeral', '-s', 'read-only', '-m', model_id, '--json',
                '-C', cwd or own, '-o', str(last)]
@@ -168,7 +173,7 @@ def normalize(raw: dict) -> dict:
 
 
 def investigate(backend: str, model_id: str, task: str, *, config_path: str,
-                scripted: Callable[[str], dict] | None = None) -> Call:
+                scripted: Callable[[str], dict] | None = None, file_auth: Path | None = None) -> Call:
     prompt = background_prompt() + '\n\n## This run\n' + task + (
         '\n\nUse the phctx tools (read-only) to inspect evidence. Return ONLY the JSON candidate.')
     digest = hashlib.sha256(prompt.encode()).hexdigest()
@@ -178,7 +183,7 @@ def investigate(backend: str, model_id: str, task: str, *, config_path: str,
         return Call('scripted', 'scripted', digest, validate_candidate(scripted(task)), [])
     if backend == 'codex_cli':
         text, trace = run_codex(prompt, model_id=model_id, config_path=config_path,
-                                output_schema=CODEX_CANDIDATE_SCHEMA)
+                                output_schema=CODEX_CANDIDATE_SCHEMA, file_auth=file_auth)
         try:
             cand = normalize(json.loads(text))
         except ValueError as e:

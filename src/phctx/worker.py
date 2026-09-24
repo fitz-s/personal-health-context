@@ -192,7 +192,7 @@ def execute(store: Store, cfg: Config, job: dict, owner: str, config_path: str,
             c.execute('INSERT INTO model_calls VALUES(?,?,?,?,?,?,NULL,?,NULL,NULL)',
                       (call_id, job['id'], backend, cfg.model_id or backend, prompt_sha, started, 'running'))
         result = model.investigate(backend, cfg.model_id, task_text(store, job), config_path=config_path,
-                                   scripted=scripted)
+                                   scripted=scripted, file_auth=cfg.codex_file_auth)
     except model.ModelError as e:
         attempts = job['attempts'] + 1
         delay = min(3600 * 24, 900 * 2 ** attempts)

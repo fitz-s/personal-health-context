@@ -112,6 +112,22 @@ class ToolsFilesTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
+    def test_page_image_renders_any_pdf_page_for_a_fresh_conversation(self):
+        sha = self.store.put_attachment_bytes(request_id='SYNTHETIC-render', data=text_pdf(3), filename='s.pdf',
+                                              mime='application/pdf', text='SYNTHETIC scan',
+                                              occurred_at=AT)['object_sha256']
+        out = self.tools.call('context_read_original', {'object_sha256': sha, 'mode': 'page_image', 'start_page': 2})
+        self.assertFalse(out.is_error, out.data)
+        jpg, mime = out.image
+        self.assertEqual((mime, jpg[:3]), ('image/jpeg', b'\xff\xd8\xff'))
+        self.assertEqual((out.data['page'], out.data['total_pages']), (2, 3))
+        bad = self.tools.call('context_read_original', {'object_sha256': sha, 'mode': 'page_image', 'start_page': 9})
+        self.assertEqual(bad.data['error'], 'page_out_of_range')
+        txt = self.store.put_attachment_bytes(request_id='SYNTHETIC-txt', data=b'SYNTHETIC', filename='s.txt',
+                                              mime='text/plain', text='SYNTHETIC', occurred_at=AT)['object_sha256']
+        self.assertEqual(self.tools.call('context_read_original', {'object_sha256': txt, 'mode': 'page_image'})
+                         .data['error'], 'not_renderable')
+
     def test_invalid_arguments_return_invalid_arguments(self):
         result = self.tools.call('context_capture', {'request_id': 'x'})
         self.assertTrue(result.is_error)
