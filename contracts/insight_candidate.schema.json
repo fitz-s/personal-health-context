@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Candidate, not an authorized notification",
+  "type": "object",
+  "properties": {
+    "decision": {
+      "enum": [
+        "silence",
+        "surface"
+      ]
+    },
+    "question_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "topic": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "why_now": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "what_changed": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "unknowns": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "next_step": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "evidence_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "maxItems": 100
+    },
+    "evidence_versions": {
+      "type": "object"
+    },
+    "source_policies": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "durable",
+          "ephemeral",
+          "blocked"
+        ]
+      },
+      "maxItems": 20
+    }
+  },
+  "required": [
+    "decision"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "surface"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "topic",
+          "why_now",
+          "what_changed",
+          "unknowns",
+          "next_step",
+          "evidence_ids",
+          "evidence_versions",
+          "source_policies"
+        ],
+        "properties": {
+          "evidence_ids": {
+            "minItems": 1
+          },
+          "source_policies": {
+            "items": {
+              "const": "durable"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

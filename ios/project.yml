@@ -1,0 +1,33 @@
+name: HealthSyncHelper
+options:
+  bundleIdPrefix: com.personalhealthcontext.healthsync
+  deploymentTarget:
+    iOS: "17.0"
+packages:
+  HealthSyncCore:
+    path: HealthSyncCore
+
+targets:
+  HealthSyncHelper:
+    type: application
+    platform: iOS
+    sources:
+      - path: HealthSyncHelper
+        excludes:
+          - Resources
+          - HealthSyncHelper.entitlements
+    resources:
+      - path: HealthSyncHelper/Resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.personalhealthcontext.healthsync.suffix
+        PRODUCT_NAME: HealthSyncHelper
+        SWIFT_VERSION: "5.9"
+        INFOPLIST_FILE: HealthSyncHelper/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: HealthSyncHelper/HealthSyncHelper.entitlements
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: NO
+        SUPPORTS_MACCATALYST: NO
+    dependencies:
+      - package: HealthSyncCore
+        product: HealthSyncCore

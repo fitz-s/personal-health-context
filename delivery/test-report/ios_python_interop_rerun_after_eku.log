@@ -1,0 +1,31 @@
+Synthetic Swift ↔ Python ingest interoperability probe
+Date: 2026-09-23 07:08:20 CDT
+Scope: disposable synthetic store, loopback TLS server, temporary outbox under ios/test-report
+server startup exit code: 0
+
+Command: swift build --package-path /Users/leofitz/personal-health-context/ios/HealthSyncCore --product InteropProbe
+[0/1] Planning build
+Building for debugging...
+[0/3] Write swift-version--1AB21518FC5DEDBE.txt
+Build of product 'InteropProbe' complete! (0.18s)
+InteropProbe build exit code: 0
+
+Command: PHCTX_INTEROP=1 swift run --package-path /Users/leofitz/personal-health-context/ios/HealthSyncCore InteropProbe 127.0.0.1 53646 <pinned-cert> <one-time-code>
+[0/1] Planning build
+Building for debugging...
+[0/3] Write swift-version--1AB21518FC5DEDBE.txt
+Build of product 'InteropProbe' complete! (0.18s)
+PASS: wrong certificate pin rejected before pairing
+PASS: wrong pin generated no accepted pairing request; valid pairing succeeded
+PASS: pairing and tolerant PairResponse decoding
+PASS: restricted-source sample removed before durable outbox
+PASS: two ordered batches on one stream and one batch on second stream committed
+PASS: identical raw outbox body replay returns committed ACK
+PASS: authenticated status reports per-stream sequences
+InteropProbe run exit code: 0
+
+Command: query synthetic SQLite observations and committed receipt counts
+{"active_observations": 3, "batch_receipts": 3, "oura_observations": 0, "server_filtered_restricted_counts": [0, 0, 0]}
+Synthetic database assertion exit code: 0
+
+Overall interop exit code: 0

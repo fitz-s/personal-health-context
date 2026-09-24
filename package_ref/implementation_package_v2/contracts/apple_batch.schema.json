@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Trusted HealthKit normalized batch v1",
+  "type": "object",
+  "properties": {
+    "protocol_version": {
+      "const": 1
+    },
+    "installation_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "stream": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "batch_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "previous_batch_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "next_anchor_b64": {
+      "type": "string",
+      "maxLength": 100000
+    },
+    "query_completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "samples": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "native_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "metric": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "start_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timezone": {
+            "type": "string",
+            "default": "America/Chicago",
+            "maxLength": 100
+          },
+          "value_num": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "value_text": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_bundle_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "source_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "device": {
+            "type": "object"
+          },
+          "metadata": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "native_id",
+          "metric",
+          "start_at",
+          "end_at",
+          "timezone",
+          "source_bundle_id",
+          "source_name"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 5000
+    },
+    "deleted_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "maxItems": 5000
+    },
+    "coverage": {
+      "type": "object",
+      "description": "Observed coverage and limits; never use empty data to claim permission denied or complete."
+    }
+  },
+  "required": [
+    "protocol_version",
+    "installation_id",
+    "stream",
+    "batch_id",
+    "sequence",
+    "previous_batch_id",
+    "next_anchor_b64",
+    "query_completed_at",
+    "samples",
+    "deleted_ids",
+    "coverage"
+  ],
+  "additionalProperties": false
+}

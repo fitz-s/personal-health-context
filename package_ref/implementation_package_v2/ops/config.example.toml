@@ -1,0 +1,38 @@
+# TEMPLATE ONLY: local installer resolves absolute paths and validates actual capabilities.
+[app]
+profile = "synthetic" # installer must intentionally create the separate production profile
+root = "~/Library/Application Support/PersonalHealthContext"
+timezone = "America/Chicago"
+[transport]
+mode = "secure_tunnel_stdio"
+tunnel_profile = "phctx-local"
+public_listener = false
+[files]
+max_interactive_bytes = 26214400
+# Populate only from the official host observed/verified during the current file capability probe.
+allowed_download_hosts = []
+[model]
+enabled = false
+model_id = "SET_AFTER_CAPABILITY_AND_EVAL"
+api_key_keychain_service = "phctx-openai"
+store = false
+max_tool_rounds = 12
+# Engineering spending cap, not a price estimate. Enable paid calls only with explicit authorization.
+daily_budget_usd = 2.0
+[worker]
+enabled = false
+mode = "shadow"
+change_check_seconds = 900
+minimum_semantic_interval_seconds = 21600
+[attention]
+proactivity = "normal"
+normal_cooldown_hours = 72
+quiet_cooldown_hours = 168
+macos_notification_enabled = false
+[sources]
+oura_persistence = "blocked"
+oura_official_mcp = "not_connected"
+[backup]
+local_snapshot_enabled = true
+cloud_snapshot_enabled = false
+cloud_encryption_required = true

@@ -1,0 +1,93 @@
+{
+  "as_of": "2026-09-23",
+  "user_timezone": "America/Chicago",
+  "template_only": false,
+  "environment": {
+    "macos": "15.7.4 (24G512) arm64",
+    "xcode": "not installed (Command Line Tools only; Swift 6.1.2)",
+    "ios": "no device tested",
+    "chatgpt_account": "ChatGPT Pro (personal)",
+    "client": "chatgpt.com web (read-only settings check)",
+    "model_mode": "n/a (no live tool call yet)",
+    "python": "3.12.13",
+    "mcp_sdk": "mcp 2.2.0",
+    "tunnel_client": "0.0.14 (sha256 verified)"
+  },
+  "capabilities": {
+    "chatgpt_developer_mode": {
+      "status": "PASS",
+      "evidence": "live-evidence/chatgpt_developer_mode_on_2026-09-23.png",
+      "notes": "Switch observed ON in Settings → Security and login."
+    },
+    "chatgpt_read": {
+      "status": "BLOCKED",
+      "evidence": null,
+      "notes": "Needs phctx tunnel + developer-mode app created by the user (USER_ACTIONS §1)."
+    },
+    "chatgpt_write": {
+      "status": "BLOCKED",
+      "evidence": null,
+      "notes": "Same; docs S1/S2 conflict on Pro write — to be settled by the live probe."
+    },
+    "chatgpt_original_file_bytes": {
+      "status": "BLOCKED",
+      "evidence": null,
+      "notes": "Same; file host allowlist empty until observed."
+    },
+    "fresh_chat": {
+      "status": "BLOCKED",
+      "evidence": null,
+      "notes": "Same."
+    },
+    "mobile_client": {
+      "status": "NOT_RUN",
+      "evidence": null,
+      "notes": "Requires the app connection first."
+    },
+    "transcribed_voice": {
+      "status": "NOT_RUN",
+      "evidence": null,
+      "notes": "Transcript-as-text capture verified in model eval (E009); not in ChatGPT."
+    },
+    "secure_tunnel": {
+      "status": "BLOCKED",
+      "evidence": "research/official_sources_2026-09-23.md",
+      "notes": "Official client downloaded, checksum-verified, wired (ops/tunnel.sh); needs user runtime key + tunnel id."
+    },
+    "apple_device_sync": {
+      "status": "BLOCKED",
+      "evidence": null,
+      "notes": "No Xcode/iOS SDK; needs user's Apple signing + device."
+    },
+    "apple_xml_backfill": {
+      "status": "PASS",
+      "evidence": "test-report/p1_p5_engineering_tests.log",
+      "notes": "Synthetic export import, Oura filter, idempotent re-import, entity refusal."
+    },
+    "oura_official_mcp": {
+      "status": "BLOCKED",
+      "evidence": "live-evidence/p0_account_probe_2026-09-23.md",
+      "notes": "No official route available to this account; nothing persisted by design."
+    },
+    "background_model_api": {
+      "status": "BLOCKED",
+      "evidence": "live-evidence/p0_account_probe_2026-09-23.md",
+      "notes": "Platform org shows 'Add credits'; no paid API use without authorization."
+    },
+    "background_model_codex_cli": {
+      "status": "PASS",
+      "evidence": "eval-report/summary.json",
+      "notes": "User's authorized Codex login runs gpt-5.6-sol against the phctx MCP server (read-only profile) — used for eval; disabled in production config pending user decision (USER_ACTIONS §4)."
+    },
+    "arbitrary_chat_thread_push": {
+      "status": "BLOCKED",
+      "evidence": null,
+      "notes": "Not offered by the platform; proactive items wait in the local outbox."
+    },
+    "encrypted_icloud_backup": {
+      "status": "PASS",
+      "evidence": "recovery-report/recovery_drill.json",
+      "notes": "Synthetic round trip via iCloud Drive; production opt-in."
+    }
+  }
+}

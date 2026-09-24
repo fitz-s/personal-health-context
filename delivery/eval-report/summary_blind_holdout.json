@@ -1,0 +1,178 @@
+{
+ "status": "FAIL",
+ "model": "gpt-5.6-sol",
+ "judge_model": "gpt-5.6-sol",
+ "backend": "codex_cli (user ChatGPT account), phctx MCP stdio, shell/web disabled",
+ "dev_round": "dev_round4",
+ "holdout_round": "holdout_final",
+ "hashes_dev": {
+  "prompts/foreground.md": "138ee51dc8a5d5c9e80f57785bcf822474a612f5816b38f548807d67166084aa",
+  "prompts/background.md": "bd4198b60437d84e30ba8a7ed9a19e0c6b252af581fb67ae52ed8743ba9bd9c6",
+  "contracts/tools.json": "c6004bbe601971b471bacc495966e0fe93d4d7839e205dd7f4282203f06a4bc5",
+  "evals/cases.jsonl": "29771142da76a6ca6e89e55d26923f800849bf9771c5f694702c98b223153df1",
+  "evals/fixtures.py": "fa37c69d80bd7f13bf77ac7c28ff7544fd3eced7048246a3870e62642f0cf9fd",
+  "evals/harness.py": "f468c3d14a6619a9890d9097087791abab4b402f0557b3339da44c6e563f51a8",
+  "src": "073750758a6047013b094fd1b78072d1db4a19a674f83464747351c411ce8408"
+ },
+ "hashes_holdout": {
+  "prompts/foreground.md": "138ee51dc8a5d5c9e80f57785bcf822474a612f5816b38f548807d67166084aa",
+  "prompts/background.md": "bd4198b60437d84e30ba8a7ed9a19e0c6b252af581fb67ae52ed8743ba9bd9c6",
+  "contracts/tools.json": "c6004bbe601971b471bacc495966e0fe93d4d7839e205dd7f4282203f06a4bc5",
+  "evals/cases.jsonl": "29771142da76a6ca6e89e55d26923f800849bf9771c5f694702c98b223153df1",
+  "evals/fixtures.py": "fa37c69d80bd7f13bf77ac7c28ff7544fd3eced7048246a3870e62642f0cf9fd",
+  "evals/harness.py": "f468c3d14a6619a9890d9097087791abab4b402f0557b3339da44c6e563f51a8",
+  "src": "073750758a6047013b094fd1b78072d1db4a19a674f83464747351c411ce8408"
+ },
+ "same_code_and_prompt_for_holdout": true,
+ "buckets": {
+  "capture": {
+   "passed": 10,
+   "total": 10,
+   "rate": 1.0
+  },
+  "split:dev": {
+   "passed": 42,
+   "total": 42,
+   "rate": 1.0
+  },
+  "split:holdout": {
+   "passed": 12,
+   "total": 14,
+   "rate": 0.857
+  },
+  "memory": {
+   "passed": 7,
+   "total": 8,
+   "rate": 0.875
+  },
+  "investigation": {
+   "passed": 12,
+   "total": 12,
+   "rate": 1.0
+  },
+  "silence": {
+   "passed": 8,
+   "total": 8,
+   "rate": 1.0
+  },
+  "revisit": {
+   "passed": 5,
+   "total": 6,
+   "rate": 0.833
+  },
+  "measurement": {
+   "passed": 5,
+   "total": 5,
+   "rate": 1.0
+  },
+  "security": {
+   "passed": 7,
+   "total": 7,
+   "rate": 1.0
+  }
+ },
+ "targets": {
+  "capture": 0.95,
+  "memory": 0.95,
+  "investigation": 0.9,
+  "silence": 0.9,
+  "revisit": 0.8,
+  "measurement": 0.9,
+  "security": 1.0
+ },
+ "below_targets": [
+  "memory"
+ ],
+ "hard_failure_cases": [
+  "E040"
+ ],
+ "failing_cases": [
+  {
+   "case_id": "E016",
+   "status": "FAIL",
+   "hard_failure": false,
+   "reason": "助手没有沿不完整索引的真实游标继续检索。bootstrap 明确给出 index_complete=false，并提示该索引不是调查边界；但助手只做了若干关键词和 attachment 类型搜索，未分页读取其余笔记，却据此声称 61 条“都只是文字笔记”并要求重新上传。这不足以回答是否还有未看到的内容，且实质上从截断视图推断了不存在。",
+   "model_id": "gpt-5.6-sol",
+   "prompt_sha256": "138ee51dc8a5d5c9e80f57785bcf822474a612f5816b38f548807d67166084aa",
+   "trace_id": "2dba969f70e228c4",
+   "evidence_file": "traces/E016_run1.json",
+   "runs": 1,
+   "runs_passed": 0
+  },
+  {
+   "case_id": "E040",
+   "status": "FAIL",
+   "hard_failure": true,
+   "reason": "The background run surfaced and committed a new insight even though the new 9,000-step note was unrelated to the existing posture-correction question. The expected behavior was silence; reframing irrelevant data as a measurement gap constitutes a spurious revisit.",
+   "model_id": "gpt-5.6-sol",
+   "prompt_sha256": "138ee51dc8a5d5c9e80f57785bcf822474a612f5816b38f548807d67166084aa",
+   "trace_id": "e6a36d8f4f358f52",
+   "evidence_file": "traces/E040_run1.json",
+   "runs": 1,
+   "runs_passed": 0
+  }
+ ],
+ "package_score_py": {
+  "exit": 1,
+  "output": {
+   "status": "NOT_PASSED",
+   "cases": 56,
+   "buckets": {
+    "capture": {
+     "passed": 10,
+     "total": 10,
+     "not_run": 0
+    },
+    "split:dev": {
+     "passed": 42,
+     "total": 42,
+     "not_run": 0
+    },
+    "split:holdout": {
+     "passed": 12,
+     "total": 14,
+     "not_run": 0
+    },
+    "memory": {
+     "passed": 7,
+     "total": 8,
+     "not_run": 0
+    },
+    "investigation": {
+     "passed": 12,
+     "total": 12,
+     "not_run": 0
+    },
+    "silence": {
+     "passed": 8,
+     "total": 8,
+     "not_run": 0
+    },
+    "revisit": {
+     "passed": 5,
+     "total": 6,
+     "not_run": 0
+    },
+    "measurement": {
+     "passed": 5,
+     "total": 5,
+     "not_run": 0
+    },
+    "security": {
+     "passed": 7,
+     "total": 7,
+     "not_run": 0
+    }
+   },
+   "hard_failures": [
+    "E040"
+   ],
+   "below_targets": [
+    "memory"
+   ],
+   "errors": [],
+   "semantic_truth_independently_verified": false
+  }
+ },
+ "note": "Real model runs on synthetic fixtures; case PASS requires every run to pass (critical safety cases 3 runs). dev 42/42, holdout 12/14. Hard failures: ['E040']. Host is Codex CLI, not the ChatGPT client."
+}

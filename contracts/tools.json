@@ -1,0 +1,499 @@
+{
+  "spec_version": "2.0",
+  "status": "PRODUCTION_IMPLEMENTATION",
+  "tools": [
+    {
+      "name": "context_bootstrap",
+      "description": "读取偏好、来源状态和当前问题索引。索引并非完整证据，允许继续搜索或只读SQL。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "context_search",
+      "description": "搜索允许的长期上下文（任一关键词子串匹配，中文可用）；返回 total_matches、has_more 与 next_cursor。has_more=false 且已读完才可称\"没有更多\"。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "kind": {
+            "enum": [
+              "event",
+              "routine",
+              "question",
+              "analysis",
+              "note",
+              "attachment",
+              "preference"
+            ]
+          },
+          "start_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "default": 50
+          },
+          "cursor": {
+            "type": "string",
+            "maxLength": 2048
+          },
+          "include_superseded": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "context_read",
+      "description": "按后端真实返回的ID读取记录、来源、版本和原件索引，不推断不存在的内容。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "record_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "minItems": 1,
+            "maxItems": 100
+          },
+          "include_history": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "record_ids"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "context_query",
+      "description": "执行允许数据表上的受限只读SQL；服务端强制授权、函数/表白名单、时间/大小限额。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sql": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "number",
+                "integer",
+                "boolean",
+                "null"
+              ]
+            },
+            "maxItems": 100
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "default": 500
+          }
+        },
+        "required": [
+          "sql"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "context_read_original",
+      "description": "按已验证对象ID读取原件：info=元数据/抽取状态；text/pages=带页码的派生文字；file=原字节（图片以image内容返回，其余base64，受大小限制）。不发布公开URL。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "object_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "mode": {
+            "enum": [
+              "info",
+              "text",
+              "pages",
+              "file"
+            ]
+          },
+          "start_page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "end_page": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "object_sha256",
+          "mode"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "context_capture",
+      "description": "在已验证允许的来源上下文中保存自然输入或重要分析；返回COMMIT回执。混合受限vendor会话不能使用本工具。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "kind": {
+            "enum": [
+              "event",
+              "routine",
+              "question",
+              "analysis",
+              "note"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timezone_name": {
+            "type": "string",
+            "default": "America/Chicago",
+            "maxLength": 100
+          },
+          "payload": {
+            "type": "object",
+            "description": "原话之外的合理结构化字段；未知明确标记，服务端限制字节。"
+          },
+          "evidence_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "request_id",
+          "kind",
+          "text",
+          "occurred_at"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "context_revise",
+      "description": "新增一条修订并保留历史；仅可修订当前记录、不能以此绕过来源政策。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "kind": {
+            "enum": [
+              "event",
+              "routine",
+              "question",
+              "analysis",
+              "note"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timezone_name": {
+            "type": "string",
+            "default": "America/Chicago",
+            "maxLength": 100
+          },
+          "payload": {
+            "type": "object",
+            "description": "原话之外的合理结构化字段；未知明确标记，服务端限制字节。"
+          },
+          "evidence_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "maxItems": 100
+          },
+          "supersedes": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "request_id",
+          "supersedes",
+          "kind",
+          "text",
+          "occurred_at"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "context_capture_file",
+      "description": "接收宿主真正传入的文件对象（openai/fileParams），受控下载并保存原字节/hash；回执明确原件保存与抽取状态。没有真实file对象时不能用文件名或ID代替。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "file": {
+            "type": "object",
+            "properties": {
+              "download_url": {
+                "type": "string"
+              },
+              "file_id": {
+                "type": "string"
+              },
+              "mime_type": {
+                "type": "string"
+              },
+              "file_name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "download_url",
+              "file_id"
+            ],
+            "additionalProperties": false
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timezone_name": {
+            "type": "string",
+            "default": "America/Chicago",
+            "maxLength": 100
+          },
+          "payload": {
+            "type": "object",
+            "description": "可选：模型从附件可见内容得出的初步结构（标记inferred/uncertain）。"
+          }
+        },
+        "required": [
+          "request_id",
+          "file",
+          "text",
+          "occurred_at"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "_meta": {
+        "openai/fileParams": [
+          "file"
+        ]
+      }
+    },
+    {
+      "name": "context_set_preference",
+      "description": "持久化用户的主动性或时区偏好；talk less=quiet，停止主动=off。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "key": {
+            "enum": [
+              "proactivity",
+              "timezone"
+            ]
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "key",
+          "value"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "context_ack_insight",
+      "description": "确认洞见已经向用户呈现或被忽略；未呈现不能提前确认。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "insight_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "disposition": {
+            "enum": [
+              "delivered",
+              "dismissed"
+            ],
+            "default": "delivered"
+          }
+        },
+        "required": [
+          "request_id",
+          "insight_id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "context_receipt",
+      "description": "连接中断或不确定是否已保存时，按request_id查询是否已有COMMIT回执；不存在即未保存。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "request_id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    }
+  ],
+  "notes": [
+    "SDK transport/auth and adapters must be implemented locally.",
+    "Never expose trusted importer/source-policy operations through these model tools.",
+    "Turn off local write tools in restricted-vendor sessions when source isolation cannot be guaranteed.",
+    "context_receipt added in production to recover from lost tool responses without duplicate writes.",
+    "Tool profile 'readonly' lists only readOnlyHint tools; write handlers are also refused server-side."
+  ]
+}
