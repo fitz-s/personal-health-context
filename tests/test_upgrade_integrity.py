@@ -378,6 +378,31 @@ class UpgradeTests(unittest.TestCase):
                                            'read_receipts': [read['read_receipt']]}).data['record_id']
         self.assertFalse(s.get_records([child])['records'][0]['evidence']['bound'])
 
+    def test_an_actual_v14_layout_upgrades_and_retires_its_certifications(self):
+        """R9-03: the real v14 shape (three-column dependencies, no receipt policy column), not current tables relabelled."""
+        s = Store(self.base / 'live', 'synthetic')
+        t = Tools(ToolContext(store=s))
+        receipt = s.issue_receipt(set(), True, self.seq(s))
+        rid = t.call('context_capture', {'request_id': 'SYNTHETIC-a', 'kind': 'note', 'text': 'SYNTHETIC',
+                                         'occurred_at': '2026-09-20T12:00:00-05:00',
+                                         'read_receipts': [receipt]}).data['record_id']
+        with s.transaction() as c:
+            c.execute('CREATE TABLE deps14(record_id TEXT PRIMARY KEY REFERENCES records(id), seq INTEGER NOT NULL, '
+                      'observations INTEGER NOT NULL CHECK(observations IN(0,1)))')
+            c.execute('INSERT INTO deps14 SELECT record_id, seq, observations FROM record_dependencies')
+            c.execute('DROP TABLE record_dependencies')
+            c.execute('ALTER TABLE deps14 RENAME TO record_dependencies')
+            c.execute('ALTER TABLE read_receipts DROP COLUMN policy')
+            c.execute("UPDATE meta SET value='14' WHERE key='schema_version'")
+            c.execute('DELETE FROM migrations WHERE version>14')
+        s = Store(self.base / 'live', 'synthetic')
+        ev = s.get_records([rid])['records'][0]['evidence']
+        self.assertEqual((ev['bound'], ev['current']), (False, False))  # still derived, certification retired
+        again = Tools(ToolContext(store=s)).call('context_capture', {
+            'request_id': 'SYNTHETIC-b', 'kind': 'analysis', 'text': 'SYNTHETIC',
+            'occurred_at': '2026-09-20T12:00:00-05:00', 'read_receipts': [receipt]})
+        self.assertEqual(again.data['error'], 'evidence_unbound')
+
     def test_a_note_derived_without_certification_is_not_primary(self):
         """R8-02: a note written with a receipt that certified nothing (SELECT 1) reads unverified, not primary."""
         s = Store(self.base / 'live', 'synthetic')

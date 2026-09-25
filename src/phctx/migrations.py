@@ -340,7 +340,9 @@ def _v13(c: sqlite3.Connection) -> None:
 def _v14(c: sqlite3.Connection) -> None:
     # Once deleted the dependencies certified before v13 (receipts without completeness). A timestamp cutoff missed
     # those issued under v13's own rules and deleting a dependency erases that a record was derived; v15 retires every
-    # older certification by binding-policy version instead. Stores already past v14 lost only those rows' seq.
+    # older certification by binding-policy version instead. A store already migrated by the old v14 lost those rows
+    # outright; v15 cannot reconstruct them, so such a store needs a snapshot comparison for derived records left
+    # without one (production: none, 2026-09-25).
     pass
 
 

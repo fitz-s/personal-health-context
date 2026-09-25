@@ -1,0 +1,177 @@
+GO-WITH-GAPS for the stated foreground scope at b8717fc. Confidence: high in the code-level closure of R8-01/R8-02; moderate in deployment acceptance because the production inventory and live conversations are reported evidence, not my own account-level rerun. I found no remaining release-blocking failure in the reviewed current-policy paths under the operating assumptions below.
+
+The design is now correct at its central boundary: being derived is a persistent property; being verified is a revocable property. Policy versioning replaces the shifting timestamp cutoffs, while a non-certifying dependency row preserves derivation. No architectural rewrite or Codex campaign is needed before this foreground release.
+
+The strongest counterargument is that v15 cannot reconstruct derivation markers already deleted by an older executable. That remains true. Your reported comparison against the pre-v14 snapshot is therefore material acceptance evidence: no production note lost a dependency, and the notes lacking dependencies were independently identified as primary facts. I accept that supplied evidence for this single-user root; I would not generalize the verdict to an arbitrary previously upgraded database without the same check.
+
+R8-01–R8-03: disposition
+
+FindingVerdict
+
+R8-01 — incompatible receipts and certifications survive retirementCleared in the new implementation. Actual pre-v15 receipts receive policy 0; surviving old dependencies receive policy 14; policy-15 code refuses or unverifies them regardless of timestamps.
+
+R8-02 — revocation promotes a derived note to a primary factCleared for new writes and preserved historical dependencies. Receipt-bearing writes retain a dependency row even when seq=NULL; retirement changes validity without deleting derivation. Your reported production audit addresses previously erased markers.
+
+R8-03 — legacy companion identitiesNot applicable to the stated production root and scope. You report no companion source or rows, and the receiver remains disabled. This is not a claim that every legacy companion database is repaired.
+
+These calls distinguish code repair from absence of exposure. R8-01/R8-02 now have the relevant enforcement; R8-03 is excluded by the actual operating scope rather than declared universally fixed.
+
+Why the versioned binding transition holds
+
+Old receipts are retained as history, not accepted as authority
+
+Revising R8-01: issue_receipt explicitly writes the running BINDING_POLICY. _bind requires every supplied receipt to exist and have exactly that policy. A mixture containing one incompatible receipt fails closed; supplying a newer-looking policy does not help because the comparison is equality, not “at least current.”
+
+For a genuine v14 database, the new receipt column is added with default 0. An older issuer that inserts through the old explicit column list also obtains policy 0, not policy 15. Thus policy-15 _bind refuses that receipt. The migration does not need to physically delete every old receipt to revoke it.
+
+The same distinction holds for persisted certifications. V15 rebuilds the dependency table and marks every copied dependency as policy 14. _freshness certifies only when all three conditions hold:
+
+Plain text
+
+dependency row exists
+AND seq IS NOT NULL
+AND policy == Store.BINDING_POLICY
+
+Consequently, an old certificate cannot remain verified merely because its record is active or its creation timestamp falls after an earlier migration cutoff.
+
+I checked the important boundary between zero and NULL. Sequence 0 is a valid sequence and remains certifying when the other conditions hold. A NULL sequence is explicitly non-certifying. The implementation does not accidentally use sequence truthiness for that decision.
+
+An idempotent replay of an already committed write is also not a new certification. It can return the original receipt without rerunning the write, but the record’s subsequent freshness is still evaluated against its stored dependency policy. In the isolated check, replaying an old committed request after policy retirement did not restore its bound status.
+
+Unverified derivations no longer become primary facts
+
+Revising R8-02: every successful new write supplying one or more read receipts now inserts a dependency row. When the reads certify nothing—such as SELECT 1, or an incomplete compound result—the row has seq=NULL. Its presence is sufficient to keep a note, event, routine, or question in the derived-record path.
+
+That fixes both earlier failure modes:
+
+A newly created note from a non-certifying receipt remains derived and unverified.
+
+A previously certified note whose policy is retired keeps its row and remains derived and unverified.
+
+Recursive _freshness propagates the parent’s bound=false to children. The tuple (False, []) is still processed; it is not confused with the None sentinel used for a primary fact. I checked child and grandchild chains, not only the parent’s display.
+
+The valid path also survives. An observation-derived note under the current policy can support a current child. A later observation change invalidates both; rereading a stale parent does not refresh it; re-deriving a new parent from current evidence allows a new current child. Receipt reuse across independent analyses remains permitted, which is appropriate when the evidence is unchanged.
+
+Tokenless primary statements remain tokenless. An analysis written by a trusted internal caller without receipts remains unverified rather than becoming a primary fact. These are distinct states, and the reviewed code now preserves that distinction.
+
+The two upgrade routes must be distinguished
+
+A database upgrading through the current migration definitions: v11 and v14 no longer delete dependencies. V13 can remove obsolete read receipts without erasing the derivation rows. V15 then retires the preserved certifications by policy. That addresses a fresh traversal of the migration chain rather than merely fixing a database already at v14.
+
+A database already processed by the old v14 executable: v15 can preserve and retire rows that still exist, but cannot infer a deleted row’s history from its absence. Your production snapshot comparison supplies the missing information for this root. If that comparison instead found a derived non-analysis record whose marker had been erased, that record and its descendants would need explicit repair before this verdict applied.
+
+The code comment saying stores past v14 “lost only those rows’ seq” is too narrow: historical v14 deleted the dependency row itself. The new migration does not reconstruct it. This wording should be corrected, but it does not overturn acceptance of the root whose missing-marker condition you checked.
+
+Remaining findings — none blocks the stated foreground release
+
+Conservative read ordering can reject a valid synthesis
+
+[MEDIUM] R9-01 mixed-read sequencing — file:src/phctx/store.py:382–385 — Does not block release, but a valid synthesis can receive stale_evidence because all dependency classes share the earliest receipt sequence — Track observation and record-read watermarks separately, or reread unchanged record evidence after the observation query — verify locally: Round9Acceptance.test_valid_mixed_read_timing_can_require_a_fresh_record_read.
+
+Concrete sequence:
+
+Read an unchanged primary note and obtain receipt R1.
+
+An observation batch commits.
+
+Query the now-current observations and obtain receipt R2.
+
+Save an analysis citing the note and both receipts.
+
+All information used can be current, yet _bind combines the earliest sequence from R1 with the observation dependency from R2. _changed_since consequently rejects the write because the batch occurred after R1. I reproduced this result. Rereading the unchanged note and retrying with that new receipt succeeds without modifying the note or observations.
+
+This is an availability/precision limitation, not false certification. Do not relax the generation check globally to eliminate it. A later improvement should preserve each dependency class’s actual read boundary.
+
+There is a separate, expected revision boundary: a new revision that cites its own superseded predecessor becomes stale because that predecessor is no longer active. Use supersedes to preserve revision lineage and cite the underlying current evidence. The reviewed code detects this state rather than falsely reporting it current.
+
+Other previously upgraded roots still require a historical-marker audit
+
+[MEDIUM] R9-02 previously erased derivation — file:src/phctx/migrations.py:340–363 — Does not block the audited production root, but v15 cannot reconstruct derivation rows deleted by historical migrations on another root — Require a pre-upgrade snapshot comparison and restore unverified derivation markers where necessary; correct the “lost only seq” comment — verify locally: a fixture whose old v14 deleted a derived note’s dependency must be identified by the upgrade audit rather than assumed primary.
+
+The concrete general counterexample remains: create a receipt-derived note under an older implementation, let its historical migration delete the dependency, then open it with v15. With no references or marker left, it is indistinguishable from a primary note to the current store.
+
+That is not the production history you supplied. The reported three surviving dependencies were analyses; the six unmarked notes were identified as primary; no companion rows exist. Those facts close the conditional exposure for this acceptance decision. They do not turn v15 into a universal historical reconstruction algorithm.
+
+Strengthen the migration fixtures with genuinely old table layouts
+
+[LOW] R9-03 upgrade fixture realism — file:tests/test_upgrade_integrity.py:339–345 — Does not block release, but the helper starts with current tables and edits version/policy values, so it does not exercise every real old-layout branch — Add fixtures built from schema v1 and actual three-column v14 dependency tables, including rollback during the rebuild — verify locally: Round9Acceptance.test_actual_v1_to_current_keeps_primary_record, test_actual_v14_upgrade_retires_existing_receipt_and_note, and test_failed_rebuild_rolls_back_actual_v14_layout.
+
+The existing tests genuinely exercise policy rejection, policy retirement, derived-note preservation, and NULL-sequence behavior. The coverage limitation is specific: changing metadata on a current schema does not test adding a previously absent read_receipts.policy column.
+
+I separately executed the v15 SQL against a reduced fixture with the actual old three-column dependency layout and no receipt-policy column. It upgraded successfully. An injected failure after the rebuild rolled back the schema and contents to the old shape. The additional repository-level tests supplied below exercise the complete application path when run locally.
+
+Concurrency, security, and rollback
+
+The policy supplied by a model is only a receipt identifier; the issuer writes the policy value, and the relevant receipt/dependency tables remain outside the model-readable SQL surface. I did not find a model-facing path that selects an arbitrary policy number or creates a policy-15 receipt through direct SQL.
+
+Binding, freshness validation, record insertion, and dependency insertion remain in the same write transaction. The v15 table rebuild also runs in the migration’s explicit transaction under the migration lock. SQLite permits one writer at a time, and its explicit transaction boundaries support rollback of the tested rebuild; I did not find a new partially committed certification path in this change.  SQLite
+
+Policy versioning does not replace deployment discipline. The serving process must be the current code. An old interpreter left running can still execute its old read logic even though a new process migrated the database. New policy-15 code refuses old-policy receipts, but it cannot change instructions already loaded into another process. Keep the usual stop/migrate/restart boundary and do not deliberately run mixed-version writers against this root.
+
+Rollback likewise means restoring a verified snapshot into a separate root and running a compatible binary—not decrementing schema metadata in place. The newer-than-target refusal should remain intact. Old-policy certifications restored from a snapshot are expected to become unverified when the current policy is reapplied.
+
+The a650d13 no-op behavior remains in place. This round adds unchanged to the acknowledgement; upserted still represents accepted checked samples, so operational consumers should not interpret it alone as the count of changed rows. The change log continues using the actual changed count.
+
+Validation and the live replay
+
+The committed replay records the relevant end-to-end outcomes: a v14 receipt was refused, the old certified control became unverified, a SELECT 1 note remained derived with a NULL sequence, and a current aggregate-derived note plus child both read bound/current. The inspected store.py blob is identical at the replay’s 17e4386 commit and the review pin. These are useful acceptance observations, not merely an unchanged historical model score.
+
+The platform-blocked attempt did not reach the server and therefore demonstrates neither a server success nor a server defect. The neutral-text retry establishes the receipt/write protocol path it exercised. It does not prove that every future health-related text will pass the host’s separate controls.
+
+I ran 20 isolated synthetic SQLite checks, including these results:
+
+CheckResult
+
+Old, unknown, and future-policy receiptsRefused
+
+Old-style issuer omitting the policy columnPolicy 0; refused by current code
+
+Current-policy sequence 0Valid—not confused with NULL
+
+NULL-sequence note/event/routine/question/analysisDerived and unverified
+
+Retired note → child → further descendantsUnverified propagated
+
+Current parent/child followed by observation changeBoth invalidated
+
+Fresh re-derivationCurrent parent and child accepted
+
+Actual old dependency-table shapeSuccessfully rebuilt and retired
+
+Failure after the rebuildOld schema and data restored by rollback
+
+Idempotent replay after retirementDid not restore verification
+
+The tests also captured the conservative mixed-read rejection and the already-erased-marker limitation described above. All passed their stated expectations; “20 passed” does not mean those limitations disappeared.
+
+I made four analogous mutations in that isolated implementation: remove the receipt-policy check, remove the certification-policy check, save derivation only when certified, and treat NULL sequence as certifying. All four were detected. This independently supports the importance of the new branches, but it is not a rerun of your repository’s reported 368 tests or its reported four-mutation campaign.
+
+I source-reviewed the v1 initialization and migration ordering. The executable migration checks here covered the selected v11–v15 transition and the actual v14 table shape, not a complete checkout’s v1→v15 run. The accompanying repository tests add that full-path coverage.
+
+Release call
+
+R8-01 and R8-02 are cleared for the stated deployment. R8-03 does not apply while the companion receiver has no data and remains disabled. Foreground GO-WITH-GAPS is defensible now.
+
+The release boundary is:
+
+Foreground capture, original retrieval, and evidence-linked analyses through the current ChatGPT/server integration.
+
+Vendor data treated as an upsert-only imported archive, not an exact current mirror with deletion reconciliation.
+
+Companion receiver and background reasoning still disabled; model_eval remains NOT_RUN.
+
+Previously retired analyses remain available as unverified history and are re-derived when needed, not silently re-certified.
+
+No additional Codex campaign is required to clear this round. The remaining read-order limitation fails closed and has a bounded reread recovery; it does not justify another NO-GO.
+
+I supplied additional repository-level acceptance tests. They use temporary synthetic roots, make no model/vendor calls, and were syntax-checked here but not run against a checkout:
+
+Bash
+
+PYTHONPATH=src .venv/bin/python test_round9_acceptance.py
+
+The independently executed material is the isolated reproduction script, its results, and the mutation results.
+
+Sources and limits. I used the pinned comparison, current store/tool/migration code, relevant upgrade tests, schema, data dictionary, and live-replay evidence, plus SQLite’s official transaction documentation. Container GitHub access failed DNS resolution, so source inspection used the GitHub connector and executable checks used transcribed binding predicates and migration SQL in a reduced SQLite fixture. I did not rerun the complete project suite, inspect production records or snapshots, or operate the live ChatGPT account.
+
+The load-bearing assumptions are your reported absence of lost derived-note markers and companion data, current-policy code serving the upgraded root, one active data root per provider credential, vendors remaining upsert-only, and the existing private-network/security boundaries. Under those assumptions, I have no remaining BLOCKER or HIGH finding for this foreground acceptance decision.
