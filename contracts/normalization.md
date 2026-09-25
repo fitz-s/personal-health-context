@@ -101,3 +101,5 @@ Known limits of the companion mapping (review 2026-09-24):
 - A sample the app sends under two types (an active-energy sample is also in total_calories) is stored once per
   projection: the faithful row keeps the HealthKit uuid, the projection is `companion:<type>:<uuid>`. A record without
   a uuid is identified by its content, not its position.
+
+Upgrade limit: the receiver's identities changed in fcc7ab7 (projections namespaced `companion:<type>:<uuid>`, uuid-less records keyed by content). Rows stored by an earlier receiver are not migrated and would coexist with the new identities; the production store had no companion rows when the change shipped. Pages above 5000 samples commit one by one: HTTP 200 follows the last, but earlier pages stay if a later one fails (a retry re-sends the same identities).

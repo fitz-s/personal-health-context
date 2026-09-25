@@ -263,7 +263,7 @@ class UpgradeTests(unittest.TestCase):
             rid = s.put_record(request_id=f'SYNTHETIC-{name}', kind='analysis', text='SYNTHETIC', evidence_ids=ev,
                                occurred_at='2026-09-20T12:00:00-05:00')['record_id']
             with s.transaction() as c:  # a dependency the v10 rules stored
-                c.execute('INSERT INTO record_dependencies VALUES(?, 0, 1)', (rid,))
+                c.execute('INSERT INTO record_dependencies(record_id,seq,observations,policy) VALUES(?, 0, 1, 14)', (rid,))
             kept[name] = rid
         with s.transaction() as c:
             c.execute("UPDATE meta SET value='10' WHERE key='schema_version'")
@@ -324,13 +324,70 @@ class UpgradeTests(unittest.TestCase):
         rid = s.put_record(request_id='SYNTHETIC-a', kind='analysis', text='SYNTHETIC mixed', evidence_ids=[],
                            occurred_at='2026-09-20T12:00:00-05:00')['record_id']
         with s.transaction() as c:  # a dependency stored by v11/v12 (its mixed query tracked observations only)
-            c.execute('INSERT INTO record_dependencies VALUES(?, 0, 1)', (rid,))
+            c.execute('INSERT INTO record_dependencies(record_id,seq,observations,policy) VALUES(?, 0, 1, 14)', (rid,))
             c.execute("UPDATE meta SET value='13' WHERE key='schema_version'")
             c.execute('DELETE FROM migrations WHERE version>=13')
             c.execute("INSERT INTO migrations VALUES(13, '9999-01-01T00:00:00+00:00')")  # v13 applied after it
             c.execute("UPDATE meta SET value='13' WHERE key='schema_version'")
         s = Store(self.base / 'live', 'synthetic')
         self.assertFalse(s.get_records([rid])['records'][0]['evidence']['bound'])
+
+    def seq(self, s):
+        with s.connect() as c:
+            return c.execute('SELECT coalesce(max(seq), 0) FROM changes').fetchone()[0]
+
+    def downgrade_to_v14(self, s):
+        with s.transaction() as c:
+            c.execute("UPDATE meta SET value='14' WHERE key='schema_version'")
+            c.execute('DELETE FROM migrations WHERE version>14')
+            c.execute('UPDATE read_receipts SET policy=0')
+            c.execute('UPDATE record_dependencies SET policy=14')
+        return Store(self.base / 'live', 'synthetic')
+
+    def test_v15_retires_certifications_and_receipts_issued_under_older_rules(self):
+        """R8-01: a v13-era certification (e.g. from a source-state query marked complete) reads unverified after the
+        upgrade, and its surviving receipt cannot certify a new write."""
+        s = Store(self.base / 'live', 'synthetic')
+        t = Tools(ToolContext(store=s))
+        receipt = s.issue_receipt(set(), True, self.seq(s))  # as v13 issued it for SELECT state FROM sources: complete
+        rid = t.call('context_capture', {'request_id': 'SYNTHETIC-a', 'kind': 'analysis', 'text': 'SYNTHETIC',
+                                         'occurred_at': '2026-09-20T12:00:00-05:00',
+                                         'read_receipts': [receipt]}).data['record_id']
+        self.assertTrue(s.get_records([rid])['records'][0]['evidence']['bound'])
+        s = self.downgrade_to_v14(s)
+        self.assertFalse(s.get_records([rid])['records'][0]['evidence']['bound'])
+        again = Tools(ToolContext(store=s)).call('context_capture', {
+            'request_id': 'SYNTHETIC-b', 'kind': 'analysis', 'text': 'SYNTHETIC',
+            'occurred_at': '2026-09-20T12:00:00-05:00', 'read_receipts': [receipt]})
+        self.assertEqual(again.data['error'], 'evidence_unbound')
+
+    def test_a_revoked_derived_note_never_becomes_a_primary_fact(self):
+        """R8-02: a note written from an aggregate keeps its derived status when its certification is retired, so a
+        child citing it is unverified, not current."""
+        s = Store(self.base / 'live', 'synthetic')
+        t = Tools(ToolContext(store=s))
+        note = t.call('context_capture', {'request_id': 'SYNTHETIC-n', 'kind': 'note', 'text': 'SYNTHETIC mean 10',
+                                          'occurred_at': '2026-09-20T12:00:00-05:00',
+                                          'read_receipts': [s.issue_receipt(set(), True, self.seq(s))]}).data['record_id']
+        s = self.downgrade_to_v14(s)
+        t = Tools(ToolContext(store=s))
+        self.assertIn('evidence', s.get_records([note])['records'][0])  # still derived, not a primary fact
+        read = t.call('context_read', {'record_ids': [note]}).data
+        child = t.call('context_capture', {'request_id': 'SYNTHETIC-c', 'kind': 'analysis', 'text': 'SYNTHETIC',
+                                           'occurred_at': '2026-09-20T12:00:00-05:00', 'evidence_ids': [note],
+                                           'read_receipts': [read['read_receipt']]}).data['record_id']
+        self.assertFalse(s.get_records([child])['records'][0]['evidence']['bound'])
+
+    def test_a_note_derived_without_certification_is_not_primary(self):
+        """R8-02: a note written with a receipt that certified nothing (SELECT 1) reads unverified, not primary."""
+        s = Store(self.base / 'live', 'synthetic')
+        t = Tools(ToolContext(store=s))
+        const = t.call('context_query', {'sql': 'SELECT 1'}).data['read_receipt']
+        note = t.call('context_capture', {'request_id': 'SYNTHETIC-n', 'kind': 'note', 'text': 'SYNTHETIC',
+                                          'occurred_at': '2026-09-20T12:00:00-05:00',
+                                          'read_receipts': [const]}).data['record_id']
+        ev = s.get_records([note])['records'][0]['evidence']
+        self.assertEqual((ev['bound'], ev['current']), (False, False))
 
     def test_an_older_program_waiting_on_the_lock_refuses_a_newer_schema(self):
         """R6-08: the schema is re-read after the lock; one migrated past this program's target is refused."""

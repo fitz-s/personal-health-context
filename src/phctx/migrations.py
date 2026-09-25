@@ -5,7 +5,7 @@ import hashlib
 import json
 import sqlite3
 
-TARGET = 14
+TARGET = 15
 
 
 def statements(sql: str):
@@ -314,13 +314,10 @@ CREATE INDEX IF NOT EXISTS changes_entity_seq ON changes(entity, seq);
 
 
 def _v11(c: sqlite3.Connection) -> None:
-    # Binding rules tightened: no read delivers individual observations, and page text binds its page, not the
-    # original. A dependency stored under the old rules for a record citing an observation or a whole original cannot
-    # show which read delivered it, so that record becomes freshness-unverified (content and history kept).
-    run(c, """
-DELETE FROM record_dependencies WHERE record_id IN (SELECT record_id FROM evidence_refs
- WHERE ref_id LIKE 'obs\\_%' ESCAPE '\\' OR (ref_id LIKE 'obj:%' AND ref_id NOT LIKE '%#p%'));
-""")
+    # Binding rules tightened (no read delivers individual observations; page text binds its page, not the original).
+    # This step once deleted the dependencies certified under the old rules; deleting a dependency turns a derived
+    # note into a primary fact, so v15 now retires them by binding-policy version instead.
+    pass
 
 
 def _v12(c: sqlite3.Connection) -> None:
@@ -336,24 +333,38 @@ def _v13(c: sqlite3.Connection) -> None:
     # made before v11 cannot show which read delivered their evidence, so they read unverified. Content is kept.
     if 'complete' not in {r[1] for r in c.execute('PRAGMA table_info(read_receipts)')}:
         c.execute('ALTER TABLE read_receipts ADD COLUMN complete INTEGER NOT NULL DEFAULT 0 CHECK(complete IN(0,1))')
-    run(c, """
-DELETE FROM read_receipts;
-DELETE FROM record_dependencies WHERE record_id IN (SELECT id FROM records
- WHERE created_at < coalesce((SELECT applied_at FROM migrations WHERE version=11), '9999'));
-""")
+    # (Certifications made before v11 are retired by v15's binding-policy version, not deleted here: see _v11.)
+    c.execute('DELETE FROM read_receipts')
 
 
 def _v14(c: sqlite3.Connection) -> None:
-    # Certifications made before v13 were bound by receipts that recorded no completeness (a query also reading
-    # records, pages or source state could certify): they cannot show their dependencies were all tracked, so they
-    # read unverified. v13's cutoff at v11 left those made between v11 and v13. Content is kept.
+    # Once deleted the dependencies certified before v13 (receipts without completeness). A timestamp cutoff missed
+    # those issued under v13's own rules and deleting a dependency erases that a record was derived; v15 retires every
+    # older certification by binding-policy version instead. Stores already past v14 lost only those rows' seq.
+    pass
+
+
+def _v15(c: sqlite3.Connection) -> None:
+    # Binding rules are versioned (Store.BINDING_POLICY): v14's timestamp cutoff left receipts and certifications issued
+    # under v13's rules (source-state and bootstrap reads complete, an empty page delivered) usable. Every receipt from
+    # before this version is refused and every certification reads unverified. A dependency row is kept, never deleted,
+    # and may carry no seq: its presence is what marks a record derived, so revoking it cannot turn a derived note into
+    # a primary fact. Content is kept.
+    if 'policy' not in {r[1] for r in c.execute('PRAGMA table_info(read_receipts)')}:
+        c.execute('ALTER TABLE read_receipts ADD COLUMN policy INTEGER NOT NULL DEFAULT 0')
     run(c, """
-DELETE FROM record_dependencies WHERE record_id IN (SELECT id FROM records
- WHERE created_at < coalesce((SELECT applied_at FROM migrations WHERE version=13), '9999'));
+CREATE TABLE record_dependencies_v15(
+ record_id TEXT PRIMARY KEY REFERENCES records(id), seq INTEGER,
+ observations INTEGER NOT NULL CHECK(observations IN(0,1)), policy INTEGER NOT NULL
+);
+INSERT INTO record_dependencies_v15(record_id, seq, observations, policy)
+ SELECT record_id, seq, observations, 14 FROM record_dependencies;
+DROP TABLE record_dependencies;
+ALTER TABLE record_dependencies_v15 RENAME TO record_dependencies;
 """)
 
 
-STEPS = {2: _v2, 3: _v3, 4: _v4, 5: _v5, 6: _v6, 7: _v7, 8: _v8, 9: _v9, 10: _v10, 11: _v11, 12: _v12, 13: _v13, 14: _v14}
+STEPS = {2: _v2, 3: _v3, 4: _v4, 5: _v5, 6: _v6, 7: _v7, 8: _v8, 9: _v9, 10: _v10, 11: _v11, 12: _v12, 13: _v13, 14: _v14, 15: _v15}
 
 
 def apply(c: sqlite3.Connection, current: int, now: str) -> int:

@@ -147,6 +147,9 @@ class Store:
     OBSERVATION_TABLES = {'observations', 'active_observations', 'canonical_observations', 'canonical_observations_raw',
                           'observation_catalog', 'supersessions'}
     IMPORT_GATED_TABLES = OBSERVATION_TABLES | {'sources'}
+    # The evidence-binding rules receipts and certifications were issued under. Raising it when the rules change retires
+    # every older receipt (refused) and certification (reads unverified) without deleting what shows a record derived.
+    BINDING_POLICY = 15
     PUBLIC_TABLES = {'records', 'active_records', 'observations', 'active_observations', 'canonical_observations',
                      'canonical_observations_raw',
                      'sources', 'objects', 'evidence_links', 'evidence_refs', 'object_pages', 'extractions',
@@ -345,8 +348,9 @@ class Store:
         that also read records or extracted pages). A derived write cites evidence through receipts."""
         rid = 'rr_' + uuid.uuid4().hex
         with self.transaction() as c:
-            c.execute('INSERT INTO read_receipts(id,seq,observations,refs_json,created_at,complete) VALUES(?,?,?,?,?,?)',
-                      (rid, seq, int(observations), dump(sorted(refs)[:5000]), utcnow(), int(complete)))
+            c.execute('INSERT INTO read_receipts(id,seq,observations,refs_json,created_at,complete,policy) '
+                      'VALUES(?,?,?,?,?,?,?)', (rid, seq, int(observations), dump(sorted(refs)[:5000]), utcnow(),
+                                                int(complete), self.BINDING_POLICY))
             c.execute('DELETE FROM read_receipts WHERE created_at<?', (utc_in(-7 * 86400),))
         return rid
 
@@ -356,10 +360,10 @@ class Store:
         `SELECT 1`, or a record read the write does not cite); such a write is stored with freshness unverified.
         Refuses a receipt the store did not issue, evidence none of the receipts delivered, and a cited derived
         record that is already stale (a cited unverified one leaves this write unverified: see _freshness)."""
-        rows = c.execute(f'SELECT seq, observations, refs_json, complete FROM read_receipts WHERE id IN '
+        rows = c.execute(f'SELECT seq, observations, refs_json, complete, policy FROM read_receipts WHERE id IN '
                          f'({",".join("?" * len(receipts))})', receipts).fetchall()
-        if len(rows) != len(set(receipts)):
-            raise StoreError('evidence_unbound', 'Unknown or expired read_receipt; read the evidence again.')
+        if len(rows) != len(set(receipts)) or any(r['policy'] != self.BINDING_POLICY for r in rows):
+            raise StoreError('evidence_unbound', 'Unknown, expired or superseded read_receipt; read the evidence again.')
         read = set().union(*(json.loads(r['refs_json']) for r in rows))
         # Exact ids only: page text read as obj:<sha>#p<n> binds that page (whose extraction can change), never the
         # immutable original obj:<sha>, which only returned bytes or a rendered page deliver.
@@ -386,14 +390,16 @@ class Store:
         makes this one stale or unverified too."""
         refs = {x['ref_id']: x['ref_version'] for x in
                 c.execute('SELECT ref_id, ref_version FROM evidence_refs WHERE record_id=?', (rid,))}
-        dep = c.execute('SELECT seq, observations FROM record_dependencies WHERE record_id=?', (rid,)).fetchone()
+        # A dependency row marks the record derived (written with receipts); it certifies freshness only when a read
+        # certified something (seq) under the current binding rules.
+        dep = c.execute('SELECT seq, observations, policy FROM record_dependencies WHERE record_id=?', (rid,)).fetchone()
         if not refs and not dep:  # a primary fact; an analysis with nothing certified is an unverified derivation
             kind = c.execute('SELECT kind FROM records WHERE id=?', (rid,)).fetchone()
             return (False, []) if kind and kind[0] == 'analysis' else None
         stale = self._stale_refs(c, refs)
-        if dep:
+        bound = dep is not None and dep['seq'] is not None and dep['policy'] == self.BINDING_POLICY
+        if bound:
             stale += [x for x in self._changed_since(c, [], dep['seq'], bool(dep['observations'])) if x not in stale]
-        bound = dep is not None
         for ref in refs:  # evidence records predate the record citing them: no cycles
             if ref_kind(ref) == 'record' and (f := self._freshness(c, ref)):
                 if f[1] and ref not in stale:
@@ -475,8 +481,9 @@ class Store:
             c.executemany('INSERT INTO evidence_links VALUES(?,?)',
                           [(rid, x) for x in evidence_ids if ref_kind(x) == 'record'])
             c.executemany('INSERT INTO evidence_refs VALUES(?,?,?)', [(rid, r, v) for r, v in versions.items()])
-            if bound:
-                c.execute('INSERT INTO record_dependencies VALUES(?,?,?)', (rid, bound[0], int(bound[1])))
+            if read_receipts:  # derived, certified or not: an uncertified one must never read as a primary fact
+                c.execute('INSERT INTO record_dependencies(record_id,seq,observations,policy) VALUES(?,?,?,?)',
+                          (rid, bound and bound[0], int(bool(bound and bound[1])), self.BINDING_POLICY))
             local = datetime.fromisoformat(at).astimezone(ZoneInfo(timezone_name)).isoformat(timespec='seconds')
             out = {'record_id': rid, 'kind': kind, 'occurred_at': at, 'occurred_at_local': local,
                    'evidence_ids': evidence_ids}
@@ -938,7 +945,7 @@ class Store:
                 c.execute("INSERT INTO changes(entity, entity_id, detail, at) VALUES('observations', ?, ?, ?)",
                           (source_id, dump({'metrics': sorted(metrics), 'start': lo, 'end': hi,
                                             'upserted': changed, 'deleted': len(deleted_ids)}), now))
-            out = {'upserted': len(checked), 'deleted': len(deleted_ids),
+            out = {'upserted': len(checked), 'unchanged': len(checked) - changed, 'deleted': len(deleted_ids),
                    'cursor': cursor, 'source_id': source_id}
             if _extra:
                 out.update(_extra(c))
