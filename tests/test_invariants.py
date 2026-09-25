@@ -284,6 +284,19 @@ class ReadReceiptTests(Base):
         out = self.analysis([read['read_receipt']], [])
         self.assertEqual(out.data['error'], 'stale_evidence')
 
+    def test_an_identical_re_read_is_no_change(self):
+        """Live: the hourly Oura re-read of an unchanged trailing window staled every observation-bound analysis."""
+        self.obs('a', 9, 10.0)
+        read = self.query()
+        n = self.rows("SELECT count(*) FROM changes WHERE entity='observations'")[0][0]
+        self.obs('a', 9, 10.0)
+        self.assertEqual(self.rows("SELECT count(*) FROM changes WHERE entity='observations'")[0][0], n)
+        rid = self.analysis([read['read_receipt']], []).data['record_id']
+        ev = self.s.get_records([rid])['records'][0]['evidence']
+        self.assertEqual((ev['bound'], ev['current']), (True, True))
+        self.obs('a', 9, 11.0)  # a changed value is still a change
+        self.assertEqual(self.analysis([read['read_receipt']], []).data['error'], 'stale_evidence')
+
     def test_deleting_a_non_cited_member_makes_it_stale(self):
         self.obs('a', 9, 10.0)
         self.obs('b', 11, 30.0)

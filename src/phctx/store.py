@@ -815,7 +815,9 @@ class Store:
     def ingest_batch(self, *, request_id: str, source_id: str, samples: list[dict],
                      deleted_ids: list[str], cursor: str, coverage: dict | None = None,
                      _extra: Callable[[sqlite3.Connection], dict] | None = None) -> dict:
-        """Trusted importer-only. Upserts, deletes, source cursor and change log commit together."""
+        """Trusted importer-only. Upserts, deletes, source cursor and change log commit together. A sample identical to
+        its active stored row is skipped: vendor syncs re-read a trailing window every hour, and logging those as
+        changes would stale every observation-bound analysis within the hour."""
         if not isinstance(samples, list) or len(samples) > 5000 or len(deleted_ids) > 5000:
             raise StoreError('batch_size', 'Use pages of at most 5000 samples/deletions.')
         checked, seen = [], set()
@@ -857,6 +859,7 @@ class Store:
             shrink: set[tuple[str, str]] = set()  # pairs that may have lost their first/last sample
             live = source_id.startswith('apple_health:')
             touched: set[str] = set()  # export origin_keys whose repeat marks must be re-resolved
+            changed = 0
 
             def leave(prev: sqlite3.Row) -> None:
                 """prev (metric, unit, _, start, end) leaves or changes: its pair needs a re-read only if prev was that
@@ -873,8 +876,11 @@ class Store:
                 oid = 'obs_' + hashlib.sha256((source_id + '\0' + s['native_id']).encode()).hexdigest()
                 origin = s.get('origin_key')
                 pair = (s['metric'], s.get('unit') or '')
-                prev = c.execute("SELECT metric, coalesce(unit,''), deleted, start_at, end_at, origin_key "
+                prev = c.execute("SELECT metric, coalesce(unit,''), deleted, start_at, end_at, origin_key, raw_json "
                                  'FROM observations WHERE id=?', (oid,)).fetchone()
+                if prev and not prev[2] and prev[6] == dump(s):
+                    continue  # a re-read of an unchanged sample is no change: it must not stale dependent analyses
+                changed += 1
                 if prev and prev[5] and not live:
                     touched.add(prev[5])  # the group this row leaves must be re-resolved too
                 if prev and not prev[2]:
@@ -927,11 +933,11 @@ class Store:
             c.execute('''UPDATE sources SET state='ready',last_attempt_at=?,last_success_at=?,
                       latest_sample_at=?,cursor=?,coverage_json=? WHERE id=?''',
                       (now, now, latest, cursor, dump(coverage or {}), source_id))
-            if checked or deleted_ids:
+            if changed or deleted_ids:
                 self._apply_catalog(c, source_id, delta, shrink)
                 c.execute("INSERT INTO changes(entity, entity_id, detail, at) VALUES('observations', ?, ?, ?)",
                           (source_id, dump({'metrics': sorted(metrics), 'start': lo, 'end': hi,
-                                            'upserted': len(checked), 'deleted': len(deleted_ids)}), now))
+                                            'upserted': changed, 'deleted': len(deleted_ids)}), now))
             out = {'upserted': len(checked), 'deleted': len(deleted_ids),
                    'cursor': cursor, 'source_id': source_id}
             if _extra:
