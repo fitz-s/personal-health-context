@@ -97,3 +97,17 @@ within the hour and a write whose read preceded a sync was refused. a650d13 skip
 stored row; the first production sync after deploy logged 2 change rows (the two collections with genuinely new data).
 The round-6 control `rec_fb2ed0bb4cb14c1d8cc6463032129885` now reads stale_ids=[observations] from those pre-fix
 no-op batches — expected, since its dependency cannot distinguish them.
+
+## Round 8 replay — ChatGPT Health space, Extra High (commit 17e4386, schema v15, 2026-09-25 09:18–10:51 CDT)
+
+Server log: `chatgpt_mcp_server_log_round8.txt`. Same conversation; v15 applied to production 09:13 (pre-v15 snapshot kept).
+
+| Case (round-8 finding) | Server | Stored record | Result |
+|---|---|---|---|
+| Reuse a v14-era receipt (`rr_a22bce86…`, round-7 control) after v15 (R8-01) | `context_capture error:evidence_unbound` ("Unknown, expired or superseded read_receipt") | none | PASS |
+| Round-7 control certified under v14 (R8-01) | read back | `rec_597eb55b…` now bound=false, current=false (was bound/current before v15) | PASS |
+| Note from a `SELECT 1` receipt (R8-02) | capture ok | `rec_10c0ef9f…` kind=note: bound=false, current=false (derived, not primary); dependency seq NULL, policy 15 | PASS |
+| Note from an observation aggregate, then a child citing it (R8-02 positive path) | capture ok ×2 | note `rec_88474d65…` and child `rec_9476a971…`: both bound=true, current=true | PASS |
+
+The first attempt at the aggregate note (09:20) never reached the server: ChatGPT reported "This tool call was blocked by
+OpenAI's safety checks" (the note text carried the readiness value). Re-run with neutral text reached the server and passed.

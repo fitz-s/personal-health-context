@@ -1,0 +1,231 @@
+NO-GO for the upgraded store’s authoritative foreground-analysis guarantee at 830feee. Confidence: high. Keep a650d13: I did not find a normal ingestion sequence in which its unchanged-reread shortcut suppresses a genuine measurement change. The decisive remaining problem is the transition between evidence-binding rules: v14 leaves some obsolete receipts and certifications usable, and revoking a derived note’s dependency can accidentally turn it into a trusted primary fact.
+
+The approach is now substantially right. A repeated observation is not a new observation event, and it should not invalidate an analysis merely because a poll ran. The superior next change is not another model, dashboard, or general-purpose dependency engine. It is a versioned binding policy with explicit revocation that preserves whether a record was derived. The companion mapping also needs a separate legacy-data transition if that receiver has already stored affected records.
+
+model_eval=NOT_RUN remains an acceptable disclosed gap for foreground acceptance through ChatGPT. It is not what blocks this pin.
+
+R7-01–R7-07: disposition
+
+FindingDisposition at 830feee
+
+R7-01 — migration trust cutoffPartially cleared. Pre-v13 certifications are downgraded. V13-era source/bootstrap/page authority is not fully retired, and v14 does not void the corresponding receipts.
+
+R7-02 — source-metadata dependencyCleared for newly issued reads. Queries reading sources and all bootstrap receipts are incomplete and cannot confer verified freshness.
+
+R7-03 — empty-page deliveryCleared for newly issued reads. A zero-character continuation page is omitted; only fully returned pages receive evidence IDs.
+
+R7-04 — companion identity collisionCleared for new payloads. Faithful active-energy rows and ambiguous total-calorie projections now have distinct identities. Legacy rows are not migrated.
+
+R7-05 — lossy producer equivalenceMitigated within the declared scope. Heart rate/resting heart rate are marked approximate and receive no equivalence key. This is not exact export deduplication, and existing supersession relations are not repaired.
+
+R7-06 — position-dependent fallback identityCleared for new records. Canonical content, rather than array position, determines the fallback identity. Legacy identity reconciliation remains separate.
+
+R7-07 — payload versus batch capacityThe identified capacity failure is cleared. More than 5,000 translated samples are paged, and HTTP success follows the last commit. This is not an atomic all-pages publication guarantee.
+
+Revising R7-02/R7-03: the code now implements the intended restrictions, and the tests distinguish them from the previous behavior. Source queries and bootstrap produce unverified analyses; the page-budget test excludes page 2 from authority when no page-2 text was returned and permits a separate full read of that page.
+
+Revising R7-04/R7-06/R7-07: the new projection namespace, position-independent content hash, and paged ingestion address the named new-input failures. The corresponding tests are meaningful, including the 5,001-sample request. They do not test upgrading a database already containing the old identities.
+
+The strongest counterargument to NO-GO is that the current live replay passes, the reported engineering suite is green, and the new reread behavior fixes an actual production usability defect. I accept those results for the exercised paths. The remaining failures are upgrade and composition cases that those probes do not cover—not a reason to discard the improvements.
+
+Remaining findings
+
+1. V14 does not retire all authority issued under the rules it changes
+
+[BLOCKER] R8-01 binding-policy upgrade — file:src/phctx/migrations.py:350–353; src/phctx/store.py:351–381 — Blocks upgraded foreground authority because v13-era receipts and certifications can still assert completeness under superseded rules — Version the binding policy, void incompatible receipts, and explicitly revoke ambiguous surviving certifications in a forward migration — verify locally: Round8Acceptance.test_v13_source_certificate_is_unverified_after_upgrade, test_v13_receipt_cannot_create_a_new_certificate_after_upgrade, and test_old_empty_page_receipt_is_voided_after_upgrade.
+
+V14 deletes dependencies only for records created before v13 was applied. That repairs the specific v11/v12 mixed-query certification from R7-01. But v13 itself still issued complete observation-dependent receipts for sources queries and bootstrap, and still issued page IDs for the empty-page boundary case. Those are precisely the rules changed in this round. V14 neither invalidates those receipts nor downgrades certifications created from them after v13.
+
+A concrete source-state sequence is:
+
+Under v13, read SELECT state FROM sources WHERE id=?. Its receipt records observations=1, complete=1.
+
+Save an analysis after v13’s migration timestamp.
+
+Upgrade to v14.
+
+A source attempt changes state from ready to error, without an observation batch.
+
+The old analysis remains bound=true, current=true.
+
+The surviving old receipt can also support a new verified-current analysis after the upgrade.
+
+The new issuer’s complete=0 does not help with a receipt already stored as complete. _bind trusts its stored flags and has no binding-rule version to reject it. The source-state update still deliberately does not emit an observation change.
+
+My reduced SQLite execution produced:
+
+Item after v14 and a source-state changeResult
+
+Pre-v13 certificationCorrectly unverified
+
+V13-era source certificationStill bound/current
+
+New capture using the surviving v13 receiptBound/current
+
+Child citing the surviving certificationBound/current
+
+The old page receipt creates the analogous path: a v13 receipt that listed page 2 despite returning no page-2 text survives v14 and can still authorize that page. The newly issued page receipt correctly refuses it. This distinction matters: the new handler is fixed; the transition is not.
+
+The current v14 test constructs a pre-v13 certification and verifies its downgrade. That test genuinely checks its chosen case, but it does not cover a v13-era source certificate or reuse of a v13 receipt.
+
+Do not solve this by moving the timestamp cutoff one release at a time. Define which binding-policy version issued a receipt and certification. Until that provenance exists, treat ambiguous older authority as revoked. Because production is already v14, use a new migration; editing _v14 alone will not repair that store. Keep all record content, references, revisions, and originals.
+
+There is an additional complication: revocation must not erase the fact that a record was derived, as the next finding demonstrates.
+
+2. Deleting a dependency can promote a derived note into a primary fact
+
+[BLOCKER] R8-02 derivation identity after revocation — file:src/phctx/store.py:390–392; src/phctx/migrations.py:350–353 — Blocks foreground authority because an aggregate-derived note whose dependency is removed becomes a primary fact for inheritance, allowing a child analysis to verify stale content — Preserve derivation identity separately from binding validity and propagate explicit unverified status after revocation — verify locally: Round8Acceptance.test_invalidated_derived_note_does_not_become_primary.
+
+This does not require a model to lie about an analysis or omit a required receipt. The supported write contract allows a note with read receipts, and the store creates a dependency for it.
+
+Concrete sequence:
+
+Read an observation aggregate.
+
+Save its interpretation as kind="note", with the query receipt and no enumerated evidence IDs.
+
+The backend stores an observation dependency and reports the note as bound/current.
+
+V14 removes that dependency because the note predates the cutoff.
+
+The note now has neither evidence_refs nor record_dependencies.
+
+_freshness returns None, because its special unverified case applies only to kind="analysis".
+
+Read the note and save a child analysis citing it. The child becomes bound/current.
+
+Change the observation population. The child remains current: its parent is now treated as an independent primary fact.
+
+I reproduced that sequence. The migration intended to weaken the note’s authority but instead discarded the information that would prevent its later promotion. The relevant early return is explicit in _freshness.
+
+The correction should distinguish:
+
+a genuine primary statement;
+
+a derived record with a valid binding;
+
+a derived record whose binding is absent, incomplete, or revoked.
+
+This can be an explicit derivation marker plus a binding-policy/status field. It does not require another model decision. The store already knew the note was derived when it created record_dependencies; retain that knowledge when invalidating the certificate.
+
+For records already processed by v14, the premigration snapshot can identify dependencies that were removed. Where provenance cannot be recovered, leave it unknown/unverified rather than infer “primary” from the absence of a row. This is why blindly deleting every dependency is not, by itself, a complete fix for R8-01.
+
+3. Companion identities changed without a transition for existing rows
+
+[HIGH] R8-03 legacy companion projection — file:src/phctx/companion.py:117–127; src/phctx/migrations.py:346–353 — Blocks authoritative use of affected existing companion data because the same logical projection can remain under both its old and new identities — Reconcile or retire the old projection identities while preserving source content, and review supersessions created by the older mapping — verify locally: Round8Acceptance.test_projection_identity_upgrade_does_not_leave_both_legacy_and_new.
+
+This is conditional on existing companion rows. It does not independently block a store in which the companion has never ingested affected data.
+
+Under the older receiver, a total-calorie projection used the HealthKit UUID directly. The new receiver uses companion:total_calories:<uuid>. V14 changes evidence dependencies only; it does not migrate observations. Re-receiving the same projection therefore adds a second row rather than updating the first. Both remain canonical because they are live-source rows with different identities.
+
+The isolated reproduction stored one legacy 12.5-calorie projection, applied v14, and ingested the current projection. The result was two canonical rows summing to 25, representing one logical 12.5-calorie input.
+
+The new active-versus-total identity separation itself is correct. The missing piece is what happens to already-stored rows. The same migration question applies to anonymous records whose identifier changed from position-based to content-based.
+
+There is also a supersession qualification for R7-05. Setting an updated heart-rate row’s origin_key=None does not remove an older supersession relation that row previously created. The store intentionally preserves such history. Thus “never supersedes” is true for newly admitted approximate rows, not automatically for existing rows rewritten under the new mapping. Do not indiscriminately delete all historical supersessions; reconcile only relations shown to have come from the superseded companion policy.
+
+The smallest fact that removes this conditional blocker is a verified absence of affected pre-change companion rows. I did not inspect production to establish that fact.
+
+a650d13: assessment of the skip
+
+The optimization is correct for an active row whose stored projection is consistent with its serialized input. I would retain it. A successful poll is not a data change, and the new code avoids rewriting updated_at, reapplying catalog deltas, and advancing the observation generation merely because the same sample was fetched again. Its comparison occurs inside _mutate’s write transaction, not in an unlocked precheck.
+
+SQLite’s single-writer transaction behavior supports that ordering: once BEGIN IMMEDIATE succeeds, another writer cannot change the row between this check and the remainder of the mutation. The optimization does not introduce a new check-then-write race. SQLite
+
+Genuine changes remain changes
+
+The serialized sample includes the measurement value, metric, timestamps supplied by the producer, unit, provenance fields, metadata, and supplied equivalence key. Changing one of those inputs changes dump(s) and bypasses the shortcut. My positive control confirmed that an unchanged reread preserved the analysis, while a changed value advanced the observation generation and invalidated it. The committed regression exercises that same distinction.
+
+This is a byte-canonical input comparison, not a claim that every raw-document change is clinically meaningful. A provider metadata change can still invalidate an analysis conservatively. That is a separate precision/efficiency question, not a false-current failure.
+
+Tombstoned rows are not skipped
+
+The condition requires not prev[2], meaning the old row must be active. Re-sending identical raw content for a deleted row enters the normal upsert path, clears the tombstone, increments the active catalog count, and logs an observation change. I exercised that case; the row revived and the catalog matched direct SQL.
+
+Repeated deletion IDs still log changes. The code has not made tombstone handling fully no-op-aware, but that is conservative invalidation rather than a missed real change. It is not the hourly upsert-only Oura failure this patch was intended to fix.
+
+Skipped peers still participate in a changed repeat group
+
+Skipping an unchanged peer does not prevent mark_repeats from updating it when another row changes the group.
+
+If the representative moves, its old key and new key are added to touched; mark_repeats rereads the entire active group, including rows skipped earlier in the batch. If a new smaller-ID representative arrives, its insertion touches the group and can mark the unchanged old row as the repeat. The mutation logs an observation change because the triggering row changed or was inserted.
+
+The reduced executions confirmed both representative movement and promotion of a newly earlier representative. Reversing the move restored one canonical representative. These were positive controls, not newly discovered defects.
+
+Catalog deltas are correctly omitted for actual no-ops
+
+An unchanged active row adds no raw active count and removes no boundary. Skipping its catalog delta is therefore correct. Changed, deleted, revived, and moved rows continue through the existing maintenance path.
+
+I ran a seeded 400-operation reduced state-machine check containing identical resends, insertions, deletions, revivals, metric/unit changes, interval changes, and key/null transitions. After every operation, the maintained catalog equaled direct SQL aggregation. This was a transcription of the reviewed ingestion/catalog logic in a reduced synthetic schema—not your repository test suite or production archive.
+
+Isolated checkResult
+
+Identical active rereadGeneration and observation timestamp unchanged; analysis current
+
+Changed valueGeneration advanced; old analysis stale
+
+Identical raw payload for a deleted rowRow revived; generation advanced
+
+Skipped peer while representative movesOld group repaired correctly
+
+New representative with unchanged existing peerRepeat membership repaired correctly
+
+Catalog state machineEqual to direct SQL after all 400 operations
+
+Same request-ID replaySame receipt; no second mutation
+
+The corresponding implementation and commit patch support these outcomes.
+
+Equal raw JSON is not a general integrity check
+
+There is a necessary limitation: equal raw_json does not prove every stored column is consistent with it. In a diagnostic fault injection, I changed value_num directly to 999 while leaving raw input describing 10. A resend of that raw input skipped the row and did not repair it.
+
+I do not count that injected inconsistency as a newly demonstrated normal-ingestion blocker. I did not find an ordinary current Oura/WHOOP write that changes a measurement while preserving the exact serialized sample and taking the skip.
+
+It does mean the shortcut relies on a storage invariant. Normalization migrations deserve particular care: v6 deliberately recomputes the stored origin_key without rewriting raw_json. That is a supported example of a derived column having a different lifecycle from its raw source. A future repair or normalization change should carry a projection version or perform an explicit reconciliation; it should not assume a raw-only resend will repair every derived column, nor blindly overwrite a corrected migration key with old producer semantics.
+
+A useful hardening improvement is to distinguish accepted, changed, and unchanged counts. The current receipt’s upserted remains len(checked), so an unchanged accepted sample still reports upserted=1 even though the change-log count is zero. That is not a durability failure, but clearer counters would prevent operational misinterpretation.
+
+Security, ordering, and durability
+
+Nothing in the reviewed diff establishes a new signature bypass, SQL-write bypass, or committed-receipt-before-commit path. The no-op check remains inside the existing transaction, and record/original delivery rules remain separate from arbitrary SQL results. Source metadata no longer qualifies a query as completely tracked observation evidence.
+
+The new companion pagination returns HTTP 200 only after every page returns successfully. Earlier pages can nevertheless be durable if a later page fails. Retry identities are deterministic for unchanged payload, mapping, and configuration. That is paged, resumable application—not one atomic webhook transaction. Preserve that distinction in coverage and operational reporting, especially if a malformed later page prevents completion. The existing 5,001-record success test proves the capacity fix, not crash recovery between pages.
+
+The companion’s approximate heart-rate fields and missing interval information remain declared limitations. Disabling automatic equivalence avoids claiming an exact match; it does not make duplicate raw projections safe to sum across overlapping sources. Keep source-aware analysis and the documented non-overlap assumption, rather than treating every row in a future combined export/live history as independent.
+
+For rollback and repair, preserve the pre-v14 snapshot and current originals. The foreground blockers concern certification metadata, not a reason to delete source observations or analysis text. The conditional companion issue concerns its projection and mapping lineage; repair it separately from evidence certificates.
+
+Validation and release decision
+
+The reported 365 passing tests, 8/8 R7 mutations, and 1/1 skip mutation remain your measured results. I read the relevant tests but did not independently run that full campaign.
+
+The live narrative and server log support the reported source-query and bootstrap unverification, successful original read, pre-fix stale-evidence refusal, and subsequent successful aggregate capture. The narrative correctly labels the page replay as the untruncated path; the character-budget failure is covered by the deterministic test rather than that live example.
+
+The new skip regression is genuinely adversarial against reverting a650d13. It is not sufficient by itself to establish revival, repeat-group, and catalog behavior, which is why I exercised those separately. Conversely, the v14 regression proves only its pre-v13 cutoff case; a passing result does not establish that all obsolete authority is retired.
+
+Do not erase old observation-change rows to make existing analyses current. The patch prevents future no-op events. It cannot retrospectively prove that every earlier change after a given read was irrelevant. Re-derive those analyses from fresh receipts; the live narrative’s treatment of the older control as stale is appropriate.
+
+What clears foreground acceptance
+
+The remaining foreground work is one coherent trust-transition repair:
+
+Retire incompatible receipts and certifications, including v13-era source/bootstrap/page authority and any later certification recreated through surviving old receipts.
+
+Preserve derivation identity when revoking a binding, so a derived note cannot become a primary fact merely because its dependency row was removed.
+
+Reconcile legacy companion identities only if present, or keep that capability outside the authoritative scope until the affected rows are resolved.
+
+After the first two repairs and targeted current ChatGPT replay, foreground GO-WITH-GAPS is defensible without a Codex campaign. The third item is conditional on companion history and activation. The current new-read rules and a650d13 should be retained.
+
+I supplied   repository-ready regression tests. They include the migration counterexamples, the derived-note case, the conditional companion transition, and positive no-op/revival/repeat/catalog controls. They were syntax-checked here, not executed against a full checkout. From the repository root:
+
+Bash
+
+PYTHONPATH=src .venv/bin/python test_round8_acceptance.py
+
+The work independently executed here is the   isolated reproduction script, with its   results. It uses synthetic data and no model or external service.
+
+Sources and limits. I reviewed the pinned comparison, a650d13 patch, current store/tool/migration/companion implementations, relevant tests, normalization contract, and live-replay narrative/log, plus SQLite’s official transaction documentation. Container GitHub access failed DNS resolution, so source retrieval used the GitHub connector. Executable checks used a reduced SQLite 3.46.1 schema and transcribed logic, not production or the full project suite.
+
+The load-bearing assumptions are vendors remaining upsert-only, the existing private-network/credential constraints, and no claim that the companion’s lossy fields are exact export equivalents. I did not establish which legacy certifications or companion rows exist in production. The skip is a justified fix; incomplete retirement and revocation of old authority are the remaining foreground blockers.
