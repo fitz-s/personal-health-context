@@ -79,3 +79,21 @@ Server log: `chatgpt_mcp_server_log_round6.txt`. One conversation, the model tol
 | Page text read, cite the whole original (R5-03) | `evidence_unbound` (read delivered `obj:…#p1`) | none | PASS |
 | Records + observations in one query (R6-02) | first attempt `query_timeout` (cross join over 3.7 M rows); bounded rewrite saved | `rec_32d189424ceb4e80a1fc7925a87e9c64`: bound=false, current=false; its receipt observations=1, complete=0 | PASS |
 | Positive control: observation-only aggregate, receipt only | saved | `rec_fb2ed0bb4cb14c1d8cc6463032129885`: bound=true, current=true | PASS |
+
+## Round 7 replay — ChatGPT Health space, Extra High (commits fcc7ab7 + a650d13, schema v14, 2026-09-24 19:05 – 09-25 08:06 CDT)
+
+Server log: `chatgpt_mcp_server_log_round7.txt`. Same conversation as round 6; same instructions (report refusals, no workarounds).
+
+| Case (round-7 finding) | Server | Stored record | Result |
+|---|---|---|---|
+| Analysis from a `sources` query (R7-02) | query receipt complete=0 (sources is not an observation table); capture ok | `rec_1bf980bb84604270b7522c8e893e5b6c`: bound=false, current=false | PASS |
+| Analysis citing only the bootstrap receipt (R7-02) | bootstrap receipt complete=0; capture ok | `rec_e544b5046d824444b7bd138846e65870`: bound=false, current=false | PASS |
+| Page read of pages 1–2 (R7-03) | receipt refs `obj:ad7a…ec19#p1`, `#p2`; truncated=false, so no `continue_from_page` | — | PASS (untruncated path; the truncated path is covered by tests) |
+| Positive control: observation-only aggregate, receipt only | first attempt `context_capture error:stale_evidence` (see below); after a650d13 saved | `rec_597eb55b8fba4694b2faa4c66d10c898`: bound=true, current=true | PASS after fix |
+
+Live defect found by the control: every hourly Oura sync re-reads a trailing window and each page logged an
+`observations` change even when nothing changed (12 change rows per hour), so any observation-bound analysis went stale
+within the hour and a write whose read preceded a sync was refused. a650d13 skips a sample identical to its active
+stored row; the first production sync after deploy logged 2 change rows (the two collections with genuinely new data).
+The round-6 control `rec_fb2ed0bb4cb14c1d8cc6463032129885` now reads stale_ids=[observations] from those pre-fix
+no-op batches — expected, since its dependency cannot distinguish them.
