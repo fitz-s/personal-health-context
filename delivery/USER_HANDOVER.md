@@ -11,7 +11,8 @@
 - 本地长期上下文库（SQLite + 原件对象库）：`~/Library/Application Support/PersonalHealthContext/production`，目录 0700、文件 0600，FileVault 已开启。
 - MCP 服务（官方 Python SDK，stdio）：11 个工具——读取地图、搜索、读记录、受限只读 SQL、读原件/页、保存事实、修订、保存附件原件、偏好、确认候选洞见、按 request_id 查回执。
 - 每次"保存"都有数据库提交后的回执；附件只有真实字节落盘并校验 SHA-256 后才算保存；抽取失败不影响原件。
-- Apple Health 历史回填：`phctx import-apple export.zip`（自动过滤 Oura 镜像条目）。
+- Apple Health 历史回填：`phctx import-apple export.zip`（不再过滤 Oura 条目——Oura 现在是自己的持久来源，见下）。
+- Oura：通过 API v2 每小时自动同步（`phctx sync-oura`，launchd 常驻），生产库中约 25 万条观测；WHOOP 同理。
 - 后台 worker：每 15 分钟检查变化；无相关新证据不调用模型；默认 shadow 模式、模型关闭。
 - 每日一致快照备份（本地，7 天 + 4 周轮转）；加密 iCloud 备份已实测可用，需你开启。
 - 在 Mac 上用 Codex CLI 也能直接对话使用同一套工具（评测就是这样跑的）。
@@ -45,4 +46,4 @@ PYTHONPATH=~/personal-health-context/src ~/personal-health-context/.venv/bin/pyt
 `~/Library/Logs/PersonalHealthContext/`；`ops/status.sh` 显示服务、最近 worker 运行、来源同步时间、待展示候选数量。
 
 ## 限制
-见 `KNOWN_LIMITATIONS.md`（按原始 A–L 逐项）。最重要的三条：ChatGPT 尚未连接（需你操作）；iPhone 持续同步未编译安装（需 Xcode 与你的签名）；Oura 没有可用的官方接入，且按条款不在本地保存。
+见 `KNOWN_LIMITATIONS.md`（按原始 A–L 逐项）。最重要的三条：iPhone 持续同步未编译安装（本仓库自带的 helper 或开源 Life Dashboard Companion 二选一，都需要你用 Xcode 和自己的签名装到手机上）；ChatGPT 官方 Oura 接入对这个账号仍不可用（Oura 现在走自己的 API v2 同步，不受此影响）；后台主动发现在当前代码树上未重跑评测（模型调用默认关闭，见 USER_ACTIONS §4）。

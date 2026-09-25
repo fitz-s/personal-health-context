@@ -1,15 +1,15 @@
-# final engineering suite 2026-09-24T15:28:24Z rev 1dfc982
+# final engineering suite 2026-09-25T17:07:39Z rev f6e29a9
 test_dry_run_does_not_persist_observations_or_source_cursor (test_apple_ingest.AppleExportTests.test_dry_run_does_not_persist_observations_or_source_cursor) ... ok
 test_entity_declaration_is_rejected (test_apple_ingest.AppleExportTests.test_entity_declaration_is_rejected) ... ok
-test_export_import_filters_restricted_origin_and_is_idempotent (test_apple_ingest.AppleExportTests.test_export_import_filters_restricted_origin_and_is_idempotent) ... ok
+test_export_import_keeps_every_origin_and_is_idempotent (test_apple_ingest.AppleExportTests.test_export_import_keeps_every_origin_and_is_idempotent) ... ok
 test_live_and_export_copies_share_one_canonical_observation (test_apple_ingest.AppleExportTests.test_live_and_export_copies_share_one_canonical_observation) ... ok
 test_zip_traversal_member_is_rejected (test_apple_ingest.AppleExportTests.test_zip_traversal_member_is_rejected) ... ok
 test_zip_without_export_xml_is_rejected (test_apple_ingest.AppleExportTests.test_zip_without_export_xml_is_rejected) ... ok
 test_batch_ack_replay_conflict_gap_and_status (test_apple_ingest.IngestTLSTests.test_batch_ack_replay_conflict_gap_and_status) ... ok
 test_batch_rejects_wrong_token_installation_and_schema (test_apple_ingest.IngestTLSTests.test_batch_rejects_wrong_token_installation_and_schema) ... ok
 test_deleted_ids_create_tombstones_and_revoked_device_loses_access (test_apple_ingest.IngestTLSTests.test_deleted_ids_create_tombstones_and_revoked_device_loses_access) ... ok
+test_oura_origin_sample_is_stored_with_its_provenance (test_apple_ingest.IngestTLSTests.test_oura_origin_sample_is_stored_with_its_provenance) ... ok
 test_pairing_code_is_single_use_and_expired_code_is_forbidden (test_apple_ingest.IngestTLSTests.test_pairing_code_is_single_use_and_expired_code_is_forbidden) ... ok
-test_restricted_vendor_sample_is_filtered_and_not_stored (test_apple_ingest.IngestTLSTests.test_restricted_vendor_sample_is_filtered_and_not_stored) ... ok
 test_local_day_window_on_ordinary_and_dst_days (test_apple_mapping.ActivitySummaryTests.test_local_day_window_on_ordinary_and_dst_days) ... ok
 test_corrupt_member_fails_the_run_instead_of_leaving_it_running (test_apple_mapping.AttachmentTests.test_corrupt_member_fails_the_run_instead_of_leaving_it_running) ... ok
 test_member_larger_than_declared_is_never_read_past_the_cap (test_apple_mapping.AttachmentTests.test_member_larger_than_declared_is_never_read_past_the_cap) ... ok
@@ -33,6 +33,24 @@ test_workout_and_heartbeat_children_are_preserved_and_unsupported_counted (test_
 test_an_older_row_the_new_parser_did_not_reproduce_is_kept (test_apple_mapping.RetirementTests.test_an_older_row_the_new_parser_did_not_reproduce_is_kept) ... ok
 test_attributed_v3_rows_are_retired_and_other_exports_kept (test_apple_mapping.RetirementTests.test_attributed_v3_rows_are_retired_and_other_exports_kept) ... ok
 test_unattributed_v3_rows_of_another_export_are_never_retired (test_apple_mapping.RetirementTests.test_unattributed_v3_rows_of_another_export_are_never_retired) ... ok
+test_a_payload_larger_than_one_store_page_is_applied_whole (test_companion.CompanionTests.test_a_payload_larger_than_one_store_page_is_applied_whole)
+R7-07 ... ok
+test_active_and_total_calories_keep_separate_identities (test_companion.CompanionTests.test_active_and_total_calories_keep_separate_identities)
+R7-04: one HealthKit sample sent as active_calories and inside total_calories. ... ok
+test_bad_signature_refused_and_nothing_stored (test_companion.CompanionTests.test_bad_signature_refused_and_nothing_stored) ... ok
+test_companion_and_export_copies_share_one_canonical_observation (test_companion.CompanionTests.test_companion_and_export_copies_share_one_canonical_observation) ... ok
+test_identical_replay_is_idempotent (test_companion.CompanionTests.test_identical_replay_is_idempotent) ... ok
+test_malformed_signature_header_is_refused_not_a_crash (test_companion.CompanionTests.test_malformed_signature_header_is_refused_not_a_crash) ... ok
+test_menstruation_period_has_no_uuid_and_is_stored_unmapped (test_companion.CompanionTests.test_menstruation_period_has_no_uuid_and_is_stored_unmapped) ... ok
+test_missing_signature_refused_and_nothing_stored (test_companion.CompanionTests.test_missing_signature_refused_and_nothing_stored) ... ok
+test_nutrition_splits_combined_record_and_keeps_standalone_uuid (test_companion.CompanionTests.test_nutrition_splits_combined_record_and_keeps_standalone_uuid) ... ok
+test_the_apps_catch_all_other_is_not_named_as_healthkit_other (test_companion.CompanionTests.test_the_apps_catch_all_other_is_not_named_as_healthkit_other) ... ok
+test_truncated_heart_rate_gets_no_equivalence_key (test_companion.CompanionTests.test_truncated_heart_rate_gets_no_equivalence_key)
+R7-05: the app sends heart rate as an integer, so it cannot be proven equal to its export copy. ... ok
+test_unmappable_type_stored_as_companion_type (test_companion.CompanionTests.test_unmappable_type_stored_as_companion_type) ... ok
+test_uuidless_record_identity_ignores_array_position (test_companion.CompanionTests.test_uuidless_record_identity_ignores_array_position)
+R7-06 ... ok
+test_valid_signature_accepted_and_mapped (test_companion.CompanionTests.test_valid_signature_accepted_and_mapped) ... ok
 test_absolute_path_outside_repo_is_refused (test_evidence_binding.ArgvPathFenceTests.test_absolute_path_outside_repo_is_refused) ... ok
 test_interpreter_and_bash_and_env_are_allowed (test_evidence_binding.ArgvPathFenceTests.test_interpreter_and_bash_and_env_are_allowed) ... ok
 test_path_under_the_repo_root_is_allowed (test_evidence_binding.ArgvPathFenceTests.test_path_under_the_repo_root_is_allowed) ... ok
@@ -85,18 +103,30 @@ F14: extraction/metadata failures after commit must not deny that the original w
 test_a_child_analysis_inherits_its_parents_population (test_invariants.ReadReceiptTests.test_a_child_analysis_inherits_its_parents_population) ... ok
 test_a_constant_read_cannot_certify_an_analysis (test_invariants.ReadReceiptTests.test_a_constant_read_cannot_certify_an_analysis) ... ok
 test_a_disjoint_new_member_of_the_aggregate_makes_it_stale (test_invariants.ReadReceiptTests.test_a_disjoint_new_member_of_the_aggregate_makes_it_stale) ... ok
-test_a_query_cell_naming_an_unread_kind_does_not_bind (test_invariants.ReadReceiptTests.test_a_query_cell_naming_an_unread_kind_does_not_bind) ... ok
-test_a_record_id_inside_record_text_does_not_bind (test_invariants.ReadReceiptTests.test_a_record_id_inside_record_text_does_not_bind) ... ok
+test_a_page_returned_without_text_is_not_delivered (test_invariants.ReadReceiptTests.test_a_page_returned_without_text_is_not_delivered)
+R7-03 ... ok
+test_a_query_cell_never_delivers_an_id (test_invariants.ReadReceiptTests.test_a_query_cell_never_delivers_an_id)
+R5-01: table access says nothing about where a cell came from. ... ok
+test_a_query_of_source_state_cannot_certify (test_invariants.ReadReceiptTests.test_a_query_of_source_state_cannot_certify)
+R7-02: source state changes (a failed attempt) without an observation batch. ... ok
+test_a_query_that_also_reads_records_cannot_certify (test_invariants.ReadReceiptTests.test_a_query_that_also_reads_records_cannot_certify)
+R6-02: a record revision changes the result without an observation batch, so it stays unverified. ... ok
 test_a_saved_analysis_turns_stale_when_its_population_changes_later (test_invariants.ReadReceiptTests.test_a_saved_analysis_turns_stale_when_its_population_changes_later) ... ok
 test_a_stale_parent_cannot_be_cited_again (test_invariants.ReadReceiptTests.test_a_stale_parent_cannot_be_cited_again) ... ok
-test_an_analysis_of_bootstrap_counts_turns_stale_after_an_observation_batch (test_invariants.ReadReceiptTests.test_an_analysis_of_bootstrap_counts_turns_stale_after_an_observation_batch) ... ok
+test_an_evidence_free_analysis_cannot_verify_its_child (test_invariants.ReadReceiptTests.test_an_evidence_free_analysis_cannot_verify_its_child)
+R5-02: an analysis whose reads certified nothing stays unverified through inheritance. ... ok
+test_an_identical_re_read_is_no_change (test_invariants.ReadReceiptTests.test_an_identical_re_read_is_no_change)
+Live: the hourly Oura re-read of an unchanged trailing window staled every observation-bound analysis. ... ok
+test_bootstrap_cannot_certify_an_analysis (test_invariants.ReadReceiptTests.test_bootstrap_cannot_certify_an_analysis)
+R7-02: bootstrap returns source status, preferences and the record index alongside the catalog; not all of ... ok
 test_citing_an_unverified_derivation_leaves_the_child_unverified (test_invariants.ReadReceiptTests.test_citing_an_unverified_derivation_leaves_the_child_unverified) ... ok
 test_deleting_a_non_cited_member_makes_it_stale (test_invariants.ReadReceiptTests.test_deleting_a_non_cited_member_makes_it_stale) ... ok
 test_derived_writes_need_a_receipt_that_returned_the_evidence (test_invariants.ReadReceiptTests.test_derived_writes_need_a_receipt_that_returned_the_evidence) ... ok
 test_every_read_tool_returns_a_receipt_and_writes_do_not (test_invariants.ReadReceiptTests.test_every_read_tool_returns_a_receipt_and_writes_do_not) ... ok
 test_ids_a_record_only_mentions_do_not_bind (test_invariants.ReadReceiptTests.test_ids_a_record_only_mentions_do_not_bind) ... ok
-test_ids_concatenated_in_one_cell_bind (test_invariants.ReadReceiptTests.test_ids_concatenated_in_one_cell_bind) ... ok
 test_one_receipt_can_support_several_analyses (test_invariants.ReadReceiptTests.test_one_receipt_can_support_several_analyses) ... ok
+test_page_text_binds_the_page_not_the_original (test_invariants.ReadReceiptTests.test_page_text_binds_the_page_not_the_original)
+R5-03: re-extraction must reach an analysis of the page text. ... ok
 test_primary_facts_need_no_read (test_invariants.ReadReceiptTests.test_primary_facts_need_no_read) ... ok
 test_re_extracted_page_after_the_read_is_refused (test_invariants.ReadReceiptTests.test_re_extracted_page_after_the_read_is_refused) ... ok
 test_record_evidence_is_stale_when_a_newer_record_supersedes_it_after_the_read (test_invariants.ReadReceiptTests.test_record_evidence_is_stale_when_a_newer_record_supersedes_it_after_the_read) ... ok
@@ -109,6 +139,18 @@ test_canonical_view_is_readable_through_readonly_query (test_invariants.Superses
 test_live_and_export_in_either_order_leave_only_the_live_copy (test_invariants.SupersessionTests.test_live_and_export_in_either_order_leave_only_the_live_copy) ... ok
 test_live_tombstone_keeps_export_copy_suppressed_in_every_order (test_invariants.SupersessionTests.test_live_tombstone_keeps_export_copy_suppressed_in_every_order) ... ok
 test_v4_database_with_deleted_live_match_migrates_to_same_canonical_set (test_invariants.SupersessionTests.test_v4_database_with_deleted_live_match_migrates_to_same_canonical_set) ... ok
+test_a_200_without_a_collection_is_an_error_not_emptiness (test_oura.OuraSyncTests.test_a_200_without_a_collection_is_an_error_not_emptiness)
+R6-05 ... ok
+test_a_collection_the_first_token_cannot_read_falls_back_to_the_next (test_oura.OuraSyncTests.test_a_collection_the_first_token_cannot_read_falls_back_to_the_next) ... ok
+test_a_failed_oauth_refresh_still_uses_the_personal_token (test_oura.OuraSyncTests.test_a_failed_oauth_refresh_still_uses_the_personal_token)
+R6-07 ... ok
+test_a_revised_document_updates_and_absence_deletes_nothing (test_oura.OuraSyncTests.test_a_revised_document_updates_and_absence_deletes_nothing)
+R6-03: a re-read window cannot be matched to stored rows exactly, so absence is never a deletion. ... ok
+test_an_expired_token_marks_the_source_and_saves_nothing (test_oura.OuraSyncTests.test_an_expired_token_marks_the_source_and_saves_nothing) ... ok
+test_backfill_stores_every_document_with_its_raw_body (test_oura.OuraSyncTests.test_backfill_stores_every_document_with_its_raw_body) ... ok
+test_overlapping_syncs_are_refused (test_oura.OuraSyncTests.test_overlapping_syncs_are_refused)
+R6-04: one sync per provider at a time. ... ok
+test_rerun_is_idempotent_and_reads_only_the_trailing_window (test_oura.OuraSyncTests.test_rerun_is_idempotent_and_reads_only_the_trailing_window) ... ok
 test_acknowledge_removes_pending (test_reference_core.FoundationTests.test_acknowledge_removes_pending) ... ok
 test_attachment_bytes_roundtrip (test_reference_core.FoundationTests.test_attachment_bytes_roundtrip) ... ok
 test_attachment_corruption_detected (test_reference_core.FoundationTests.test_attachment_corruption_detected) ... ok
@@ -118,6 +160,7 @@ test_attachment_path_escape (test_reference_core.FoundationTests.test_attachment
 test_attachment_repeat (test_reference_core.FoundationTests.test_attachment_repeat) ... ok
 test_attention_budget_not_daily_report (test_reference_core.FoundationTests.test_attention_budget_not_daily_report) ... ok
 test_backup_inside_live_rejected (test_reference_core.FoundationTests.test_backup_inside_live_rejected) ... ok
+test_backup_refuses_to_fill_the_disk (test_reference_core.FoundationTests.test_backup_refuses_to_fill_the_disk) ... ok
 test_backup_restore_in_new_directory (test_reference_core.FoundationTests.test_backup_restore_in_new_directory) ... ok
 test_batch_duplicate_id_rejected (test_reference_core.FoundationTests.test_batch_duplicate_id_rejected) ... ok
 test_batch_invalid_interval (test_reference_core.FoundationTests.test_batch_invalid_interval) ... ok
@@ -143,9 +186,7 @@ test_missing_evidence_rollback (test_reference_core.FoundationTests.test_missing
 test_nonfinite_measurement_rejected (test_reference_core.FoundationTests.test_nonfinite_measurement_rejected) ... ok
 test_off_preference_persists (test_reference_core.FoundationTests.test_off_preference_persists) ... ok
 test_opaque_file_id_not_original (test_reference_core.FoundationTests.test_opaque_file_id_not_original) ... ok
-test_oura_batch_blocked (test_reference_core.FoundationTests.test_oura_batch_blocked) ... ok
-test_oura_registration_blocked (test_reference_core.FoundationTests.test_oura_registration_blocked) ... ok
-test_oura_write_blocked (test_reference_core.FoundationTests.test_oura_write_blocked) ... ok
+test_oura_is_a_durable_source (test_reference_core.FoundationTests.test_oura_is_a_durable_source) ... ok
 test_query_expression_memory_limit (test_reference_core.FoundationTests.test_query_expression_memory_limit) ... ok
 test_query_incremental_output_cap (test_reference_core.FoundationTests.test_query_incremental_output_cap) ... ok
 test_question_reference_must_exist (test_reference_core.FoundationTests.test_question_reference_must_exist) ... ok
@@ -286,16 +327,25 @@ test_invalid_arguments_return_invalid_arguments (test_tools_files.ToolsFilesTest
 test_log_redactor_removes_signed_url_and_bearer_token (test_tools_files.ToolsFilesTests.test_log_redactor_removes_signed_url_and_bearer_token) ... ok
 test_magic_sniffing_overrides_declared_image_mime (test_tools_files.ToolsFilesTests.test_magic_sniffing_overrides_declared_image_mime) ... ok
 test_malformed_pdf_keeps_original_and_reports_extraction_failure (test_tools_files.ToolsFilesTests.test_malformed_pdf_keeps_original_and_reports_extraction_failure) ... ok
-test_official_mcp_stdio_tools_capture_and_readonly_profile (test_tools_files.ToolsFilesTests.test_official_mcp_stdio_tools_capture_and_readonly_profile) ... 2026-09-24 10:29:06,639 phctx.mcp INFO tool=context_capture status=ok
-2026-09-24 10:29:07,099 phctx.mcp INFO tool=context_search status=ok
-2026-09-24 10:29:07,566 phctx.mcp INFO tool=context_search status=ok
+test_official_mcp_stdio_tools_capture_and_readonly_profile (test_tools_files.ToolsFilesTests.test_official_mcp_stdio_tools_capture_and_readonly_profile) ... 2026-09-25 12:08:28,552 phctx.mcp INFO tool=context_capture status=ok
+2026-09-25 12:08:29,015 phctx.mcp INFO tool=context_search status=ok
+2026-09-25 12:08:29,483 phctx.mcp INFO tool=context_search status=ok
 ok
 test_page_image_renders_any_pdf_page_for_a_fresh_conversation (test_tools_files.ToolsFilesTests.test_page_image_renders_any_pdf_page_for_a_fresh_conversation) ... ok
 test_readonly_profile_hides_writers_and_rejects_capture (test_tools_files.ToolsFilesTests.test_readonly_profile_hides_writers_and_rejects_capture) ... ok
 test_same_file_request_id_skips_a_second_https_fetch (test_tools_files.ToolsFilesTests.test_same_file_request_id_skips_a_second_https_fetch) ... ok
 test_unknown_tool_returns_unknown_tool (test_tools_files.ToolsFilesTests.test_unknown_tool_returns_unknown_tool) ... ok
 test_replay_with_missing_original_is_an_error_not_a_saved_claim (test_upgrade_integrity.ReplayTruthTests.test_replay_with_missing_original_is_an_error_not_a_saved_claim) ... ok
+test_a_note_derived_without_certification_is_not_primary (test_upgrade_integrity.UpgradeTests.test_a_note_derived_without_certification_is_not_primary)
+R8-02: a note written with a receipt that certified nothing (SELECT 1) reads unverified, not primary. ... ok
+test_a_revoked_derived_note_never_becomes_a_primary_fact (test_upgrade_integrity.UpgradeTests.test_a_revoked_derived_note_never_becomes_a_primary_fact)
+R8-02: a note written from an aggregate keeps its derived status when its certification is retired, so a ... ok
+test_an_actual_v14_layout_upgrades_and_retires_its_certifications (test_upgrade_integrity.UpgradeTests.test_an_actual_v14_layout_upgrades_and_retires_its_certifications)
+R9-03: the real v14 shape (three-column dependencies, no receipt policy column), not current tables relabelled. ... ok
+test_an_older_program_waiting_on_the_lock_refuses_a_newer_schema (test_upgrade_integrity.UpgradeTests.test_an_older_program_waiting_on_the_lock_refuses_a_newer_schema)
+R6-08: the schema is re-read after the lock; one migrated past this program's target is refused. ... ok
 test_bootstrap_and_status_withhold_observation_numbers_during_an_import (test_upgrade_integrity.UpgradeTests.test_bootstrap_and_status_withhold_observation_numbers_during_an_import) ... ok
+test_concurrent_openers_take_one_pre_migration_snapshot (test_upgrade_integrity.UpgradeTests.test_concurrent_openers_take_one_pre_migration_snapshot) ... ok
 test_gate_and_query_share_one_snapshot (test_upgrade_integrity.UpgradeTests.test_gate_and_query_share_one_snapshot) ... ok
 test_historical_supersession_survives_the_rekey (test_upgrade_integrity.UpgradeTests.test_historical_supersession_survives_the_rekey) ... ok
 test_imports_are_exclusive_and_only_the_same_signature_may_resume (test_upgrade_integrity.UpgradeTests.test_imports_are_exclusive_and_only_the_same_signature_may_resume) ... ok
@@ -306,6 +356,29 @@ test_profile_a_then_b_then_a_ends_with_a_active_and_keeps_every_revision (test_u
 test_reimport_with_other_timezone_is_not_an_idempotency_conflict (test_upgrade_integrity.UpgradeTests.test_reimport_with_other_timezone_is_not_an_idempotency_conflict) ... ok
 test_reimports_record_each_original_and_profile_once_and_v7_chains_old_duplicates (test_upgrade_integrity.UpgradeTests.test_reimports_record_each_original_and_profile_once_and_v7_chains_old_duplicates) ... ok
 test_since_reimport_after_upgrade_does_not_duplicate_legacy_rows (test_upgrade_integrity.UpgradeTests.test_since_reimport_after_upgrade_does_not_duplicate_legacy_rows) ... ok
+test_v11_unverifies_certifications_the_new_binding_rules_cannot_reproduce (test_upgrade_integrity.UpgradeTests.test_v11_unverifies_certifications_the_new_binding_rules_cannot_reproduce) ... ok
+test_v12_makes_the_oura_placeholder_a_durable_source (test_upgrade_integrity.UpgradeTests.test_v12_makes_the_oura_placeholder_a_durable_source) ... ok
+test_v13_voids_old_receipts_and_keeps_post_v11_certifications (test_upgrade_integrity.UpgradeTests.test_v13_voids_old_receipts_and_keeps_post_v11_certifications)
+R6-01: a receipt issued under the old rules cannot bind after the upgrade. ... ok
+test_v14_unverifies_certifications_made_before_v13 (test_upgrade_integrity.UpgradeTests.test_v14_unverifies_certifications_made_before_v13)
+R7-01: a certification bound under rules without receipt completeness reads unverified after upgrade. ... ok
+test_v15_retires_certifications_and_receipts_issued_under_older_rules (test_upgrade_integrity.UpgradeTests.test_v15_retires_certifications_and_receipts_issued_under_older_rules)
+R8-01: a v13-era certification (e.g. from a source-state query marked complete) reads unverified after the ... ok
+test_a_refused_attempt_says_so_and_a_fresh_start_still_connects (test_whoop.ConsentServerTests.test_a_refused_attempt_says_so_and_a_fresh_start_still_connects) ... ok
+test_two_providers_on_one_port_each_exchange_their_own_code (test_whoop.ConsentServerTests.test_two_providers_on_one_port_each_exchange_their_own_code) ... ok
+test_every_vendor_request_names_a_user_agent (test_whoop.UserAgentTests.test_every_vendor_request_names_a_user_agent)
+WHOOP's front refuses urllib's default User-Agent with HTTP 403 (error code 1010). ... ok
+test_a_200_without_records_is_an_error (test_whoop.WhoopSyncTests.test_a_200_without_records_is_an_error)
+R6-05 ... ok
+test_a_failed_keychain_write_after_rotation_asks_for_reconnection (test_whoop.WhoopSyncTests.test_a_failed_keychain_write_after_rotation_asks_for_reconnection)
+R6-07: the vendor already retired the old token. ... ok
+test_a_recovery_is_one_row_per_cycle_when_its_sleep_changes (test_whoop.WhoopSyncTests.test_a_recovery_is_one_row_per_cycle_when_its_sleep_changes)
+R6-06 ... ok
+test_backfill_keeps_every_record_with_its_headline_and_raw_body (test_whoop.WhoopSyncTests.test_backfill_keeps_every_record_with_its_headline_and_raw_body) ... ok
+test_missing_client_secret_is_a_bounded_error (test_whoop.WhoopSyncTests.test_missing_client_secret_is_a_bounded_error) ... ok
+test_refresh_stores_the_rotated_token_before_use (test_whoop.WhoopSyncTests.test_refresh_stores_the_rotated_token_before_use) ... ok
+test_rerun_reads_the_trailing_window_updates_and_deletes_nothing (test_whoop.WhoopSyncTests.test_rerun_reads_the_trailing_window_updates_and_deletes_nothing)
+R6-04: an older or narrower response must not hide records another sync stored. ... ok
 test_backup_restore_preserves_counts_and_original_object_bytes (test_worker_backup.WorkerBackupTests.test_backup_restore_preserves_counts_and_original_object_bytes) ... ok
 test_changes_every_fifteen_minutes_coalesce_instead_of_a_job_train (test_worker_backup.WorkerBackupTests.test_changes_every_fifteen_minutes_coalesce_instead_of_a_job_train) ... ok
 test_default_backup_dir_follows_the_root (test_worker_backup.WorkerBackupTests.test_default_backup_dir_follows_the_root) ... ok
@@ -330,9 +403,9 @@ test_worker_lease_rejects_second_owner_until_released (test_worker_backup.Worker
 test_zero_daily_call_cap_defers_job_without_completing_it (test_worker_backup.WorkerBackupTests.test_zero_daily_call_cap_defers_job_without_completing_it) ... ok
 
 ----------------------------------------------------------------------
-Ran 324 tests in 45.341s
+Ran 369 tests in 55.855s
 
 OK
 Command: PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v
-Date: 2026-09-24T10:29:10-0500
+Date: 2026-09-25T12:08:35-0500
 Exit code: 0

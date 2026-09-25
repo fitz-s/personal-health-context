@@ -208,10 +208,20 @@ def main() -> int:
                                                'stored SHA-256; pages readable.'),
         'fresh_conversation': live('fresh_conversation', 'A new ChatGPT chat found the earlier capture by content.'),
         'apple_device_sync': check('BLOCKED', None, 'Helper not built: needs Xcode licence (sudo), Apple ID signing and '
-                                                    'the iPhone — deferred by the user. Swift core tests + TLS interop '
+                                                    'the iPhone — deferred by the user. Two routes now exist — this '
+                                                    'repo\'s own ios/HealthSyncHelper, or the open-source Life Dashboard '
+                                                    'Companion webhook receiver (src/phctx/companion.py, '
+                                                    'ios/COMPANION_SETUP.md) — neither is installed on-device. Swift '
+                                                    'core tests, TLS interop, and companion signature/replay tests '
                                                     'pass; full export backfill is in production.'),
-        'oura_official_access': check('BLOCKED', None, 'No official Oura MCP route available to this account '
-                                                       '(live-evidence/p0_account_probe_2026-09-23.md). Nothing persisted.'),
+        'oura_official_access': check('BLOCKED', None, 'No official Oura MCP connector route available to this '
+                                                       'account for ChatGPT (live-evidence/p0_account_probe_2026-09-23.md); '
+                                                       'unchanged since that probe. Oura data is instead synced directly '
+                                                       'as a durable source via Oura API v2 (src/phctx/oura.py, hourly '
+                                                       'launchd job com.personalhealthcontext.oura; ~250k observations '
+                                                       'in production per ops/status.sh) — this closes the data-access '
+                                                       'gap but is not the official MCP route this check names, so it '
+                                                       'stays BLOCKED.'),
         'model_eval': check(ev['status'], 'eval-report/summary.json', ev['note']),
         'sparse_proactivity': check('PASS' if ev['buckets'].get('silence', {}).get('rate', 0) >= .9
                                     and ev['buckets'].get('revisit', {}).get('rate', 0) >= .8 else 'FAIL',
