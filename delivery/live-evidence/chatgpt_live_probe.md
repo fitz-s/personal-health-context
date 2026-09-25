@@ -89,7 +89,7 @@ Server log: `chatgpt_mcp_server_log_round7.txt`. Same conversation as round 6; s
 | Analysis from a `sources` query (R7-02) | query receipt complete=0 (sources is not an observation table); capture ok | `rec_1bf980bb84604270b7522c8e893e5b6c`: bound=false, current=false | PASS |
 | Analysis citing only the bootstrap receipt (R7-02) | bootstrap receipt complete=0; capture ok | `rec_e544b5046d824444b7bd138846e65870`: bound=false, current=false | PASS |
 | Page read of pages 1–2 (R7-03) | receipt refs `obj:ad7a…ec19#p1`, `#p2`; truncated=false, so no `continue_from_page` | — | PASS (untruncated path; the truncated path is covered by tests) |
-| Positive control: observation-only aggregate, receipt only | first attempt `context_capture error:stale_evidence` (see below); after a650d13 saved | `rec_597eb55b8fba4694b2faa4c66d10c898`: bound=true, current=true | PASS after fix |
+| Positive control: observation-only aggregate, receipt only | first attempt `context_capture error:stale_evidence` at 04:53, ~10 h after its 19:06 query (see below); after a650d13 re-run 08:06 → saved | `rec_597eb55b8fba4694b2faa4c66d10c898`: bound=true, current=true | PASS after fix |
 
 Live defect found by the control: every hourly Oura sync re-reads a trailing window and each page logged an
 `observations` change even when nothing changed (12 change rows per hour), so any observation-bound analysis went stale
