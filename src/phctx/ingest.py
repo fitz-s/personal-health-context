@@ -12,10 +12,12 @@ import ipaddress
 import json
 import logging
 import os
+import re
 import secrets
 import shutil
 import socket
 import ssl
+import subprocess
 import tempfile
 import threading
 import time
@@ -267,16 +269,29 @@ def _load_key(ctx: ssl.SSLContext, cert: Path, key_pem: bytes) -> None:
         shutil.rmtree(d, ignore_errors=True)
 
 
+# A proxy/VPN client's TUN interface (198.18.0.0/15, the benchmark range such clients use) takes the default route
+# while the phone still reaches the Mac on its Wi-Fi address; link-local addresses are unreachable from it too.
+_NOT_LAN = (ipaddress.ip_network('198.18.0.0/15'), ipaddress.ip_network('169.254.0.0/16'))
+
+
 def lan_addresses() -> list[str]:
+    """127.0.0.1 plus the address a phone on the same network reaches this Mac at: the default-route interface's,
+    or, when that is a tunnel, each private interface address (from `ifconfig`, macOS)."""
     out = {'127.0.0.1'}
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(('192.0.2.1', 9))  # no packet sent; selects the LAN interface address
+        s.connect(('192.0.2.1', 9))  # no packet sent; selects the default-route interface address
         out.add(s.getsockname()[0])
         s.close()
     except OSError:
         pass
-    return sorted(out)
+    try:
+        text = subprocess.run(['/sbin/ifconfig'], capture_output=True, text=True, timeout=5).stdout
+        out.update(re.findall(r'^\s*inet (\d+\.\d+\.\d+\.\d+) ', text, re.M))
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return sorted(a for a in out if a == '127.0.0.1' or (ipaddress.ip_address(a).is_private
+                                                           and not any(ipaddress.ip_address(a) in n for n in _NOT_LAN)))
 
 
 # ---- HTTP server ----------------------------------------------------------------------------

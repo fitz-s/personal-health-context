@@ -236,3 +236,20 @@ class CompanionTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
+
+
+class LanAddressTests(unittest.TestCase):
+    def test_a_proxy_tunnel_default_route_is_not_offered_to_the_phone(self):
+        """Live: a proxy client's utun (198.18.0.1) took the default route, so the webhook URL named an address the
+        phone cannot reach; the Wi-Fi address must be offered instead."""
+        from unittest import mock
+        from phctx import ingest
+        ifconfig = ('lo0: flags=8049\n\tinet 127.0.0.1 netmask 0xff000000\n'
+                    'en0: flags=8863\n\tinet 192.168.0.85 netmask 0xffffff00 broadcast 192.168.0.255\n'
+                    'utun10: flags=8051\n\tinet 198.18.0.1 --> 198.18.0.1 netmask 0xfffe0000\n'
+                    'en12: flags=8863\n\tinet 169.254.79.112 netmask 0xffff0000\n')
+        sock = mock.MagicMock()
+        sock.getsockname.return_value = ('198.18.0.1', 0)
+        with mock.patch.object(ingest.socket, 'socket', return_value=sock), \
+                mock.patch.object(ingest.subprocess, 'run', return_value=mock.Mock(stdout=ifconfig)):
+            self.assertEqual(ingest.lan_addresses(), ['127.0.0.1', '192.168.0.85'])
