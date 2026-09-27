@@ -95,7 +95,9 @@ iOS 18+ State of Mind (valence) and GAD-7 / PHQ-9 (score). `metric` = the record
 uuid, `value_num` / `value_text` / `unit` as sent, `source_bundle_id` and `device` kept, `origin_key()` as above. The
 phone reads each quantity in the user's Health unit (`preferredUnits`), which is what the owner's export writes (e.g.
 VO2Max `mL/min·kg`, WalkingSpeed `mi/hr`, energy `Cal`→`kcal`), so a live sample and its export copy share one key; a
-unit the export spells differently only means both rows stay. Category `value_text` is the export's case name
+unit the export spells differently only means both rows stay. The key rounds values to 4 decimals while the export prints some
+types with fewer (VO2Max has 2), so such a sample's live and export copies may also both stay; the 7-day window
+means they overlap only if a newer full export is imported. Category `value_text` is the export's case name
 (`HKCategoryValueSleepAnalysisAsleepCore`, `HKCategoryValueNotApplicable`); a workout is `value_num` = duration s,
 `value_text` = `HKWorkoutActivityType<Name>`, energy/distance totals in metadata. A record that is not one well-formed
 sample (no uuid or `hk_type`, a non-numeric or non-finite value, a time without offset, an end before its start,
