@@ -394,7 +394,10 @@ def make_server(store: Store, host: str, port: int, secret: str, tz: str) -> Thr
                 pass
 
         def log_message(self, fmt, *args):  # redacted access log: method/path/status only
-            log.info('%s %s', self.command, self.path.split('?')[0])
+            pass
+
+        def log_request(self, code='-', size='-'):
+            log.info('%s %s %s', self.command, self.path.split('?')[0], code)
 
         def reply(self, status: int, body: dict) -> None:
             data = json.dumps(body).encode()
@@ -424,6 +427,7 @@ def make_server(store: Store, host: str, port: int, secret: str, tz: str) -> Thr
             try:
                 raw = self.read_body()
             except _BadRequest as e:
+                log.info('rejected %s', e.body.get('error'))
                 self.reply(e.status, e.body)
                 return
             if not secret or not _verify(raw, self.headers.get('X-Signature', ''), secret):
