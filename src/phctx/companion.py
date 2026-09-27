@@ -454,6 +454,7 @@ def make_server(store: Store, host: str, port: int, secret: str, tz: str) -> Thr
                                                coverage={'kind': 'life_dashboard_companion_webhook'})
                     upserted += result['upserted']
             except StoreError as e:
+                log.info('store_error %s after %d/%d samples', e.code, upserted, len(samples))
                 status = 503 if e.code in {'storage_busy', 'storage_unavailable'} else 422
                 self.reply(status, {'error': e.code})
                 return
