@@ -174,7 +174,7 @@ def backup(cfg: Config, dest: Path | None = None, encrypt: bool = False) -> dict
         shutil.rmtree(stage, ignore_errors=True)
         raise
     result = {'snapshot': {**made, 'path': str(snap)}}
-    result['verified'] = {k: v for k, v in Store.verify_snapshot(snap).items() if k != 'manifest'}
+    result['verified'] = {k: v for k, v in Store.verify_snapshot(snap, full=False).items() if k != 'manifest'}
     if encrypt:
         if not cfg.cloud_backup_dir:
             raise StoreError('backup_config', 'Set [backup] cloud_dir to write the encrypted archive.')

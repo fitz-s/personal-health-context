@@ -1207,7 +1207,10 @@ class Store:
         return {'status': 'snapshot_complete', 'path': str(dest), 'objects': len(refs), 'cloud_synced': False}
 
     @classmethod
-    def verify_snapshot(cls, snapshot: str | Path) -> dict:
+    def verify_snapshot(cls, snapshot: str | Path, full: bool = True) -> dict:
+        """Manifest, checksums and database check of a sealed snapshot. `full=False` (the daily backup's own check of
+        the copy it just made) runs quick_check: integrity_check reads every index of a multi-GB copy and saturated the
+        disk for over 12 hours, starving the live store's writers. Restore always runs the full check."""
         src = Path(snapshot).resolve()
         try:
             m = json.loads((src / 'backup_manifest.json').read_text())
@@ -1226,7 +1229,7 @@ class Store:
                 raise StoreError('backup_invalid', 'Snapshot checksum failed.')
         db = sqlite3.connect((src / 'context.sqlite3').as_uri() + '?mode=ro', uri=True)
         try:
-            if (db.execute('PRAGMA integrity_check').fetchone()[0] != 'ok'
+            if (db.execute('PRAGMA integrity_check' if full else 'PRAGMA quick_check').fetchone()[0] != 'ok'
                     or db.execute('PRAGMA foreign_key_check').fetchone() is not None):
                 raise StoreError('backup_invalid', 'Snapshot integrity check failed.')
             objects = [sha for (sha,) in db.execute('SELECT sha256 FROM objects')]
