@@ -87,6 +87,24 @@ identifier at all and are stored as `companion.<type>` (raw fields, no invented 
 app merges active + basal energy into one array with no field saying which type a given record is) and
 `menstruation_period` (client-derived from consecutive flow days; HealthKit has no period sample type).
 
+`healthkit_samples` (the owner's local build, `phctx-local` branch of the app, not upstream): one generic record per
+sample of every HealthKit type a third-party app can read that no enabled dedicated key already sends — 120 quantity
+and 69 category types (iOS 26.2 SDK, `HKTypeIdentifiers.h`), workouts, ECG summaries (average heart rate as
+`value`, classification as `value_text`, sampling frequency and symptom status in metadata; never voltages), and on
+iOS 18+ State of Mind (valence) and GAD-7 / PHQ-9 (score). `metric` = the record's raw `hk_type`, `native_id` = its
+uuid, `value_num` / `value_text` / `unit` as sent, `source_bundle_id` and `device` kept, `origin_key()` as above. The
+phone reads each quantity in the user's Health unit (`preferredUnits`), which is what the owner's export writes (e.g.
+VO2Max `mL/min·kg`, WalkingSpeed `mi/hr`, energy `Cal`→`kcal`), so a live sample and its export copy share one key; a
+unit the export spells differently only means both rows stay. Category `value_text` is the export's case name
+(`HKCategoryValueSleepAnalysisAsleepCore`, `HKCategoryValueNotApplicable`); a workout is `value_num` = duration s,
+`value_text` = `HKWorkoutActivityType<Name>`, energy/distance totals in metadata. A record that is not one well-formed
+sample (no uuid or `hk_type`, a non-numeric or non-finite value, a time without offset, an end before its start,
+non-JSON metadata) or that repeats a uuid already in the payload is skipped and counted (`skipped` in the reply);
+it never fails the batch. The generic path sends only samples dated within the last 7 days, read through one anchor
+per type and capped at 500 per type / 6000 per sync; a sample backdated further than that after the anchor passes it
+is not sent (the export is the backfill). The same build's `exercise` records also carry `activity_type` (the export's
+name for every activity, so 'other' below no longer loses it) and the energy/distance totals.
+
 Known limits of the companion mapping (review 2026-09-24):
 - Units are the app's (m, L, mmol/L, degC, g); the owner's export uses locale units (e.g. mi, ft, mL) and values are
   not converted, so a companion sample and its export copy of distance, height or water do not share an origin_key

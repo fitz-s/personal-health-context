@@ -141,7 +141,7 @@ class CompanionTests(unittest.TestCase):
         from phctx import companion
         rec = {'uuid': 'SYNTHETIC-energy-1', 'calories': 12.5, 'start_time': '2026-09-20T10:00:00Z',
                'end_time': '2026-09-20T10:05:00Z', 'source': 'SYNTHETIC Watch'}
-        samples, _ = companion.translate({'active_calories': [rec], 'total_calories': [rec]}, 'America/Chicago')
+        samples, _, _ = companion.translate({'active_calories': [rec], 'total_calories': [rec]}, 'America/Chicago')
         self.assertEqual(sorted(s['native_id'] for s in samples),
                          ['SYNTHETIC-energy-1', 'companion:total_calories:SYNTHETIC-energy-1'])
         status, _ = self.post_json({'active_calories': [rec]})
@@ -155,8 +155,8 @@ class CompanionTests(unittest.TestCase):
         from phctx import companion
         a = {'start_time': '2026-09-01T00:00:00Z', 'end_time': '2026-09-05T00:00:00Z', 'SYNTHETIC': 1}
         b = {'start_time': '2026-08-01T00:00:00Z', 'end_time': '2026-08-05T00:00:00Z', 'SYNTHETIC': 2}
-        first, _ = companion.translate({'menstruation_period': [a, b]}, 'America/Chicago')
-        second, _ = companion.translate({'menstruation_period': [b, a]}, 'America/Chicago')
+        first, _, _ = companion.translate({'menstruation_period': [a, b]}, 'America/Chicago')
+        second, _, _ = companion.translate({'menstruation_period': [b, a]}, 'America/Chicago')
         self.assertEqual({s['native_id'] for s in first}, {s['native_id'] for s in second})
 
     def test_a_payload_larger_than_one_store_page_is_applied_whole(self):
@@ -232,6 +232,116 @@ class CompanionTests(unittest.TestCase):
             self.assertEqual(c.execute('SELECT count(*) FROM active_observations').fetchone()[0], 2)
             self.assertEqual([r[0] for r in c.execute('SELECT source_name FROM canonical_observations')],
                              ['Apple Watch'])
+
+    # ---- healthkit_samples: the phctx-local build's generic "All other HealthKit types" records -------------------
+
+    def generic(self, uuid, hk_type, value, unit=None, value_text=None, start='2026-09-20T13:00:00.250Z',
+                end='2026-09-20T13:05:00.750Z', source='SYNTHETIC Watch', **extra):
+        record = {'uuid': uuid, 'hk_type': hk_type, 'value': value, 'start_time': start, 'end_time': end,
+                  'source': source, 'source_bundle_id': 'com.apple.health.SYNTHETIC', **extra}
+        if unit is not None:
+            record['unit'] = unit
+        if value_text is not None:
+            record['value_text'] = value_text
+        return record
+
+    def export_keys(self, xml_records):
+        xml = f'<?xml version="1.0" encoding="UTF-8"?><HealthData>{xml_records}</HealthData>'
+        apple_export.import_export(self.store, make_zip(self.base / 'export.zip', xml))
+        with self.store.connect() as c:
+            return {r[0]: r[1] for r in c.execute("SELECT metric, origin_key FROM observations "
+                                                  "WHERE source_id='apple_health_export'")}
+
+    def test_generic_quantity_category_and_workout_share_the_exports_equivalence_key(self):
+        times = 'startDate="2026-09-20 08:00:00 -0500" endDate="2026-09-20 08:05:00 -0500"'
+        exported = self.export_keys(
+            f'<Record type="HKQuantityTypeIdentifierVO2Max" sourceName="SYNTHETIC Watch" unit="mL/min·kg" '
+            f'value="41.25" {times}/>'
+            f'<Record type="HKQuantityTypeIdentifierWalkingSpeed" sourceName="SYNTHETIC Watch" unit="mi/hr" '
+            f'value="2.90782" {times}/>'
+            f'<Record type="HKCategoryTypeIdentifierAppleStandHour" sourceName="SYNTHETIC Watch" '
+            f'value="HKCategoryValueAppleStandHourIdle" {times}/>'
+            f'<Workout workoutActivityType="HKWorkoutActivityTypeRowing" duration="5" durationUnit="min" '
+            f'sourceName="SYNTHETIC Watch" {times}/>')
+        payload = {'healthkit_samples': [
+            self.generic('SYNTHETIC-vo2', 'HKQuantityTypeIdentifierVO2Max', 41.25, 'mL/min·kg'),
+            self.generic('SYNTHETIC-speed', 'HKQuantityTypeIdentifierWalkingSpeed', 2.907821, 'mi/hr'),
+            self.generic('SYNTHETIC-stand', 'HKCategoryTypeIdentifierAppleStandHour', 1,
+                         value_text='HKCategoryValueAppleStandHourIdle'),
+            self.generic('SYNTHETIC-row', 'HKWorkoutTypeIdentifier', 300.2, 's',
+                         value_text='HKWorkoutActivityTypeRowing', metadata={'total_distance_m': 1000.0}),
+        ]}
+        live, _, skipped = companion.translate(payload, 'America/Chicago')
+        self.assertEqual(skipped, 0)
+        self.assertEqual({r['metric']: r['origin_key'] for r in live}, exported)
+        status, ack = self.post_json(payload)
+        self.assertEqual((status, ack['upserted'], ack['skipped']), (200, 4, 0))
+        with self.store.connect() as c:
+            rows = {r[0]: tuple(r)[1:] for r in c.execute(
+                "SELECT native_id, metric, value_num, value_text, unit, bundle_id FROM observations "
+                "WHERE source_id=?", (companion.SOURCE_ID,))}
+            canonical = c.execute('SELECT count(*) FROM canonical_observations').fetchone()[0]
+        self.assertEqual(rows['SYNTHETIC-vo2'], ('HKQuantityTypeIdentifierVO2Max', 41.25, None, 'mL/min·kg',
+                                                 'com.apple.health.SYNTHETIC'))
+        self.assertEqual(rows['SYNTHETIC-stand'][:4], ('HKCategoryTypeIdentifierAppleStandHour', 1,
+                                                       'HKCategoryValueAppleStandHourIdle', ''))
+        self.assertEqual(rows['SYNTHETIC-row'][:4], ('HKWorkoutTypeIdentifier', 300.2, 'HKWorkoutActivityTypeRowing',
+                                                     's'))
+        self.assertEqual(canonical, 4)  # each live sample and its export copy resolve to one canonical observation
+
+    def test_generic_energy_in_the_exports_cal_matches_a_kcal_export_row(self):
+        exported = self.export_keys(
+            '<Record type="HKQuantityTypeIdentifierBasalEnergyBurned" sourceName="SYNTHETIC Watch" unit="Cal" '
+            'value="1.5" startDate="2026-09-20 08:00:00 -0500" endDate="2026-09-20 08:05:00 -0500"/>')
+        live, _, _ = companion.translate({'healthkit_samples': [
+            self.generic('SYNTHETIC-basal', 'HKQuantityTypeIdentifierBasalEnergyBurned', 1.5, 'kcal')]},
+            'America/Chicago')
+        self.assertEqual(live[0]['origin_key'], exported['HKQuantityTypeIdentifierBasalEnergyBurned'])
+
+    def test_malformed_generic_records_are_skipped_and_counted_not_fatal(self):
+        good = self.generic('SYNTHETIC-good', 'HKQuantityTypeIdentifierFlightsClimbed', 2, 'count')
+        bad = [
+            'not a record',
+            {**good, 'uuid': ''},
+            {**good, 'uuid': 'SYNTHETIC-b1', 'hk_type': None},
+            {**good, 'uuid': 'SYNTHETIC-b2', 'value': 'high'},
+            {**good, 'uuid': 'SYNTHETIC-b3', 'value': True},
+            {**good, 'uuid': 'SYNTHETIC-b4', 'start_time': '2026-09-20T13:00:00'},  # no offset
+            {**good, 'uuid': 'SYNTHETIC-b5', 'end_time': '2026-09-20T12:00:00Z'},  # ends before it starts
+            {**good, 'uuid': 'SYNTHETIC-b6', 'unit': 7},
+            {**good, 'uuid': 'SYNTHETIC-b7', 'metadata': {'x': float('nan')}},
+            good,  # a repeated uuid in one payload would make the store refuse the whole page
+        ]
+        body = json.dumps({'healthkit_samples': [good, *bad]}).encode()  # NaN is sent as the literal NaN
+        request = urllib.request.Request(self.base_url + '/companion', data=body, method='POST',
+                                         headers={'X-Signature': sign(body)})
+        with self.opener.open(request, timeout=4) as response:
+            ack = json.loads(response.read())
+        self.assertEqual((ack['upserted'], ack['skipped']), (1, 10))
+        with self.store.connect() as c:
+            self.assertEqual([r[0] for r in c.execute('SELECT native_id FROM observations')], ['SYNTHETIC-good'])
+
+    def test_a_generic_record_repeating_a_dedicated_keys_uuid_is_skipped(self):
+        payload = self.payload()
+        payload['healthkit_samples'] = [self.generic('SYNTHETIC-steps-1', 'HKQuantityTypeIdentifierStepCount', 120,
+                                                     'count')]
+        status, ack = self.post_json(payload)
+        self.assertEqual((status, ack['upserted'], ack['skipped']), (200, 4, 1))
+
+    def test_generic_samples_need_a_valid_signature(self):
+        payload = {'healthkit_samples': [self.generic('SYNTHETIC-g', 'HKQuantityTypeIdentifierVO2Max', 40, 'mL/min·kg')]}
+        self.assertEqual(self.post_json(payload, secret='SYNTHETIC-wrong-secret')[0], 401)
+        self.assertEqual(self.post_json(payload, header=False)[0], 401)
+        with self.store.connect() as c:
+            self.assertEqual(c.execute('SELECT count(*) FROM observations').fetchone()[0], 0)
+
+    def test_exercise_activity_type_names_what_the_apps_other_hides(self):
+        [row] = companion._exercise({'uuid': 'SYNTHETIC-w', 'type': 'other', 'start_time': '2026-09-20T10:00:00Z',
+                                     'end_time': '2026-09-20T11:00:00Z', 'duration_seconds': 3600,
+                                     'activity_type': 'HKWorkoutActivityTypePickleball', 'total_energy_kcal': 410.5},
+                                    'America/Chicago')
+        self.assertEqual((row['value_text'], row['metadata']['totals']),
+                         ('HKWorkoutActivityTypePickleball', {'total_energy_kcal': 410.5}))
 
 
 if __name__ == '__main__':

@@ -20,15 +20,16 @@ import hashlib
 import hmac
 import json
 import logging
+import math
 import secrets
 import socket
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Callable
 
-from .apple_export import origin_key
+from .apple_export import WORKOUT, origin_key
 from .ingest import _linger_close, lan_addresses
-from .store import Store, StoreError, instant
+from .store import Store, StoreError, dump, instant
 
 log = logging.getLogger('phctx.companion')
 
@@ -199,11 +200,45 @@ def _sleep(record: dict, tz: str) -> list[dict]:
 
 
 def _exercise(record: dict, tz: str) -> list[dict]:
-    # The app's 'other' is its catch-all for every activity it does not name, not HealthKit's Other: kept unnamed.
+    # `activity_type` (phctx-local build) is the export's own name for every activity. Without it, the app's 'other' is
+    # its catch-all for every activity it does not name, not HealthKit's Other: kept unnamed.
     suffix = WORKOUT_ACTIVITY.get(record.get('type'))
-    text = 'HKWorkoutActivityType' + suffix if suffix else None
-    return [_sample(record.get('uuid') or '', 'HKWorkoutTypeIdentifier', record.get('start_time'),
-                   record.get('end_time'), tz, record.get('duration_seconds'), text, 's', record.get('source'))]
+    named = record.get('activity_type')
+    text = named if isinstance(named, str) else 'HKWorkoutActivityType' + suffix if suffix else None
+    totals = {k: record[k] for k in ('total_energy_kcal', 'total_distance_m') if k in record}
+    return [_sample(record.get('uuid') or '', WORKOUT, record.get('start_time'),
+                   record.get('end_time'), tz, record.get('duration_seconds'), text, 's', record.get('source'),
+                   {'totals': totals} if totals else None)]
+
+
+def _healthkit_sample(record: Any, tz: str) -> dict | None:
+    """One generic record from the phctx-local build's "All other HealthKit types" (payload key healthkit_samples): the
+    raw HealthKit identifier as metric, value in the unit the phone reads in (the user's Health unit, as the export
+    writes), category values named as the export names them. None for a record that is not one well-formed sample."""
+    if not isinstance(record, dict):
+        return None
+    uuid, metric, value, text, unit, source = (record.get(k) for k in
+                                               ('uuid', 'hk_type', 'value', 'value_text', 'unit', 'source'))
+    if not (isinstance(uuid, str) and 0 < len(uuid) <= 200 and isinstance(metric, str) and metric.startswith('HK')
+            and len(metric) <= 200):
+        return None
+    if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float))
+                              or not math.isfinite(value)):
+        return None
+    if not all(x is None or isinstance(x, str) for x in (text, unit, source, record.get('source_bundle_id'))):
+        return None
+    if metric.startswith(CATEGORY):
+        unit = ''  # the export writes no unit for a category sample
+    md = record.get('metadata') if isinstance(record.get('metadata'), dict) else {}
+    try:
+        row = _sample(uuid, metric, record.get('start_time'), record.get('end_time'), tz, value, text, unit, source,
+                      {k: v for k, v in md.items() if k != 'transport'})
+        row['source_bundle_id'] = record.get('source_bundle_id')
+        row['device'] = record['device'] if isinstance(record.get('device'), dict) else {}
+        dump(row)  # the store keeps the row as strict JSON: a NaN anywhere would fail the whole batch
+    except (StoreError, ValueError):  # a missing or offset-less time, a non-finite metadata value
+        return None
+    return row if row['end_at'] >= row['start_at'] else None
 
 
 def _menstruation_flow(record: dict, tz: str) -> list[dict]:
@@ -253,15 +288,20 @@ HANDLERS: dict[str, Callable[[dict, str], list[dict]]] = {
 }
 
 
-def translate(payload: dict[str, Any], tz: str) -> tuple[list[dict], set[str]]:
-    """Every companion record in `payload` as phctx observation-batch samples, plus the set of
+def translate(payload: dict[str, Any], tz: str) -> tuple[list[dict], set[str], int]:
+    """Every companion record in `payload` as phctx observation-batch samples, the set of
     top-level type keys (known-unfaithful, or simply not recognized by this version) that were
-    stored as companion.<type> instead of a real HealthKit identifier."""
+    stored as companion.<type> instead of a real HealthKit identifier, and the number of
+    malformed healthkit_samples records skipped."""
     samples: list[dict] = []
+    generic: list[dict | None] = []
     unmapped: set[str] = set()
     for key, records in payload.items():
         if not isinstance(records, list):
             continue  # timestamp / app_version / source: metadata, not sample arrays
+        if key == 'healthkit_samples':
+            generic = [_healthkit_sample(record, tz) for record in records]
+            continue
         if key in UNFAITHFUL_TYPES:
             unmapped.add(key)
             value_field = 'calories' if key == 'total_calories' else None
@@ -278,7 +318,17 @@ def translate(payload: dict[str, Any], tz: str) -> tuple[list[dict], set[str]]:
             continue
         for record in records:
             samples.extend(handler(record, tz))
-    return samples, unmapped
+    # The app leaves out of healthkit_samples every type a dedicated key sends; a uuid seen twice anyway is skipped
+    # here, since the store refuses a whole page that repeats a native_id.
+    seen = {s['native_id'] for s in samples}
+    skipped = 0
+    for row in generic:
+        if row is None or row['native_id'] in seen:
+            skipped += 1
+            continue
+        seen.add(row['native_id'])
+        samples.append(row)
+    return samples, unmapped, skipped
 
 
 def _verify(raw: bytes, header: str, secret: str) -> bool:
@@ -440,7 +490,9 @@ def make_server(store: Store, host: str, port: int, secret: str, tz: str) -> Thr
             except ValueError:
                 self.reply(400, {'error': 'malformed_json'})
                 return
-            samples, unmapped = translate(payload, tz)
+            samples, unmapped, skipped = translate(payload, tz)
+            if skipped:
+                log.info('skipped %d malformed healthkit_samples records', skipped)
             request_id = 'companion:' + hashlib.sha256(raw).hexdigest()  # identical retries are idempotent
             try:
                 # cursor must be a function of the request body, not wall-clock time: the store's own
@@ -462,7 +514,8 @@ def make_server(store: Store, host: str, port: int, secret: str, tz: str) -> Thr
                 log.exception('companion_ingest_error')  # never the payload: no health values logged
                 self.reply(503, {'error': 'storage_unavailable'})
                 return
-            self.reply(200, {'accepted': True, 'upserted': upserted, 'unmapped_types': sorted(unmapped)})
+            self.reply(200, {'accepted': True, 'upserted': upserted, 'unmapped_types': sorted(unmapped),
+                             'skipped': skipped})
 
         def do_GET(self):  # noqa: N802
             self.reply(404, {'error': 'not_found'})
