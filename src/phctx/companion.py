@@ -419,6 +419,10 @@ class _Server(ThreadingHTTPServer):
 
 def make_server(store: Store, host: str, port: int, secret: str, tz: str) -> ThreadingHTTPServer:
     store.register_source(SOURCE_ID, SOURCE_LABEL, 'durable')
+    # One ingest at a time: the app retries a request its 30 s timeout gave up on while the first copy is still
+    # writing; unserialized, the retry waited out the store's busy timeout and got 503. Serialized, it waits for the
+    # first copy and replays its committed result (same request_id).
+    writing = threading.Lock()
 
     class Handler(BaseHTTPRequestHandler):
         server_version = 'phctx-companion/1'
@@ -500,11 +504,12 @@ def make_server(store: Store, host: str, port: int, secret: str, tz: str) -> Thr
                 # byte-identical retry needs a byte-identical cursor to be recognized as a replay
                 # rather than an "idempotency_conflict".
                 upserted = 0  # the store takes at most 5000 samples a page; the reply comes only after every page
-                for i in range(0, len(samples), 5000):
-                    result = store.ingest_batch(request_id=f'{request_id}:{i}', source_id=SOURCE_ID,
-                                               samples=samples[i:i + 5000], deleted_ids=[], cursor=request_id,
-                                               coverage={'kind': 'life_dashboard_companion_webhook'})
-                    upserted += result['upserted']
+                with writing:
+                    for i in range(0, len(samples), 5000):
+                        result = store.ingest_batch(request_id=f'{request_id}:{i}', source_id=SOURCE_ID,
+                                                   samples=samples[i:i + 5000], deleted_ids=[], cursor=request_id,
+                                                   coverage={'kind': 'life_dashboard_companion_webhook'})
+                        upserted += result['upserted']
             except StoreError as e:
                 log.info('store_error %s after %d/%d samples', e.code, upserted, len(samples))
                 status = 503 if e.code in {'storage_busy', 'storage_unavailable'} else 422

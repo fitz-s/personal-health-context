@@ -4,6 +4,7 @@ import hmac
 import json
 import tempfile
 import threading
+import time
 import unittest
 import urllib.error
 import urllib.request
@@ -53,6 +54,41 @@ class CompanionTests(unittest.TestCase):
 
     def tearDown(self):
         self.tmp.cleanup()
+
+    def test_a_retry_arriving_while_the_first_copy_is_writing_waits_and_replays(self):
+        """Live: the app timed out after 30 s on a large first sync and re-sent it while the first copy still held the
+        write lock; the retry got 503 storage_busy. Both copies must now succeed, the data stored once."""
+        from unittest import mock
+        real, gate = self.store.ingest_batch, threading.Event()
+        inside, peak, count = [0], [0], threading.Lock()
+
+        def slow(**kw):  # the first copy stays inside ingest until the retry has arrived
+            with count:
+                inside[0] += 1
+                peak[0] = max(peak[0], inside[0])
+            try:
+                gate.wait(5)
+                return real(**kw)
+            finally:
+                with count:
+                    inside[0] -= 1
+        payload = {'steps': [{'uuid': 'SYNTHETIC-retry', 'start_time': '2026-09-20T08:00:00-05:00',
+                              'end_time': '2026-09-20T08:10:00-05:00', 'count': 5, 'source': 'SYNTHETIC'}]}
+        out = []
+        with mock.patch.object(self.store, 'ingest_batch', side_effect=slow):
+            first = threading.Thread(target=lambda: out.append(self.post(payload).status))
+            first.start()
+            time.sleep(0.3)
+            second = threading.Thread(target=lambda: out.append(self.post(payload).status))
+            second.start()
+            time.sleep(0.3)
+            gate.set()
+            first.join(5), second.join(5)
+        self.assertEqual(sorted(out), [200, 200])
+        self.assertEqual(peak[0], 1)  # the retry waited for the first copy instead of racing it for the write lock
+        with self.store.connect() as c:
+            self.assertEqual(c.execute("SELECT count(*) FROM observations WHERE native_id='SYNTHETIC-retry'")
+                             .fetchone()[0], 1)
 
     def post(self, payload, *, secret=SECRET, header=True):
         body = json.dumps(payload).encode()
