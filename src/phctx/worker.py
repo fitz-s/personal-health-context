@@ -16,6 +16,7 @@ from datetime import datetime, timedelta, timezone
 from . import extract, model
 from .config import Config
 from .store import Store, StoreError, dump, utc_in, utcnow
+from .tools import ToolContext, Tools
 
 log = logging.getLogger('phctx.worker')
 LEASE_SECONDS = 1800
@@ -159,30 +160,206 @@ def calls_today(store: Store) -> int:
                          (start,)).fetchone()[0]
 
 
-def task_text(store: Store, job: dict) -> str:
+PACKET_CHARS = 60_000  # ≈15–20k tokens: the fixed context; everything else the model retrieves with tools
+MEANING = {'pending': 'queued, not yet shown to the user', 'delivered': 'shown to the user',
+           'dismissed': 'shown, dismissed by the user', 'stale': 'withdrawn before showing: its evidence changed',
+           'expired': 'expired unshown'}
+
+
+def _cut(text: str, n: int) -> str:
+    return text if len(text) <= n else text[:n] + f'…[truncated: {n} of {len(text)} chars]'
+
+
+def _section(title: str, items: list, cap: int, empty: str) -> str:
+    """One packet section: JSON lines up to `cap` chars, then an explicit marker naming what was left out."""
+    lines, used = [], 0
+    for i, item in enumerate(items):
+        line = dump(item)
+        if used + len(line) > cap:
+            lines.append(f'[{len(items) - i} more omitted for the packet budget; retrieve them with tools]')
+            break
+        lines.append(line)
+        used += len(line)
+    return f'## {title}\n' + ('\n'.join(lines) if lines else empty)
+
+
+def _record(c, rid: str) -> dict | None:
+    row = c.execute('SELECT id, kind, text, occurred_at, timezone, payload_json, supersedes FROM records WHERE id=?',
+                    (rid,)).fetchone()
+    if not row:
+        return None
+    out = {'id': row['id'], 'kind': row['kind'], 'occurred_at': row['occurred_at'], 'text': _cut(row['text'], 1500)}
+    payload = {k: v for k, v in json.loads(row['payload_json']).items() if k != 'synthetic'}
+    if payload:
+        out['payload'] = payload if len(dump(payload)) <= 800 else _cut(dump(payload), 800)
+    if row['supersedes']:
+        old = c.execute('SELECT text FROM records WHERE id=?', (row['supersedes'],)).fetchone()
+        out['revises'] = {'id': row['supersedes'], 'text': _cut(old['text'], 600) if old else None,
+                          'insights_citing_it': _citing(c, row['supersedes'])}
+    return out
+
+
+def _citing(c, ref: str) -> list[dict]:
+    """Insights (and shadow candidates) that already cite `ref`: novelty is a lookup, not a guess."""
+    return [dict(r) for r in c.execute(
+        "SELECT i.id, i.state FROM insights i, json_each(i.payload_json, '$.evidence_ids') e WHERE e.value=? "
+        "UNION ALL SELECT s.id, 'shadow' FROM shadow_insights s, json_each(s.payload_json, '$.evidence_ids') e "
+        'WHERE e.value=?', (ref, ref))]
+
+
+def _stats(c, source: str, metric: str, lo: str, hi: str) -> dict:
+    row = c.execute('SELECT count(*) n, round(avg(value_num), 2) mean, min(value_num) min, max(value_num) max, '
+                    'min(start_at) first, max(start_at) last, group_concat(DISTINCT unit) unit '
+                    'FROM canonical_observations WHERE source_id=? AND metric=? AND start_at>=? AND start_at<=?',
+                    (source, metric, lo, hi)).fetchone()
+    return dict(row) if row['n'] else {'n': 0}
+
+
+def _observation_change(c, source: str, detail: dict) -> dict:
+    """Deterministic before/after for one ingested batch: per-sample stats of the batch window against the 28 days
+    before it from the same source, plus every source that reports the metric (device switches show up here)."""
+    lo, hi = detail['start'], detail['end']
+    base = (datetime.fromisoformat(lo) - timedelta(days=28)).isoformat(timespec='microseconds')
+    metrics = []
+    for m in detail.get('metrics', [])[:8]:
+        metrics.append({'metric': m, 'new_window': _stats(c, source, m, lo, hi),
+                        'previous_28_days_same_source': _stats(c, source, m, base, lo),
+                        'all_sources_for_metric': [dict(r) for r in c.execute(
+                            'SELECT source_id, unit, n, first_at, last_at FROM observation_catalog WHERE metric=?',
+                            (m,))]})
+    return {'source_id': source, 'window': [lo, hi], 'upserted': detail.get('upserted'),
+            'deleted': detail.get('deleted'), 'metrics': metrics,
+            'note': 'Per-sample statistics, not daily totals; the baseline window ends where the new one starts.'}
+
+
+def _trigger(c, ev: dict):
+    if ev['entity'] == 'record':
+        return {'change': 'record', 'record': _record(c, ev['id']), 'already_cited_by': _citing(c, ev['id'])}
+    if ev['entity'] == 'observations' and isinstance(ev['detail'], dict):
+        return {'change': 'observations', **_observation_change(c, ev['id'], ev['detail'])}
+    if ev['entity'] == 'extraction':
+        obj = c.execute('SELECT filename, mime FROM objects WHERE sha256=?', (ev['id'],)).fetchone()
+        return {'change': 'extraction', 'object_sha256': ev['id'], 'filename': obj and obj['filename'],
+                'pages': c.execute('SELECT count(*) FROM object_pages WHERE object_sha=?', (ev['id'],)).fetchone()[0],
+                'records': [r[0] for r in c.execute('SELECT id FROM active_records WHERE object_sha=?', (ev['id'],))]}
+    return {'change': ev['entity'], 'id': ev['id'], 'detail': ev['detail']}
+
+
+def _insight(row, shadow: bool = False) -> dict:
+    p = json.loads(row['payload_json'])
+    out = {'id': row['id'], 'question_id': row['question_id'], 'created_at': row['created_at'],
+           **{k: _cut(p[k], 600) for k in ('topic', 'what_changed', 'next_step') if p.get(k)},
+           'evidence_ids': p.get('evidence_ids', [])}
+    if shadow:
+        out['state'] = 'shadow: recorded by an earlier background run, never shown (counts as already produced)'
+    else:
+        out['state'] = f'{row["state"]} ({MEANING.get(row["state"], row["state"])})'
+        if row['delivered_at']:
+            out['delivered_at'] = row['delivered_at']
+    return out
+
+
+def _sources(c, now: datetime) -> list[dict]:
+    out = []
+    for r in c.execute('SELECT id, label, state, last_success_at, latest_sample_at FROM sources '
+                       "WHERE id != 'user' ORDER BY id"):
+        row = dict(r)
+        if r['latest_sample_at']:
+            row['days_since_latest_sample'] = round((now - datetime.fromisoformat(r['latest_sample_at']))
+                                                    .total_seconds() / 86400, 1)
+        out.append(row)
+    return out
+
+
+def packet(store: Store, job: dict, now: datetime | None = None) -> str:
+    """The fixed context of one investigation, assembled deterministically and bounded: the question and its history,
+    what the user was already told, preferences, source health and the concrete changes that triggered the job, with
+    before/after numbers. The model retrieves anything else with its read-only tools."""
+    now = now or _now()
     p = json.loads(job['payload_json'])
+    prefs = store.preferences()
+    store.pending_insights()  # closes pending insights whose evidence changed, so "already surfaced" is current
+    parts = [f'# Background investigation packet\nNow: {now.isoformat(timespec="seconds")}. Job: {job["type"]}. '
+             'Assembled from the local store just now; each section is complete unless it says it was truncated.']
+    with store.connect() as c:
+        last = c.execute("SELECT max(created_at) FROM insights WHERE state IN('pending','delivered')").fetchone()[0]
+        hours = 168 if prefs['proactivity'] == 'quiet' else 72
+        attention = {'proactivity': prefs['proactivity'],
+                     'meaning': {'normal': 'the user accepts occasional proactive messages',
+                                 'quiet': 'the user asked to be interrupted less: a higher bar',
+                                 'off': 'the user turned proactive messages off'}.get(prefs['proactivity']),
+                     'last_insight_queued_or_shown_at': last,
+                     'attention_budget': f'at most one proactive message per {hours} h (enforced by the gate)'}
+        if job['type'] == 'revisit':
+            qid = p['question_id']
+            q = _record(c, qid) or {'id': qid, 'text': '(missing)'}
+            parts.append('## Question\n' + dump(q))
+            analyses = [store._decorate(c, r) for r in c.execute(
+                "SELECT * FROM active_records WHERE kind='analysis' AND (json_extract(payload_json, '$.question_id')=? "
+                'OR id IN (SELECT record_id FROM evidence_links WHERE evidence_id=?)) ORDER BY occurred_at DESC',
+                (qid, qid))]
+            parts.append(_section('Prior analyses of this question (newest first)', [
+                {'id': a['id'], 'occurred_at': a['occurred_at'], 'text': _cut(a['text'], 2000),
+                 'revisit_when': a['payload'].get('revisit_when'),
+                 'evidence': a.get('evidence')} for a in analyses], 12_000, 'None: this question was never analysed.'))
+            told = [_insight(r) for r in c.execute('SELECT * FROM insights WHERE question_id=? ORDER BY created_at DESC',
+                                                   (qid,))]
+            told += [_insight(r, True) for r in c.execute(
+                'SELECT * FROM shadow_insights WHERE question_id=? ORDER BY created_at DESC', (qid,))]
+            parts.append(_section('Already surfaced on this question', told, 8_000,
+                                  'Nothing has been surfaced on this question.'))
+            others = [_insight(r) for r in c.execute(
+                'SELECT * FROM insights WHERE question_id IS NOT ? ORDER BY created_at DESC LIMIT 5', (qid,))]
+            parts.append(_section('Most recent insights on other topics', others, 3_000, 'None.'))
+        else:
+            qs = open_questions(store)
+            parts.append(_section('Open questions', [{'id': q['id'], 'text': _cut(q['text'], 400),
+                                                      'asked_at': q['created_at'],
+                                                      **{k: q['payload'][k] for k in ('outcome', 'watch_terms',
+                                                                                     'watch_metrics')
+                                                         if k in q['payload']}} for q in qs], 8_000, 'None.'))
+            goals = [_record(c, r[0]) for r in c.execute(
+                "SELECT id FROM active_records WHERE kind='routine' ORDER BY occurred_at DESC LIMIT 20")]
+            parts.append(_section('Current routines and goals', goals, 5_000, 'None recorded.'))
+            told = [_insight(r) for r in c.execute('SELECT * FROM insights ORDER BY created_at DESC LIMIT 15')]
+            told += [_insight(r, True) for r in c.execute(
+                'SELECT * FROM shadow_insights ORDER BY created_at DESC LIMIT 15')]
+            parts.append(_section('Already surfaced (all topics, newest first)', told, 8_000, 'Nothing yet.'))
+            parts.append(_section('Recent analyses (newest first)', [
+                {'id': a['id'], 'occurred_at': a['occurred_at'], 'question_id': a['payload'].get('question_id'),
+                 'text': _cut(a['text'], 800)} for a in (store._decorate(c, r) for r in c.execute(
+                     "SELECT * FROM active_records WHERE kind='analysis' ORDER BY occurred_at DESC LIMIT 10"))],
+                6_000, 'None.'))
+            p = {'evidence': [{'seq': r['seq'], 'entity': r['entity'], 'id': r['entity_id'],
+                               'detail': json.loads(r['detail']) if r['detail'].startswith('{') else r['detail']}
+                              for r in c.execute("SELECT * FROM changes WHERE seq>? AND seq<=? AND entity IN "
+                                                 "('record','observations','extraction') ORDER BY seq DESC LIMIT 50",
+                                                 (p['since_seq'], p['through_seq']))]}
+        parts.append('## User preferences and attention\n' + dump(attention))
+        parts.append(_section('Source status (sync health, not health data)', _sources(c, now), 5_000,
+                              'No device or vendor sources are connected.'))
+        parts.append(_section('Passive data available (observation catalog)', [dict(r) for r in c.execute(
+            'SELECT source_id, metric, unit, n, first_at, last_at FROM observation_catalog ORDER BY n DESC')],
+            4_000, 'No observations stored.'))
+        used = sum(map(len, parts))
+        parts.append(_section('What changed since the last look (the trigger of this job)',
+                              [_trigger(c, ev) for ev in p['evidence']], max(4_000, PACKET_CHARS - used),
+                              'No change descriptors.'))
     if job['type'] == 'revisit':
-        q = store.get_records([p['question_id']])['records']
-        qtext = q[0]['text'] if q else '(missing)'
-        return (f'Revisit open question {p["question_id"]}: "{qtext}".\n'
-                f'New evidence since the last look (change descriptors, read the actual data with tools): '
-                f'{dump(p["evidence"])[:6000]}\n'
-                'Read the question, any prior analyses that cite it (search analyses mentioning its id), and the new '
-                'evidence. Surface only if the new evidence changes the answer, makes it answerable, contradicts a '
-                'prior analysis, or shows passive data cannot answer it and a specific measurement would. '
-                f'Set question_id to {p["question_id"]} when surfacing.')
-    return ('Periodic broad review for unknown unknowns and measurement gaps across all permitted local data. '
-            f'Changes window seq {p["since_seq"]}..{p["through_seq"]}. Default to silence unless a finding has '
-            'concrete decision value and is not a repeat of anything already surfaced.')
+        parts.append(f'If you surface, set question_id to {p["question_id"]}.')
+    return '\n\n'.join(parts)
 
 
 def execute(store: Store, cfg: Config, job: dict, owner: str, config_path: str,
-            scripted=None) -> dict:
+            scripted=None, traces: list | None = None) -> dict:
+    """`traces` (callers in code only, e.g. the eval harness) receives each model call's candidate or error with its
+    tool trace; run_once's return value, which the CLI prints, never carries them."""
     backend = cfg.model_backend if cfg.model_enabled else 'none'
     call_id = 'mc_' + uuid.uuid4().hex
     started = utcnow()
     since = store.generation()  # evidence that changes after this point cannot have been seen by this run
     prompt_sha = hashlib.sha256(model.background_prompt().encode()).hexdigest()
+    task = None
     try:
         if backend == 'none':
             raise model.ModelError('model_disabled')
@@ -191,9 +368,14 @@ def execute(store: Store, cfg: Config, job: dict, owner: str, config_path: str,
         with store.transaction() as c:
             c.execute('INSERT INTO model_calls VALUES(?,?,?,?,?,?,NULL,?,NULL,NULL)',
                       (call_id, job['id'], backend, cfg.model_id or backend, prompt_sha, started, 'running'))
-        result = model.investigate(backend, cfg.model_id, task_text(store, job), config_path=config_path,
-                                   scripted=scripted, file_auth=cfg.codex_file_auth)
+        tools = Tools(ToolContext(store=store, profile='readonly')) if backend == 'router' else None
+        task = packet(store, job)
+        result = model.investigate(backend, cfg.model_id, task, config_path=config_path,
+                                   scripted=scripted, file_auth=cfg.codex_file_auth, tools=tools,
+                                   reasoning_effort=cfg.model_reasoning_effort)
     except model.ModelError as e:
+        if traces is not None:
+            traces.append({'job': job['dedupe_key'], 'task': task, 'error': e.code, 'trace': e.trace})
         attempts = job['attempts'] + 1
         delay = min(3600 * 24, 900 * 2 ** attempts)
         final = e.code not in {'model_disabled', 'budget_exhausted'} and attempts >= MAX_ATTEMPTS
@@ -210,6 +392,8 @@ def execute(store: Store, cfg: Config, job: dict, owner: str, config_path: str,
     with store.transaction() as c:
         c.execute("UPDATE model_calls SET finished_at=?, status='done', model_id=? WHERE id=?",
                   (utcnow(), result.model_id, call_id))
+    if traces is not None:
+        traces.append({'job': job['dedupe_key'], 'task': task, 'candidate': result.candidate, 'trace': result.trace})
 
     def finish(c) -> None:
         """Complete only while this worker still owns the job. Evidence merged in during the run re-queues it, due
@@ -247,7 +431,7 @@ def execute(store: Store, cfg: Config, job: dict, owner: str, config_path: str,
     return {'job': job['dedupe_key'], 'outcome': cand['decision'], 'gate': gate, 'tool_calls': len(result.trace)}
 
 
-def run_once(cfg: Config, config_path: str | None = None, scripted=None) -> dict:
+def run_once(cfg: Config, config_path: str | None = None, scripted=None, traces: list | None = None) -> dict:
     store = Store(cfg.root, cfg.profile)
     owner = 'w_' + uuid.uuid4().hex
     if not acquire(store, 'worker', owner):
@@ -268,7 +452,8 @@ def run_once(cfg: Config, config_path: str | None = None, scripted=None) -> dict
             # Recover jobs whose worker died mid-run.
             c.execute("UPDATE jobs SET state='queued', lease_owner=NULL WHERE state='running' AND lease_expires_at<?",
                       (utcnow(),))
-        results = [execute(store, cfg, j, owner, config_path or str(cfg.source or ''), scripted) for j in due]
+        results = [execute(store, cfg, j, owner, config_path or str(cfg.source or ''), scripted, traces)
+                   for j in due]
         summary['jobs'] = results
         surfaced = sum(1 for r in results if r.get('gate', {}).get('queued'))
         calls = sum(1 for r in results if r['outcome'] in {'silence', 'surface'})

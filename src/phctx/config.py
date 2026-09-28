@@ -9,7 +9,7 @@ from pathlib import Path
 
 CONFIG_DIR = Path(os.environ.get('PHCTX_CONFIG_DIR', '~/.config/phctx')).expanduser()
 DEFAULT_ROOT = Path('~/Library/Application Support/PersonalHealthContext').expanduser()
-BACKENDS = {'none', 'codex_cli'}  # production-selectable; `scripted` is a test double passed in code only
+BACKENDS = {'none', 'codex_cli', 'router'}  # production-selectable; `scripted` is a test double passed in code only
 
 
 class ConfigError(ValueError):
@@ -29,6 +29,7 @@ class Config:
     model_enabled: bool = False
     model_backend: str = 'none'
     model_id: str = ''
+    model_reasoning_effort: str = 'medium'
     model_keychain_service: str = 'phctx-openai'
     daily_call_cap: int = 12
     worker_mode: str = 'shadow'
@@ -75,6 +76,7 @@ def load(path: Path | None = None) -> Config:
         raise ConfigError('[model] daily_budget_usd is not enforced (model cost is unknown); remove it and use '
                           'daily_call_cap.')
     cfg.model_id = model.get('model_id', '')
+    cfg.model_reasoning_effort = model.get('reasoning_effort', cfg.model_reasoning_effort)
     cfg.model_keychain_service = model.get('api_key_keychain_service', cfg.model_keychain_service)
     cfg.daily_call_cap = int(model.get('daily_call_cap', cfg.daily_call_cap))
     cfg.worker_mode = worker.get('mode', cfg.worker_mode)

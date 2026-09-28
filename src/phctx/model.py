@@ -4,6 +4,8 @@ Backends:
 - `none`       — no model configured: the worker still schedules and records, but never claims reasoning ran.
 - `codex_cli`  — the user's own authorized Codex CLI login (ChatGPT account), strong model, tools = this
                  project's MCP server over stdio in the READ-ONLY profile. No new paid service.
+- `router`     — the local OpenAI-compatible router (loopback only; key from the Keychain), a bounded tool-use loop
+                 that calls this project's read-only tools in-process.
 - `scripted`   — deterministic test double passed in code (config.load rejects it as a production backend).
 
 Every backend returns a candidate dict matching contracts/insight_candidate.schema.json or raises ModelError.
@@ -16,11 +18,17 @@ import os
 import shutil
 import subprocess
 import tempfile
+import time
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 import jsonschema
+
+from .config import keychain_get
+from .store import dump
 
 ROOT = Path(__file__).resolve().parents[2]
 CANDIDATE_SCHEMA = json.loads((ROOT / 'contracts' / 'insight_candidate.schema.json').read_text())
@@ -182,8 +190,120 @@ def normalize(raw: dict) -> dict:
     return c
 
 
+ROUTER_URL = 'http://127.0.0.1:20128/v1/chat/completions'
+ROUTER_KEY = 'phctx-router-key'  # Keychain service (account phctx); read per call, never stored or logged
+RETRY = {429, 500, 502, 503, 504}
+
+
+def _post(body: dict, key: str, timeout: float) -> dict:
+    """One chat/completions call. Loopback only, so never through an HTTP(S)_PROXY."""
+    req = urllib.request.Request(ROUTER_URL, json.dumps(body).encode(),
+                                 {'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json'})
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    for attempt in range(3):
+        try:
+            with opener.open(req, timeout=timeout) as r:
+                return json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            if e.code not in RETRY or attempt == 2:
+                raise ModelError('model_quota_exhausted' if e.code == 429 else 'model_call_failed') from None
+        except (urllib.error.URLError, TimeoutError, ValueError):
+            if attempt == 2:
+                raise ModelError('model_call_failed') from None
+        time.sleep(5 * 2 ** attempt)
+    raise AssertionError('unreachable')
+
+
+def run_router(system: str, user: str, *, model_id: str, reasoning_effort: str, tools=None,
+               parse: Callable[[str], Any] | None = None, max_turns: int = 12, max_seconds: float = 480,
+               max_tokens: int = 400_000, result_cap: int = 12_000) -> tuple[Any, list[dict]]:
+    """Bounded tool-use loop. `tools` (a phctx.tools.Tools) lists and enforces what the model may call; its profile is
+    the permission. Past max_turns, 80% of max_seconds or max_tokens the model gets one last turn with tools off.
+    `parse` turns the final text into the result; a ModelError from it earns one repair turn. Returns (result, trace):
+    every model turn with its token usage and every tool call with its arguments and truncated result."""
+    key = keychain_get(ROUTER_KEY)
+    if not key:
+        raise ModelError('router_key_missing')
+    specs = [{'type': 'function', 'function': {'name': t['name'], 'description': t['description'],
+                                               'parameters': t['inputSchema']}} for t in tools.listed()] if tools else []
+    messages: list[dict] = [{'role': 'system', 'content': system}, {'role': 'user', 'content': user}]
+    trace: list[dict] = []
+    used = turns = 0
+    start = time.monotonic()
+    last = repaired = False
+    while True:
+        left = max_seconds - (time.monotonic() - start)
+        if left <= 0:
+            raise ModelError('model_timeout', trace)
+        body: dict = {'model': model_id, 'messages': messages, 'reasoning_effort': reasoning_effort}
+        if specs:
+            body.update(tools=specs, tool_choice='none' if last else 'auto')
+        try:
+            r = _post(body, key, min(left, 300))
+        except ModelError as e:
+            raise ModelError(e.code, trace) from None
+        usage = r.get('usage') or {}
+        used += usage.get('total_tokens') or 0
+        msg = ((r.get('choices') or [{}])[0]).get('message') or {}
+        calls = [] if last else msg.get('tool_calls') or []
+        trace.append({'turn': len([t for t in trace if 'turn' in t]), 'prompt_tokens': usage.get('prompt_tokens', 0),
+                      'completion_tokens': usage.get('completion_tokens', 0), 'tool_calls': len(calls)})
+        if calls:
+            messages.append({'role': 'assistant', 'content': msg.get('content'), 'tool_calls': calls})
+            for call in calls:
+                name, raw = call['function']['name'], call['function'].get('arguments') or '{}'
+                try:
+                    args = json.loads(raw)
+                except ValueError:
+                    args, res = raw, None
+                else:
+                    res = tools.call(name, args)
+                data = res.data if res else {'error': 'invalid_arguments', 'message': 'arguments must be a JSON object'}
+                text = dump(data)
+                if len(text) > result_cap:
+                    text = (text[:result_cap] + f'…[truncated: {result_cap} of {len(text)} chars shown; narrow the '
+                            'query, select fewer columns or page]')
+                messages.append({'role': 'tool', 'tool_call_id': call['id'], 'content': text})
+                trace.append({'tool': name, 'arguments': args, 'is_error': res is None or res.is_error,
+                              'result_text': text})
+            turns += 1
+            if turns >= max_turns or used >= max_tokens or time.monotonic() - start > 0.8 * max_seconds:
+                last = True
+                messages.append({'role': 'user', 'content': 'Investigation budget reached. Tools are now off: give '
+                                                            'your final answer from what you have read.'})
+            continue
+        text = msg.get('content') or ''
+        if parse is None:
+            return text, trace
+        try:
+            return parse(text), trace
+        except ModelError as e:
+            if repaired:
+                raise ModelError(e.code, trace) from None
+            repaired = last = True
+            why = getattr(e.__cause__, 'message', e.code)
+            messages += [{'role': 'assistant', 'content': text},
+                         {'role': 'user', 'content': f'That reply is not a valid candidate ({why}). Reply with only '
+                                                     'the JSON object.'}]
+
+
+def parse_candidate(text: str) -> dict:
+    """The final reply is the candidate JSON, optionally inside one code fence."""
+    body = text.strip()
+    if body.startswith('```'):
+        body = body.strip('`').removeprefix('json').strip()
+    try:
+        raw = json.loads(body)
+    except ValueError:
+        raise ModelError('candidate_not_json') from None
+    if not isinstance(raw, dict):
+        raise ModelError('candidate_not_json')
+    return validate_candidate(normalize(raw))
+
+
 def investigate(backend: str, model_id: str, task: str, *, config_path: str,
-                scripted: Callable[[str], dict] | None = None, file_auth: Path | None = None) -> Call:
+                scripted: Callable[[str], dict] | None = None, file_auth: Path | None = None, tools=None,
+                reasoning_effort: str = 'medium') -> Call:
     prompt = background_prompt() + '\n\n## This run\n' + task + (
         '\n\nUse the phctx tools (read-only) to inspect evidence. Return ONLY the JSON candidate.')
     digest = hashlib.sha256(prompt.encode()).hexdigest()
@@ -199,4 +319,8 @@ def investigate(backend: str, model_id: str, task: str, *, config_path: str,
         except ValueError as e:
             raise ModelError('candidate_not_json') from e
         return Call('codex_cli', model_id, digest, validate_candidate(cand), trace)
+    if backend == 'router':
+        cand, trace = run_router(background_prompt(), task, model_id=model_id, reasoning_effort=reasoning_effort,
+                                 tools=tools, parse=parse_candidate)
+        return Call('router', model_id, digest, cand, trace)
     raise ModelError('model_disabled')
