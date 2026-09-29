@@ -19,14 +19,16 @@ OUTCOME = {
     'knee': ['膝', 'knee'], 'iron': ['铁', 'ferritin', 'iron'],
 }
 METHODS = {
-    'muscle': ['围度', '体成分', 'dexa', 'dxa', '生物电阻抗', 'bia', 'circumference', 'body composition', '皮褶'],
+    'muscle': ['围度', '臂围', '腿围', '腰围', '皮尺', '体成分', 'dexa', 'dxa', '生物电阻抗', 'bia', 'circumference', 'girth',
+               'tape', 'body composition', '皮褶'],
     'bp': ['家庭血压', '家用血压', '血压计', '居家血压', 'home blood pressure', 'blood pressure log', '24小时动态血压', 'ambulatory',
            '一组血压', '多次血压', '早晚', '连续几天', '连续一周', 'twice daily', 'several days'],
     'posture': ['p1', '照片', '拍照', '复拍', 'photo', '体态评估', '姿势评估', 'reassessment'],
     'fat': ['腰围', '体脂', '皮褶', 'dexa', 'dxa', '体成分', 'waist', 'body composition', 'bia', '生物电阻抗'],
     'strength': ['1rm', '3rm', '5rm', '测试', '同一动作', '同协议', 'test', 'same protocol', '力量测试'],
     'glucose': ['空腹血糖', 'hba1c', '糖化', '同一实验室', '复查', 'fasting glucose', 'retest', 'cgm'],
-    'vo2': ['vo2', '最大摄氧', '跑步测试', '计时跑', '同一路线', 'time trial', '心率-配速', 'cooper', '场地测试'],
+    'vo2': ['vo2', '最大摄氧', '跑步测试', '计时跑', '同一路线', '固定路线', '熟悉路线', '同一平坦路线', 'time trial', '心率-配速',
+            'cooper', '场地测试', 'same route', 'fixed route'],
     'sleep': ['睡眠日记', 'sleep diary', '日记', '主观', '量表', '每天记录', '每天简短记录', '每日记录', '记录入睡', 'isi'],
     'mood': ['量表', 'phq', '情绪日记', 'mood log', '日记', '评分', '0–10', '0-10', '每天记录', '每日记录'],
     'lipids': ['血脂', 'ldl', '胆固醇', '复查', '同一实验室', 'lipid panel', 'retest'],
