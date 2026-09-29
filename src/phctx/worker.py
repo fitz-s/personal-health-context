@@ -377,9 +377,12 @@ def packet(store: Store, job: dict, now: datetime | None = None) -> str:
              'Assembled from the local store just now; each section is complete unless it says it was truncated.',
              JOBS[job['type']], SCHEMA]
     with store.connect() as c:
+        dated = upcoming(c, now, open_questions(store))
         last = c.execute("SELECT max(created_at) FROM insights WHERE state IN('pending','delivered')").fetchone()[0]
         hours = 168 if prefs['proactivity'] == 'quiet' else 72
         spent = bool(last) and now - datetime.fromisoformat(last) < timedelta(hours=hours)
+        quiet_gap = 'allowed' if any(e['days_until'] <= 14 for e in dated) else \
+            'not allowed: no dated event within 14 days in the user\'s records'
         attention = {'proactivity': prefs['proactivity'],
                      'meaning': {'normal': 'the user accepts occasional proactive messages',
                                  'quiet': 'the user asked to be interrupted less: surface only a direct answer to their '
@@ -391,6 +394,8 @@ def packet(store: Store, job: dict, now: datetime | None = None) -> str:
                      'last_insight_queued_or_shown_at': last,
                      'attention_budget': f'at most one proactive message per {hours} h (enforced by the gate)',
                      'budget_available_now': not spent}
+        if prefs['proactivity'] == 'quiet':
+            attention['measurement_gap_under_quiet'] = quiet_gap
         if job['type'] == 'revisit':
             qid = p['question_id']
             q = _record(c, qid) or {'id': qid, 'text': '(missing)'}
@@ -413,11 +418,12 @@ def packet(store: Store, job: dict, now: datetime | None = None) -> str:
                 added = [dict(r) for r in c.execute(
                     'SELECT source_id, metric, count(*) n, min(start_at) first, max(start_at) last FROM '
                     'canonical_observations WHERE start_at > ? GROUP BY source_id, metric ORDER BY n DESC LIMIT 20', (at,))]
+                cond = analyses[0]['payload'].get('revisit_when')
                 parts.append(_section(f'Since the newest analysis ({at[:10]}): records written', since, 5_000, 'None.')
                              + '\n' + _section('Since the newest analysis: passive samples added', added, 3_000, 'None.')
-                             + '\nCompare these with the analysis text itself: does anything here meet a condition it '
-                             'set (a named repeat, a date, a number of weeks), or show that the data accumulating since '
-                             'cannot answer the question?')
+                             + (f'\nThe newest analysis set a revisit condition: "{cond}" (its text may say more).'
+                                if cond else '\nThe newest analysis set no revisit condition field; read its text '
+                                'for one before assuming there is none.'))
             told = [_insight(r) for r in c.execute('SELECT * FROM insights WHERE question_id=? ORDER BY created_at DESC',
                                                    (qid,))]
             told += [_insight(r, True) for r in c.execute(
@@ -452,7 +458,6 @@ def packet(store: Store, job: dict, now: datetime | None = None) -> str:
                                                  "('record','observations','extraction') ORDER BY seq DESC LIMIT 50",
                                                  (p['since_seq'], p['through_seq']))]}
         parts.append('## User preferences and attention\n' + dump(attention))
-        dated = upcoming(c, now, open_questions(store))
         parts.append(_section(f'Upcoming dated events in the user\'s records (next {UPCOMING_DAYS} days)', dated,
                               4_000, f'None: no record names a date in the next {UPCOMING_DAYS} days.'))
         parts.append(_section('Source status (sync health, not health data)', _sources(c, now), 5_000,

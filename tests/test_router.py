@@ -90,6 +90,9 @@ class Router(unittest.TestCase):
         with self.assertRaises(model.ModelError) as e:  # well-formed but never returned by a tool: retyped or recalled
             self.run_with([read, reply(json.dumps(unseen)), reply(json.dumps(unseen))])
         self.assertEqual(e.exception.code, 'candidate_evidence_invalid')
+        cut = dict(bad, evidence_ids=[rid[:-1]])  # a truncated copy is a substring of the real id, not the id
+        with self.assertRaises(model.ModelError):
+            self.run_with([read, reply(json.dumps(cut)), reply(json.dumps(cut))])
 
     def test_missing_key_never_calls_the_router(self):
         with patch.object(model, 'keychain_get', return_value=None), patch.object(model, '_post') as post:

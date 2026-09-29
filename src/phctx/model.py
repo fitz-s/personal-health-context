@@ -191,7 +191,7 @@ def normalize(raw: dict) -> dict:
     return c
 
 
-EVIDENCE = re.compile(r'(rec|obs)_[0-9a-f]{32,64}|obj:[0-9a-f]{64}(#p[1-9][0-9]{0,4})?')
+EVIDENCE = re.compile(r'\b(?:(?:rec|obs)_[0-9a-f]{32,64}|obj:[0-9a-f]{64}(?:#p[1-9][0-9]{0,4})?)\b')
 ROUTER_URL = 'http://127.0.0.1:20128/v1/chat/completions'
 ROUTER_KEY = 'phctx-router-key'  # Keychain service (account phctx); read per call, never stored or logged
 RETRY = {429, 500, 502, 503, 504}
@@ -311,7 +311,8 @@ def parse_candidate(text: str, returned: str = '') -> dict:
     for ref, version in list(cand.get('evidence_versions', {}).items()):
         if f'"{ref}":"{version}"' not in returned:
             cand['evidence_versions'].pop(ref)  # retyped wrong, never read: the gate checks current versions anyway
-    if bad := [e for e in cand.get('evidence_ids', []) if not EVIDENCE.fullmatch(e) or e not in returned]:
+    seen = {m[0] for m in EVIDENCE.finditer(returned)}
+    if bad := [e for e in cand.get('evidence_ids', []) if not EVIDENCE.fullmatch(e) or e not in seen]:
         raise ModelError('candidate_evidence_invalid') from ValueError(
             f'evidence_ids must be rec_…, obs_… or obj:… ids copied exactly from tool results of this run; not so: '
             f'{", ".join(bad[:3])}')
