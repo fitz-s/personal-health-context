@@ -317,8 +317,9 @@ def packet(store: Store, job: dict, now: datetime | None = None) -> str:
                      'meaning': {'normal': 'the user accepts occasional proactive messages',
                                  'quiet': 'the user asked to be interrupted less: surface only a direct answer to their '
                                           'own question that the new evidence itself provides, a correction of '
-                                          'something they were shown, or a measurement gap tied to a decision the '
-                                          'records date within about two weeks; everything else is silence',
+                                          'something they were shown, or a measurement gap tied to a choice the user '
+                                          'has said they are making within about two weeks (a revisit time an '
+                                          'analysis set is not such a choice); everything else is silence',
                                  'off': 'the user turned proactive messages off'}.get(prefs['proactivity']),
                      'last_insight_queued_or_shown_at': last,
                      'attention_budget': f'at most one proactive message per {hours} h (enforced by the gate)',
@@ -384,9 +385,10 @@ def packet(store: Store, job: dict, now: datetime | None = None) -> str:
 
 
 def execute(store: Store, cfg: Config, job: dict, owner: str, config_path: str,
-            scripted=None, traces: list | None = None) -> dict:
-    """`traces` (callers in code only, e.g. the eval harness) receives each model call's candidate or error with its
-    tool trace; run_once's return value, which the CLI prints, never carries them."""
+            scripted=None, traces: list | None = None, now: datetime | None = None) -> dict:
+    """`traces` and `now` are for callers in code only (the eval harness): `traces` receives each model call's candidate
+    or error with its tool trace (run_once's return value, which the CLI prints, never carries them); `now` is the
+    packet's clock, so a synthetic scenario dated in the past reads as current."""
     backend = cfg.model_backend if cfg.model_enabled else 'none'
     call_id = 'mc_' + uuid.uuid4().hex
     started = utcnow()
@@ -402,7 +404,7 @@ def execute(store: Store, cfg: Config, job: dict, owner: str, config_path: str,
             c.execute('INSERT INTO model_calls VALUES(?,?,?,?,?,?,NULL,?,NULL,NULL)',
                       (call_id, job['id'], backend, cfg.model_id or backend, prompt_sha, started, 'running'))
         tools = Tools(ToolContext(store=store, profile='readonly')) if backend == 'router' else None
-        task = packet(store, job)
+        task = packet(store, job, now)
         result = model.investigate(backend, cfg.model_id, task, config_path=config_path,
                                    scripted=scripted, file_auth=cfg.codex_file_auth, tools=tools,
                                    reasoning_effort=cfg.model_reasoning_effort)
@@ -464,7 +466,8 @@ def execute(store: Store, cfg: Config, job: dict, owner: str, config_path: str,
     return {'job': job['dedupe_key'], 'outcome': cand['decision'], 'gate': gate, 'tool_calls': len(result.trace)}
 
 
-def run_once(cfg: Config, config_path: str | None = None, scripted=None, traces: list | None = None) -> dict:
+def run_once(cfg: Config, config_path: str | None = None, scripted=None, traces: list | None = None,
+             now: datetime | None = None) -> dict:
     store = Store(cfg.root, cfg.profile)
     owner = 'w_' + uuid.uuid4().hex
     if not acquire(store, 'worker', owner):
@@ -485,7 +488,7 @@ def run_once(cfg: Config, config_path: str | None = None, scripted=None, traces:
             # Recover jobs whose worker died mid-run.
             c.execute("UPDATE jobs SET state='queued', lease_owner=NULL WHERE state='running' AND lease_expires_at<?",
                       (utcnow(),))
-        results = [execute(store, cfg, j, owner, config_path or str(cfg.source or ''), scripted, traces)
+        results = [execute(store, cfg, j, owner, config_path or str(cfg.source or ''), scripted, traces, now)
                    for j in due]
         summary['jobs'] = results
         surfaced = sum(1 for r in results if r.get('gate', {}).get('queued'))

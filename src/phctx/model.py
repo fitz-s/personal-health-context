@@ -221,7 +221,8 @@ def run_router(system: str, user: str, *, model_id: str, reasoning_effort: str, 
                max_tokens: int = 400_000, result_cap: int = 12_000) -> tuple[Any, list[dict]]:
     """Bounded tool-use loop. `tools` (a phctx.tools.Tools) lists and enforces what the model may call; its profile is
     the permission. Past max_turns, 80% of max_seconds or max_tokens the model gets one last turn with tools off.
-    `parse` turns the final text into the result; a ModelError from it earns one repair turn. Returns (result, trace):
+    `parse(text, returned)` turns the final text into the result, `returned` being every tool result text of this run;
+    a ModelError from it earns one repair turn. Returns (result, trace):
     every model turn with its token usage and every tool call with its arguments and truncated result."""
     key = keychain_get(ROUTER_KEY)
     if not key:
@@ -240,16 +241,19 @@ def run_router(system: str, user: str, *, model_id: str, reasoning_effort: str, 
         body: dict = {'model': model_id, 'messages': messages, 'reasoning_effort': reasoning_effort}
         if specs:
             body.update(tools=specs, tool_choice='none' if last else 'auto')
+        sent = time.monotonic()
         try:
             r = _post(body, key, min(left, 300))
         except ModelError as e:
             raise ModelError(e.code, trace) from None
+        waited = round(time.monotonic() - sent, 1)
         usage = r.get('usage') or {}
         used += usage.get('total_tokens') or 0
         msg = ((r.get('choices') or [{}])[0]).get('message') or {}
         calls = [] if last else msg.get('tool_calls') or []
         trace.append({'turn': len([t for t in trace if 'turn' in t]), 'prompt_tokens': usage.get('prompt_tokens', 0),
-                      'completion_tokens': usage.get('completion_tokens', 0), 'tool_calls': len(calls)})
+                      'completion_tokens': usage.get('completion_tokens', 0), 'tool_calls': len(calls),
+                      'seconds': waited})
         if calls:
             messages.append({'role': 'assistant', 'content': msg.get('content'), 'tool_calls': calls})
             for call in calls:
@@ -278,7 +282,7 @@ def run_router(system: str, user: str, *, model_id: str, reasoning_effort: str, 
         if parse is None:
             return text, trace
         try:
-            return parse(text), trace
+            return parse(text, ''.join(t['result_text'] for t in trace if 'tool' in t)), trace
         except ModelError as e:
             if repaired:
                 raise ModelError(e.code, trace) from None
@@ -289,8 +293,9 @@ def run_router(system: str, user: str, *, model_id: str, reasoning_effort: str, 
                                                      'the JSON object.'}]
 
 
-def parse_candidate(text: str) -> dict:
-    """The final reply is the candidate JSON, optionally inside one code fence."""
+def parse_candidate(text: str, returned: str = '') -> dict:
+    """The final reply is the candidate JSON, optionally inside one code fence. Every evidence id must be a stored
+    evidence reference (not a receipt or a name) that a tool returned in this run (not recalled or retyped)."""
     body = text.strip()
     if body.startswith('```'):
         body = body.strip('`').removeprefix('json').strip()
@@ -301,10 +306,13 @@ def parse_candidate(text: str) -> dict:
     if not isinstance(raw, dict):
         raise ModelError('candidate_not_json')
     cand = validate_candidate(normalize(raw))
-    if bad := [e for e in cand.get('evidence_ids', []) if not EVIDENCE.fullmatch(e)]:
-        # A read_receipt, question text or table name is not evidence; the repair turn names what was wrong.
+    for ref, version in list(cand.get('evidence_versions', {}).items()):
+        if f'"{ref}":"{version}"' not in returned:
+            cand['evidence_versions'].pop(ref)  # retyped wrong, never read: the gate checks current versions anyway
+    if bad := [e for e in cand.get('evidence_ids', []) if not EVIDENCE.fullmatch(e) or e not in returned]:
         raise ModelError('candidate_evidence_invalid') from ValueError(
-            f'evidence_ids must be rec_…, obs_… or obj:… ids returned by tools, not {", ".join(bad[:3])}')
+            f'evidence_ids must be rec_…, obs_… or obj:… ids copied exactly from tool results of this run; not so: '
+            f'{", ".join(bad[:3])}')
     return cand
 
 

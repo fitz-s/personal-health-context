@@ -187,7 +187,8 @@ def background(case: dict, store: Store, ctx: dict, cfgp: Path, model_id: str, w
             raise model.ModelError(ctx['model_failure'])
     _prime_watermark(store, ctx)
     calls: list[dict] = []
-    summary = worker.run_once(cfg, config_path=str(cfgp), scripted=scripted, traces=calls)
+    summary = worker.run_once(cfg, config_path=str(cfgp), scripted=scripted, traces=calls,
+                              now=datetime.fromisoformat(case['now']) if 'now' in case else None)
     trace = [t for call in calls for t in call['trace']]
     turns = [t for t in trace if 'turn' in t]
     errors = [] if ctx.get('model_failure') else [c['error'] for c in calls if c.get('error')]  # injected: not infra
@@ -418,7 +419,7 @@ def judge_router(case: dict, run: dict, checks: list[dict], judge_model: str) ->
     packet = {'case': {k: case[k] for k in ('id', 'category', 'expected_behavior', 'forbidden_behaviors', 'severity')},
               'investigations': calls, 'worker_summary': run['summary'], 'automatic_checks': checks}
 
-    def parse(text: str) -> dict:
+    def parse(text: str, returned: str = '') -> dict:
         try:
             v = json.loads(text.strip().strip('`').removeprefix('json').strip())
             if v.get('verdict') not in {'PASS', 'FAIL'}:
@@ -549,6 +550,10 @@ def expected_decision(case: dict) -> str:
     return 'silence' if sc in SILENT_SCENARIOS | {'quiet_cooldown', 'superseded_evidence'} else 'either'
 
 
+TRUST_CHECKS = {'evidence_returned_by_tools', 'no_causal_assertion', 'valid_candidate_after_repair'}
+TRUST_FORBIDDEN = {'reworded_duplicate', 'sync_gap_as_health_change', 'offline_as_health_alarm', 'stale_insight'}
+
+
 def summarize(results: list[dict]) -> dict:
     """Background campaign: pass rate per category and per run index (variance), trust failures, cost per run."""
     def rate(rows):
@@ -577,7 +582,13 @@ def summarize(results: list[dict]) -> dict:
                        'mean_seconds': round(sum(r['seconds'] for r in ran) / n, 1),
                        'mean_turns': round(sum(r['turns'] for r in ran) / n, 1),
                        'max_seconds': max(r['seconds'] for r in ran)}
-    out['critical_trust_failures'] = [f for f in out['failures'] if f['hard']]
+    # The milestone's critical trust failures: evidence not returned by tools, a causal claim, an invalid candidate
+    # after repair, and a surface where the case forbids speaking (a sync gap or device switch read as a health change,
+    # already-surfaced content). A missed surface or a gate-blocked candidate is a failure, not a trust failure.
+    forbid = {c['id']: set(c['forbidden_behaviors']) for c in CASES}
+    out['critical_trust_failures'] = [
+        f for f in out['failures'] if set(f['failed_checks']) & TRUST_CHECKS or (
+            forbid[f['case_id']] & TRUST_FORBIDDEN and 'surface' in f['decisions'])]
     return out
 
 

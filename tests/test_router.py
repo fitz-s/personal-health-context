@@ -77,12 +77,19 @@ class Router(unittest.TestCase):
         self.assertEqual(e.exception.code, 'candidate_schema_invalid')
 
     def test_a_read_receipt_is_not_evidence_and_earns_the_repair_turn(self):
+        rid = self.store.put_record(request_id='SYNTHETIC-r', kind='note', text='SYNTHETIC note',
+                                    occurred_at=AT)['record_id']
         bad = {'decision': 'surface', 'topic': 't', 'why_now': 'w', 'what_changed': 'c', 'unknowns': 'u',
                'next_step': 'n', 'evidence_ids': ['rr_' + 'a' * 32], 'source_policies': ['durable']}
-        good = dict(bad, evidence_ids=['rec_' + 'a' * 32])
-        cand, _ = self.run_with([reply(json.dumps(bad)), reply(json.dumps(good))])
-        self.assertEqual(cand['evidence_ids'], good['evidence_ids'])
-        self.assertIn('rr_' + 'a' * 32, self.sent[1]['messages'][-1]['content'])
+        unseen = dict(bad, evidence_ids=['rec_' + 'a' * 32])
+        good = dict(bad, evidence_ids=[rid])
+        read = reply(calls=[('context_read', {'record_ids': [rid]})])
+        cand, _ = self.run_with([read, reply(json.dumps(bad)), reply(json.dumps(good))])
+        self.assertEqual(cand['evidence_ids'], [rid])
+        self.assertIn('rr_' + 'a' * 32, self.sent[2]['messages'][-1]['content'])
+        with self.assertRaises(model.ModelError) as e:  # well-formed but never returned by a tool: retyped or recalled
+            self.run_with([read, reply(json.dumps(unseen)), reply(json.dumps(unseen))])
+        self.assertEqual(e.exception.code, 'candidate_evidence_invalid')
 
     def test_missing_key_never_calls_the_router(self):
         with patch.object(model, 'keychain_get', return_value=None), patch.object(model, '_post') as post:
