@@ -1,0 +1,345 @@
+{
+ "record": {
+  "case_id": "GC03",
+  "run": 3,
+  "category": "measurement",
+  "split": "dev2",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "复诊临近，主动提示恰当。候选明确指出现有数据无法判断圆肩姿势是否改善，建议按7月相同的P1方法补拍照片，用于复诊时讨论是否继续训练；未声称已完成前后对比，也未将变化归因于训练。",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_c8b8ab83e986422db6bf3fd713e051aa\", \"request_id\": \"worker:job_8dd19a05768a4ce796363c09ebca883b:0:w_8182da382ac449928fbe0265c4b2894d\", \"status\": \"committed\", \"request_hash\": \"47ce6e5b071b8ef88c1e73241e0028cbb59942c91364afe6e463565d13ac0104\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_dff68639cf6840c1af5359d86a6fae38",
+    "hard": true
+   },
+   {
+    "check": "next_step_names_a_method",
+    "ok": true,
+    "detail": "p1,照片",
+    "hard": true
+   },
+   {
+    "check": "gap_names_outcome_and_decision",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-luna",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 29.2,
+  "tool_calls": [
+   "context_bootstrap",
+   "context_read",
+   "context_search",
+   "context_query"
+  ],
+  "error": null,
+  "turns": 3,
+  "tokens": {
+   "prompt": 16294,
+   "completion": 678
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_5148d59fb79347f09b7096983be3f474",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_dff68639cf6840c1af5359d86a6fae38:589ffd3acf522ae8"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_dff68639cf6840c1af5359d86a6fae38:589ffd3acf522ae8",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_c8b8ab83e986422db6bf3fd713e051aa",
+      "request_id": "worker:job_8dd19a05768a4ce796363c09ebca883b:0:w_8182da382ac449928fbe0265c4b2894d",
+      "status": "committed",
+      "request_hash": "47ce6e5b071b8ef88c1e73241e0028cbb59942c91364afe6e463565d13ac0104"
+     },
+     "tool_calls": 7
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_5148d59fb79347f09b7096983be3f474\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_dff68639cf6840c1af5359d86a6fae38:589ffd3acf522ae8\"]}, \"jobs\": [{\"job\": \"revisit:rec_dff68639cf6840c1af5359d86a6fae38:589ffd3acf522ae8\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_c8b8ab83e986422db6bf3fd713e051aa\", \"request_id\": \"worker:job_8dd19a05768a4ce796363c09ebca883b:0:w_8182da382ac449928fbe0265c4b2894d\", \"status\": \"committed\", \"request_hash\": \"47ce6e5b071b8ef88c1e73241e0028cbb59942c91364afe6e463565d13ac0104\"}, \"tool_calls\": 7}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_dff68639cf6840c1af5359d86a6fae38:589ffd3acf522ae8",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by a change matching one open question. The change is either new data about the question or a dated event the user recorded (then the trigger carries `dated_event`). Decide whether the user should hear something about this question now: a new answer, a correction, or, when a dated event on this question is near and the data on record cannot answer it, which measurement would. Otherwise stay silent.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_dff68639cf6840c1af5359d86a6fae38\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"outcome\":\"posture\",\"state\":\"open\",\"watch_metrics\":[\"posture\",\"physio\"],\"watch_terms\":[\"posture\",\"physio\"]},\"text\":\"SYNTHETIC: Is my rounded-shoulder posture improving with the band routine?\"}\n\n## Prior analyses of this question (newest first)\n{\"days_ago\":83,\"evidence_status\":\"not verifiable (written without read receipts); not known to be stale\",\"id\":\"rec_e350bdc5ab9d4ed9a114d54b94d0703a\",\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis (July): baseline photo protocol P1 only; wearable data does not measure posture.\"}\n\n## Since the newest analysis (2026-07-02): records written\n{\"id\":\"rec_4ee6368a0eb1428da382998a46c84ef4\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: physio review on 2026-09-30 to decide whether to keep the band routine; no photos since July.\"}\n## Since the newest analysis: passive samples added\n{\"first\":\"2026-09-01T12:00:00.000000+00:00\",\"last\":\"2026-09-22T12:00:00.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierHeartRateVariabilitySDNN\",\"n\":22,\"source_id\":\"synthetic:watch\"}\n{\"first\":\"2026-09-02T02:00:00.000000+00:00\",\"last\":\"2026-09-23T02:00:00.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\"}\nThe newest analysis set no revisit condition field; read its text for one before assuming there is none.\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\n{\"date\":\"2026-09-30\",\"days_until\":7,\"kind\":\"note\",\"mentions_questions\":[\"rec_dff68639cf6840c1af5359d86a6fae38\"],\"note\":\"7 days left: anything measured for this must be done before then\",\"read_as\":\"explicit date\",\"record_id\":\"rec_4ee6368a0eb1428da382998a46c84ef4\",\"text\":\"SYNTHETIC: physio review on 2026-09-30 to decide whether to keep the band routine; no photos since July.\"}\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"days_since_latest_sample\":0.5,\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_success_at\":\"2026-09-29T16:36:17.132985+00:00\",\"latest_sample_at\":\"2026-09-23T02:00:30.000000+00:00\",\"state\":\"ready\"}\n\n## Passive data available (observation catalog)\n{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierHeartRateVariabilitySDNN\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"ms\"}\n{\"first_at\":\"2026-09-02T02:00:00.000000+00:00\",\"last_at\":\"2026-09-23T02:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count\"}\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"dated_event\":{\"date\":\"2026-09-30\",\"days_until\":7,\"meaning\":\"this record is a dated event the user recorded, not a measurement\"},\"record\":{\"id\":\"rec_4ee6368a0eb1428da382998a46c84ef4\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: physio review on 2026-09-30 to decide whether to keep the band routine; no photos since July.\"}}\n\nIf you surface, set question_id to rec_dff68639cf6840c1af5359d86a6fae38.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_dff68639cf6840c1af5359d86a6fae38",
+     "topic": "复诊前缺少姿势对照",
+     "why_now": "9月30日的复诊将决定是否继续弹力带训练；现在距离复诊还有7天，这是补充对照记录的时机。",
+     "what_changed": "7月的分析记录只有一组P1基线照片；9月22日的记录说自7月以来没有再拍照。可用的手表数据是心率变异性和步数，查询未发现姿势或理疗测量。",
+     "unknowns": "目前无法判断圆肩姿势是否改善，也不能据此判断弹力带训练是否有效；单次照片对照本身仍可能受拍摄姿势和角度影响。",
+     "next_step": "若能在复诊前按与7月相同的P1拍摄方法补拍一组照片，可把前后影像带去讨论是否继续训练；这只能提供姿势外观的对照，不能单独证明变化由弹力带造成。",
+     "evidence_ids": [
+      "rec_e350bdc5ab9d4ed9a114d54b94d0703a",
+      "rec_4ee6368a0eb1428da382998a46c84ef4",
+      "rec_dff68639cf6840c1af5359d86a6fae38"
+     ],
+     "evidence_versions": {
+      "rec_e350bdc5ab9d4ed9a114d54b94d0703a": "active",
+      "rec_4ee6368a0eb1428da382998a46c84ef4": "active",
+      "rec_dff68639cf6840c1af5359d86a6fae38": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3761,
+      "completion_tokens": 15,
+      "tool_calls": 1,
+      "seconds": 1.8
+     },
+     {
+      "tool": "context_bootstrap",
+      "arguments": {},
+      "is_error": false,
+      "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T16:36:17.138951+00:00\",\"last_worker_run_at\":\"2026-09-29T16:36:17.138951+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":7,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T16:36:17.134250+00:00\",\"id\":\"rec_4ee6368a0eb1428da382998a46c84ef4\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: physio review on 2026-09-30 to decide whether to keep the band routine; no photos since July.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:36:17.127952+00:00\",\"id\":\"rec_6180ff3659714f5d862e9e33aad2b7c1\",\"kind\":\"routine\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC band routine for shoulders, 3x/week.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:36:17.126771+00:00\",\"id\":\"rec_dff68639cf6840c1af5359d86a6fae38\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"posture\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"posture\",\"physio\"],\"watch_terms\":[\"posture\",\"physio\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my rounded-shoulder posture improving with the band routine?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierHeartRateVariabilitySDNN\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"ms\"},{\"first_at\":\"2026-09-02T02:00:00.000000+00:00\",\"last_at\":\"2026-09-23T02:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count\"}],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_d8ac2c38a16d455ea17413c0618203f8\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T16:36:17.128979+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_dff68639cf6840c1af5359d86a6fae38\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_e350bdc5ab9d4ed9a114d54b94d0703a\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_dff68639cf6840c1af5359d86a6fae38\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): baseline photo protocol P1 only; wearable data does not measure posture.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":1,\"question\":1,\"routine\":1},\"source_status\":{\"checked_at\":\"2026-09-29T16:36:18.988538+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":44,\"coverage\":{},\"cursor\":\"fixture-47\",\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_attempt_at\":\"2026-09-29T16:36:17.132985+00:00\",\"last_success_at\":\"2026-09-29T16:36:17.132985+00:00\",\"latest_sample_at\":\"2026-09-23T02:00:30.000000+00:00\",\"policy\":\"durable\",\"state\":\"ready\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 5393,
+      "completion_tokens": 260,
+      "tool_calls": 3,
+      "seconds": 7.6
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_dff68639cf6840c1af5359d86a6fae38",
+        "rec_e350bdc5ab9d4ed9a114d54b94d0703a",
+        "rec_4ee6368a0eb1428da382998a46c84ef4",
+        "rec_6180ff3659714f5d862e9e33aad2b7c1"
+       ],
+       "include_history": true
+      },
+      "is_error": false,
+      "result_text": "{\"history\":{\"rec_4ee6368a0eb1428da382998a46c84ef4\":[\"rec_4ee6368a0eb1428da382998a46c84ef4\"],\"rec_6180ff3659714f5d862e9e33aad2b7c1\":[\"rec_6180ff3659714f5d862e9e33aad2b7c1\"],\"rec_dff68639cf6840c1af5359d86a6fae38\":[\"rec_dff68639cf6840c1af5359d86a6fae38\"],\"rec_e350bdc5ab9d4ed9a114d54b94d0703a\":[\"rec_e350bdc5ab9d4ed9a114d54b94d0703a\"]},\"missing_ids\":[],\"read_receipt\":\"rr_c1727d38547f41f7bb4ea1fb3333d134\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T16:36:17.134250+00:00\",\"id\":\"rec_4ee6368a0eb1428da382998a46c84ef4\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: physio review on 2026-09-30 to decide whether to keep the band routine; no photos since July.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:36:17.127952+00:00\",\"id\":\"rec_6180ff3659714f5d862e9e33aad2b7c1\",\"kind\":\"routine\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC band routine for shoulders, 3x/week.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:36:17.126771+00:00\",\"id\":\"rec_dff68639cf6840c1af5359d86a6fae38\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"posture\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"posture\",\"physio\"],\"watch_terms\":[\"posture\",\"physio\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my rounded-shoulder posture improving with the band routine?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:36:17.128979+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_dff68639cf6840c1af5359d86a6fae38\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_e350bdc5ab9d4ed9a114d54b94d0703a\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_dff68639cf6840c1af5359d86a6fae38\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): baseline photo protocol P1 only; wearable data does not measure posture.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_4ee6368a0eb1428da382998a46c84ef4\":\"active\",\"rec_6180ff3659714f5d862e9e33aad2b7c1\":\"active\",\"rec_dff68639cf6840c1af5359d86a6fae38\":\"active\",\"rec_e350bdc5ab9d4ed9a114d54b94d0703a\":\"active\"}}"
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "photo",
+       "kind": "event",
+       "start_at": "2026-06-01T00:00:00Z",
+       "end_at": "2026-09-23T23:59:59Z",
+       "limit": 50,
+       "cursor": "",
+       "include_superseded": false
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_a591ae9db3c14eecb1827047f1bd71b4\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"photo\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_6180ff3659714f5d862e9e33aad2b7c1\",\"kind\":\"routine\",\"text\":\"SYNTHETIC band routine for shoulders, 3x/week.\"},{\"id\":\"rec_dff68639cf6840c1af5359d86a6fae38\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my rounded-shoulder posture improving with the band routine?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+     },
+     {
+      "tool": "context_query",
+      "arguments": {
+       "sql": "SELECT metric, source_id, COUNT(*) n, MIN(start_at) first_at, MAX(start_at) last_at FROM canonical_observations WHERE metric LIKE '%posture%' OR metric LIKE '%physio%' GROUP BY metric, source_id",
+       "parameters": [],
+       "limit": 100
+      },
+      "is_error": false,
+      "result_text": "{\"columns\":[\"metric\",\"source_id\",\"n\",\"first_at\",\"last_at\"],\"max_rows\":100,\"query_sha256\":\"013c6dc17f0da4c0b2f8caa54761557734231c6e09f4127e9c18f00aaca7b63e\",\"read_receipt\":\"rr_4c2b60b5d0eb4dc6a99028487396d5eb\",\"reads_observations\":true,\"rows\":[],\"tables_read\":[\"canonical_observations\",\"canonical_observations_raw\",\"observations\",\"supersessions\"],\"truncated\":false}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 7140,
+      "completion_tokens": 403,
+      "tool_calls": 0,
+      "seconds": 19.6
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3761,
+    "completion_tokens": 15,
+    "tool_calls": 1,
+    "seconds": 1.8
+   },
+   {
+    "tool": "context_bootstrap",
+    "arguments": {},
+    "is_error": false,
+    "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T16:36:17.138951+00:00\",\"last_worker_run_at\":\"2026-09-29T16:36:17.138951+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":7,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T16:36:17.134250+00:00\",\"id\":\"rec_4ee6368a0eb1428da382998a46c84ef4\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: physio review on 2026-09-30 to decide whether to keep the band routine; no photos since July.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:36:17.127952+00:00\",\"id\":\"rec_6180ff3659714f5d862e9e33aad2b7c1\",\"kind\":\"routine\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC band routine for shoulders, 3x/week.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:36:17.126771+00:00\",\"id\":\"rec_dff68639cf6840c1af5359d86a6fae38\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"posture\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"posture\",\"physio\"],\"watch_terms\":[\"posture\",\"physio\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my rounded-shoulder posture improving with the band routine?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierHeartRateVariabilitySDNN\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"ms\"},{\"first_at\":\"2026-09-02T02:00:00.000000+00:00\",\"last_at\":\"2026-09-23T02:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count\"}],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_d8ac2c38a16d455ea17413c0618203f8\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T16:36:17.128979+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_dff68639cf6840c1af5359d86a6fae38\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_e350bdc5ab9d4ed9a114d54b94d0703a\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_dff68639cf6840c1af5359d86a6fae38\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): baseline photo protocol P1 only; wearable data does not measure posture.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":1,\"question\":1,\"routine\":1},\"source_status\":{\"checked_at\":\"2026-09-29T16:36:18.988538+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":44,\"coverage\":{},\"cursor\":\"fixture-47\",\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_attempt_at\":\"2026-09-29T16:36:17.132985+00:00\",\"last_success_at\":\"2026-09-29T16:36:17.132985+00:00\",\"latest_sample_at\":\"2026-09-23T02:00:30.000000+00:00\",\"policy\":\"durable\",\"state\":\"ready\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 5393,
+    "completion_tokens": 260,
+    "tool_calls": 3,
+    "seconds": 7.6
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_dff68639cf6840c1af5359d86a6fae38",
+      "rec_e350bdc5ab9d4ed9a114d54b94d0703a",
+      "rec_4ee6368a0eb1428da382998a46c84ef4",
+      "rec_6180ff3659714f5d862e9e33aad2b7c1"
+     ],
+     "include_history": true
+    },
+    "is_error": false,
+    "result_text": "{\"history\":{\"rec_4ee6368a0eb1428da382998a46c84ef4\":[\"rec_4ee6368a0eb1428da382998a46c84ef4\"],\"rec_6180ff3659714f5d862e9e33aad2b7c1\":[\"rec_6180ff3659714f5d862e9e33aad2b7c1\"],\"rec_dff68639cf6840c1af5359d86a6fae38\":[\"rec_dff68639cf6840c1af5359d86a6fae38\"],\"rec_e350bdc5ab9d4ed9a114d54b94d0703a\":[\"rec_e350bdc5ab9d4ed9a114d54b94d0703a\"]},\"missing_ids\":[],\"read_receipt\":\"rr_c1727d38547f41f7bb4ea1fb3333d134\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T16:36:17.134250+00:00\",\"id\":\"rec_4ee6368a0eb1428da382998a46c84ef4\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: physio review on 2026-09-30 to decide whether to keep the band routine; no photos since July.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:36:17.127952+00:00\",\"id\":\"rec_6180ff3659714f5d862e9e33aad2b7c1\",\"kind\":\"routine\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC band routine for shoulders, 3x/week.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:36:17.126771+00:00\",\"id\":\"rec_dff68639cf6840c1af5359d86a6fae38\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"posture\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"posture\",\"physio\"],\"watch_terms\":[\"posture\",\"physio\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my rounded-shoulder posture improving with the band routine?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:36:17.128979+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_dff68639cf6840c1af5359d86a6fae38\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_e350bdc5ab9d4ed9a114d54b94d0703a\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_dff68639cf6840c1af5359d86a6fae38\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): baseline photo protocol P1 only; wearable data does not measure posture.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_4ee6368a0eb1428da382998a46c84ef4\":\"active\",\"rec_6180ff3659714f5d862e9e33aad2b7c1\":\"active\",\"rec_dff68639cf6840c1af5359d86a6fae38\":\"active\",\"rec_e350bdc5ab9d4ed9a114d54b94d0703a\":\"active\"}}"
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "photo",
+     "kind": "event",
+     "start_at": "2026-06-01T00:00:00Z",
+     "end_at": "2026-09-23T23:59:59Z",
+     "limit": 50,
+     "cursor": "",
+     "include_superseded": false
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_a591ae9db3c14eecb1827047f1bd71b4\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"photo\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_6180ff3659714f5d862e9e33aad2b7c1\",\"kind\":\"routine\",\"text\":\"SYNTHETIC band routine for shoulders, 3x/week.\"},{\"id\":\"rec_dff68639cf6840c1af5359d86a6fae38\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my rounded-shoulder posture improving with the band routine?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+   },
+   {
+    "tool": "context_query",
+    "arguments": {
+     "sql": "SELECT metric, source_id, COUNT(*) n, MIN(start_at) first_at, MAX(start_at) last_at FROM canonical_observations WHERE metric LIKE '%posture%' OR metric LIKE '%physio%' GROUP BY metric, source_id",
+     "parameters": [],
+     "limit": 100
+    },
+    "is_error": false,
+    "result_text": "{\"columns\":[\"metric\",\"source_id\",\"n\",\"first_at\",\"last_at\"],\"max_rows\":100,\"query_sha256\":\"013c6dc17f0da4c0b2f8caa54761557734231c6e09f4127e9c18f00aaca7b63e\",\"read_receipt\":\"rr_4c2b60b5d0eb4dc6a99028487396d5eb\",\"reads_observations\":true,\"rows\":[],\"tables_read\":[\"canonical_observations\",\"canonical_observations_raw\",\"observations\",\"supersessions\"],\"truncated\":false}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 7140,
+    "completion_tokens": 403,
+    "tool_calls": 0,
+    "seconds": 19.6
+   }
+  ],
+  "error": null,
+  "seconds": 29.2,
+  "turns": 3,
+  "tokens": {
+   "prompt": 16294,
+   "completion": 678
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_c8b8ab83e986422db6bf3fd713e051aa",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_e350bdc5ab9d4ed9a114d54b94d0703a",
+      "rec_4ee6368a0eb1428da382998a46c84ef4",
+      "rec_dff68639cf6840c1af5359d86a6fae38"
+     ],
+     "evidence_versions": {
+      "rec_4ee6368a0eb1428da382998a46c84ef4": "active",
+      "rec_dff68639cf6840c1af5359d86a6fae38": "active",
+      "rec_e350bdc5ab9d4ed9a114d54b94d0703a": "active"
+     },
+     "next_step": "若能在复诊前按与7月相同的P1拍摄方法补拍一组照片，可把前后影像带去讨论是否继续训练；这只能提供姿势外观的对照，不能单独证明变化由弹力带造成。",
+     "question_id": "rec_dff68639cf6840c1af5359d86a6fae38",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "复诊前缺少姿势对照",
+     "unknowns": "目前无法判断圆肩姿势是否改善，也不能据此判断弹力带训练是否有效；单次照片对照本身仍可能受拍摄姿势和角度影响。",
+     "what_changed": "7月的分析记录只有一组P1基线照片；9月22日的记录说自7月以来没有再拍照。可用的手表数据是心率变异性和步数，查询未发现姿势或理疗测量。",
+     "why_now": "9月30日的复诊将决定是否继续弹力带训练；现在距离复诊还有7天，这是补充对照记录的时机。"
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "临近9月30日复诊，主动提示姿势改善仍无法由现有照片记录或手表数据判断；建议按7月P1方法补拍对照照片，并说明结果将用于讨论是否继续训练。没有把同期记录当作因果证据，也未重复已推送内容。",
+  "violated_forbidden": []
+ },
+ "judge_first_pass": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "复诊临近，主动提示恰当。候选明确指出现有数据无法判断圆肩姿势是否改善，建议按7月相同的P1方法补拍照片，用于复诊时讨论是否继续训练；未声称已完成前后对比，也未将变化归因于训练。",
+  "violated_forbidden": []
+ }
+}

@@ -423,7 +423,8 @@ Reply with only a JSON object: {"verdict": "PASS"|"FAIL", "hard_failure": true|f
 def judge_router(case: dict, run: dict, checks: list[dict], judge_model: str) -> dict:
     """Router judge (fresh context, no tools). Same-model judging when judge_model is the model under test."""
     calls = [{'packet_given_to_assistant': (c.get('task') or '')[:24000],
-              'tool_calls': [{'tool': t['tool'], 'arguments': t['arguments'], 'result': t['result_text'][:3000]}
+              # The full result the assistant saw (already capped by the loop): a judge shown less flags true values.
+              'tool_calls': [{'tool': t['tool'], 'arguments': t['arguments'], 'result': t['result_text']}
                              for t in c['trace'] if t.get('tool')],
               'candidate': c.get('candidate'), 'error': c.get('error')} for c in run.get('calls', [])]
     packet = {'case': {k: case[k] for k in ('id', 'category', 'expected_behavior', 'forbidden_behaviors', 'severity')},

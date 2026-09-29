@@ -1,0 +1,277 @@
+{
+ "record": {
+  "case_id": "E039",
+  "run": 2,
+  "category": "revisit",
+  "split": "dev",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "新复测记录提供了同一照片流程、同一检查者下的6月与9月估值比较，足以回应此前因只有基线而无法判断变化的问题。候选内容说明了为何现在值得提示，区分了改善迹象与原因、持续性等未能确定的事项，未作因果断言，也未重复已提示内容。",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_daf50465519d42e3af9a57b43a1f203e\", \"request_id\": \"worker:job_f6e2fa5b45814d16bc0f394d87c75d93:0:w_c25608b77a8d4d6baf89a7cb20256ec9\", \"status\": \"committed\", \"request_hash\": \"658d8dc3618611134a47506940922996698cbaee1c2fcb7ff22b225e9546ab68\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_3f0306a840284b7485f147dc7ad989c4",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-luna",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 15.4,
+  "tool_calls": [
+   "context_bootstrap",
+   "context_read"
+  ],
+  "error": null,
+  "turns": 3,
+  "tokens": {
+   "prompt": 12613,
+   "completion": 438
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_699a4c1c90904b388bedae1611d8b5c9",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_3f0306a840284b7485f147dc7ad989c4:46b1884167c4edd3"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_3f0306a840284b7485f147dc7ad989c4:46b1884167c4edd3",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_daf50465519d42e3af9a57b43a1f203e",
+      "request_id": "worker:job_f6e2fa5b45814d16bc0f394d87c75d93:0:w_c25608b77a8d4d6baf89a7cb20256ec9",
+      "status": "committed",
+      "request_hash": "658d8dc3618611134a47506940922996698cbaee1c2fcb7ff22b225e9546ab68"
+     },
+     "tool_calls": 5
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_699a4c1c90904b388bedae1611d8b5c9\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_3f0306a840284b7485f147dc7ad989c4:46b1884167c4edd3\"]}, \"jobs\": [{\"job\": \"revisit:rec_3f0306a840284b7485f147dc7ad989c4:46b1884167c4edd3\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_daf50465519d42e3af9a57b43a1f203e\", \"request_id\": \"worker:job_f6e2fa5b45814d16bc0f394d87c75d93:0:w_c25608b77a8d4d6baf89a7cb20256ec9\", \"status\": \"committed\", \"request_hash\": \"658d8dc3618611134a47506940922996698cbaee1c2fcb7ff22b225e9546ab68\"}, \"tool_calls\": 5}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_3f0306a840284b7485f147dc7ad989c4:46b1884167c4edd3",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by a change matching one open question. The change is either new data about the question or a dated event the user recorded (then the trigger carries `dated_event`). Decide whether the user should hear something about this question now: a new answer, a correction, or, when a dated event on this question is near and the data on record cannot answer it, which measurement would. Otherwise stay silent.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_3f0306a840284b7485f147dc7ad989c4\",\"kind\":\"question\",\"occurred_at\":\"2026-06-10T14:00:00.000000+00:00\",\"payload\":{\"state\":\"open\",\"watch_terms\":[\"posture\",\"pelvic\"]},\"text\":\"SYNTHETIC: Is my posture correction improving?\"}\n\n## Prior analyses of this question (newest first)\n{\"evidence_status\":\"not verifiable (written without read receipts); not known to be stale\",\"id\":\"rec_66ae6d09a8a34e11a54ba1c5566ea131\",\"occurred_at\":\"2026-06-11T14:00:00.000000+00:00\",\"revisit_when\":\"matched reassessment\",\"text\":\"SYNTHETIC analysis (June): baseline only; insufficient evidence to judge change. Revisit when a matched reassessment exists.\"}\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\nNone: no record names a date in the next 21 days.\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n\n## Passive data available (observation catalog)\nNo observations stored.\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"record\":{\"id\":\"rec_3b216fc441934a3dae0d8002f3513594\",\"kind\":\"note\",\"occurred_at\":\"2026-09-18T17:00:00.000000+00:00\",\"text\":\"SYNTHETIC physio reassessment 2026-09-18, same photo protocol P1: anterior pelvic tilt estimate 9 deg (June 14 deg). Therapist: visible improvement, same examiner.\"}}\n\nIf you surface, set question_id to rec_3f0306a840284b7485f147dc7ad989c4.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_3f0306a840284b7485f147dc7ad989c4",
+     "topic": "同一照片流程显示骨盆前倾估值下降",
+     "why_now": "此前的分析认为只有基线、需等匹配复测；现在有了同一流程的复测，正好满足复访条件。",
+     "what_changed": "记录称，6月的骨盆前倾估值为14°，2026年9月18日按同一照片流程P1复测为9°；记录还称治疗师观察到明显改善，且为同一位检查者。",
+     "unknowns": "这两次记录支持姿势有所改善，但不能单独说明变化的原因或是否会持续；角度估值也不等同于完整的姿势评估。",
+     "next_step": "若要判断改善是否持续，可在之后用同一照片流程再复测一次；结果可帮助决定是否继续当前姿势矫正方案，但不能说明改善由什么造成。",
+     "evidence_ids": [
+      "rec_3b216fc441934a3dae0d8002f3513594",
+      "rec_66ae6d09a8a34e11a54ba1c5566ea131"
+     ],
+     "evidence_versions": {
+      "rec_3b216fc441934a3dae0d8002f3513594": "active",
+      "rec_66ae6d09a8a34e11a54ba1c5566ea131": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3120,
+      "completion_tokens": 15,
+      "tool_calls": 1,
+      "seconds": 1.8
+     },
+     {
+      "tool": "context_bootstrap",
+      "arguments": {},
+      "is_error": false,
+      "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T16:12:54.894876+00:00\",\"last_worker_run_at\":\"2026-09-29T16:12:54.894876+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":4,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T16:12:54.889462+00:00\",\"id\":\"rec_3b216fc441934a3dae0d8002f3513594\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-18T17:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-18T12:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio reassessment 2026-09-18, same photo protocol P1: anterior pelvic tilt estimate 9 deg (June 14 deg). Therapist: visible improvement, same examiner.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:12:54.886521+00:00\",\"id\":\"rec_3f0306a840284b7485f147dc7ad989c4\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"posture\",\"pelvic\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my posture correction improving?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_1ff842615df440f0ba53a2e4559559e1\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T16:12:54.888136+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_3f0306a840284b7485f147dc7ad989c4\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_66ae6d09a8a34e11a54ba1c5566ea131\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-06-11T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-11T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_3f0306a840284b7485f147dc7ad989c4\",\"revisit_when\":\"matched reassessment\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): baseline only; insufficient evidence to judge change. Revisit when a matched reassessment exists.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":1,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T16:12:56.736512+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4332,
+      "completion_tokens": 87,
+      "tool_calls": 1,
+      "seconds": 3.0
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_3f0306a840284b7485f147dc7ad989c4",
+        "rec_66ae6d09a8a34e11a54ba1c5566ea131",
+        "rec_3b216fc441934a3dae0d8002f3513594"
+       ],
+       "include_history": false
+      },
+      "is_error": false,
+      "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_531355f0284a4eaf8240af92750528b4\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T16:12:54.889462+00:00\",\"id\":\"rec_3b216fc441934a3dae0d8002f3513594\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-18T17:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-18T12:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio reassessment 2026-09-18, same photo protocol P1: anterior pelvic tilt estimate 9 deg (June 14 deg). Therapist: visible improvement, same examiner.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:12:54.886521+00:00\",\"id\":\"rec_3f0306a840284b7485f147dc7ad989c4\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"posture\",\"pelvic\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my posture correction improving?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:12:54.888136+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_3f0306a840284b7485f147dc7ad989c4\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_66ae6d09a8a34e11a54ba1c5566ea131\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-06-11T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-11T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_3f0306a840284b7485f147dc7ad989c4\",\"revisit_when\":\"matched reassessment\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): baseline only; insufficient evidence to judge change. Revisit when a matched reassessment exists.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_3b216fc441934a3dae0d8002f3513594\":\"active\",\"rec_3f0306a840284b7485f147dc7ad989c4\":\"active\",\"rec_66ae6d09a8a34e11a54ba1c5566ea131\":\"active\"}}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 5161,
+      "completion_tokens": 336,
+      "tool_calls": 0,
+      "seconds": 10.6
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3120,
+    "completion_tokens": 15,
+    "tool_calls": 1,
+    "seconds": 1.8
+   },
+   {
+    "tool": "context_bootstrap",
+    "arguments": {},
+    "is_error": false,
+    "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T16:12:54.894876+00:00\",\"last_worker_run_at\":\"2026-09-29T16:12:54.894876+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":4,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T16:12:54.889462+00:00\",\"id\":\"rec_3b216fc441934a3dae0d8002f3513594\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-18T17:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-18T12:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio reassessment 2026-09-18, same photo protocol P1: anterior pelvic tilt estimate 9 deg (June 14 deg). Therapist: visible improvement, same examiner.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:12:54.886521+00:00\",\"id\":\"rec_3f0306a840284b7485f147dc7ad989c4\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"posture\",\"pelvic\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my posture correction improving?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_1ff842615df440f0ba53a2e4559559e1\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T16:12:54.888136+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_3f0306a840284b7485f147dc7ad989c4\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_66ae6d09a8a34e11a54ba1c5566ea131\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-06-11T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-11T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_3f0306a840284b7485f147dc7ad989c4\",\"revisit_when\":\"matched reassessment\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): baseline only; insufficient evidence to judge change. Revisit when a matched reassessment exists.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":1,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T16:12:56.736512+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4332,
+    "completion_tokens": 87,
+    "tool_calls": 1,
+    "seconds": 3.0
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_3f0306a840284b7485f147dc7ad989c4",
+      "rec_66ae6d09a8a34e11a54ba1c5566ea131",
+      "rec_3b216fc441934a3dae0d8002f3513594"
+     ],
+     "include_history": false
+    },
+    "is_error": false,
+    "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_531355f0284a4eaf8240af92750528b4\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T16:12:54.889462+00:00\",\"id\":\"rec_3b216fc441934a3dae0d8002f3513594\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-18T17:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-18T12:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio reassessment 2026-09-18, same photo protocol P1: anterior pelvic tilt estimate 9 deg (June 14 deg). Therapist: visible improvement, same examiner.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:12:54.886521+00:00\",\"id\":\"rec_3f0306a840284b7485f147dc7ad989c4\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"posture\",\"pelvic\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my posture correction improving?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:12:54.888136+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_3f0306a840284b7485f147dc7ad989c4\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_66ae6d09a8a34e11a54ba1c5566ea131\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-06-11T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-11T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_3f0306a840284b7485f147dc7ad989c4\",\"revisit_when\":\"matched reassessment\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): baseline only; insufficient evidence to judge change. Revisit when a matched reassessment exists.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_3b216fc441934a3dae0d8002f3513594\":\"active\",\"rec_3f0306a840284b7485f147dc7ad989c4\":\"active\",\"rec_66ae6d09a8a34e11a54ba1c5566ea131\":\"active\"}}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 5161,
+    "completion_tokens": 336,
+    "tool_calls": 0,
+    "seconds": 10.6
+   }
+  ],
+  "error": null,
+  "seconds": 15.4,
+  "turns": 3,
+  "tokens": {
+   "prompt": 12613,
+   "completion": 438
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_daf50465519d42e3af9a57b43a1f203e",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_3b216fc441934a3dae0d8002f3513594",
+      "rec_66ae6d09a8a34e11a54ba1c5566ea131"
+     ],
+     "evidence_versions": {
+      "rec_3b216fc441934a3dae0d8002f3513594": "active",
+      "rec_66ae6d09a8a34e11a54ba1c5566ea131": "active"
+     },
+     "next_step": "若要判断改善是否持续，可在之后用同一照片流程再复测一次；结果可帮助决定是否继续当前姿势矫正方案，但不能说明改善由什么造成。",
+     "question_id": "rec_3f0306a840284b7485f147dc7ad989c4",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "同一照片流程显示骨盆前倾估值下降",
+     "unknowns": "这两次记录支持姿势有所改善，但不能单独说明变化的原因或是否会持续；角度估值也不等同于完整的姿势评估。",
+     "what_changed": "记录称，6月的骨盆前倾估值为14°，2026年9月18日按同一照片流程P1复测为9°；记录还称治疗师观察到明显改善，且为同一位检查者。",
+     "why_now": "此前的分析认为只有基线、需等匹配复测；现在有了同一流程的复测，正好满足复访条件。"
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "新复测记录报告同一照片流程、同一检查者下骨盆前倾估值从6月14°降至9月9°，足以重新回应此前因缺少复测而未能回答的问题。候选内容说明了为何现在提出、保留了测量和持续性方面的不确定性，且没有将改善归因于姿势矫正。",
+  "violated_forbidden": []
+ },
+ "judge_first_pass": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "新复测记录提供了同一照片流程、同一检查者下的6月与9月估值比较，足以回应此前因只有基线而无法判断变化的问题。候选内容说明了为何现在值得提示，区分了改善迹象与原因、持续性等未能确定的事项，未作因果断言，也未重复已提示内容。",
+  "violated_forbidden": []
+ }
+}
