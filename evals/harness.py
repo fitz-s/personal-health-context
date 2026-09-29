@@ -39,7 +39,7 @@ from phctx.store import Store  # noqa: E402
 # Synthetic-only harness: uses the developer's file login (symlinked, never copied); production uses the keyring.
 EVAL_AUTH = Path(os.environ.get('PHCTX_CODEX_AUTH', '~/.codex/auth.json')).expanduser()
 INFRA_ERRORS = {'model_timeout', 'model_call_failed', 'model_quota_exhausted'}  # the turn did not complete
-CASES = [json.loads(x) for f in ('cases.jsonl', 'cases_scale.jsonl', 'cases_background.jsonl', 'cases_background2.jsonl')
+CASES = [json.loads(x) for f in ('cases.jsonl', 'cases_scale.jsonl', 'cases_background.jsonl', 'cases_background2.jsonl', 'cases_holdout3.jsonl')
          if (ROOT / 'evals' / f).exists()
          for x in (ROOT / 'evals' / f).read_text().splitlines() if x.strip()]
 FOREGROUND = (ROOT / 'prompts' / 'foreground.md').read_text()
@@ -607,7 +607,7 @@ def main() -> int:
     p.add_argument('--out', type=Path, required=True)
     p.add_argument('--model', default='gpt-5.6-sol')
     p.add_argument('--judge-model', default='gpt-5.6-sol')
-    p.add_argument('--split', choices=['dev', 'holdout', 'dev2', 'holdout2', 'all'], default='dev')
+    p.add_argument('--split', choices=['dev', 'holdout', 'dev2', 'holdout2', 'holdout3', 'all'], default='dev')
     p.add_argument('--cases', help='comma-separated ids')
     p.add_argument('--repeat-critical', type=int, default=3, help='runs per critical case (summarize requires 3)')
     p.add_argument('--workers', type=int, default=4)
@@ -628,7 +628,7 @@ def main() -> int:
         cases = [c for c in CASES if c['user_input'] == 'BACKGROUND_TICK' and c['fixture']['scenario'] != 'off_with_pending'
                  and (a.split == 'all' or c['split'] == a.split)]
     else:
-        cases = [c for c in CASES if (a.split == 'all' or c['split'] == a.split) and not c['id'].startswith(('S', 'B', 'G'))]
+        cases = [c for c in CASES if (a.split == 'all' or c['split'] == a.split) and not c['id'].startswith(('S', 'B', 'G', 'H'))]
     if a.cases:
         want = set(a.cases.split(','))
         cases = [c for c in CASES if c['id'] in want]
@@ -646,6 +646,7 @@ def main() -> int:
                        'evals/cases.jsonl': sha_file(ROOT / 'evals/cases.jsonl'),
                        'evals/cases_background.jsonl': sha_file(ROOT / 'evals/cases_background.jsonl'),
                        'evals/cases_background2.jsonl': sha_file(ROOT / 'evals/cases_background2.jsonl'),
+                       'evals/cases_holdout3.jsonl': sha_file(ROOT / 'evals/cases_holdout3.jsonl'),
                        'evals/fixtures.py': sha_file(ROOT / 'evals/fixtures.py'),
                        'evals/harness.py': sha_file(Path(__file__)),
                        'src': hashlib.sha256(b''.join(sha_file(x).encode() for x in
