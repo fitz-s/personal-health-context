@@ -76,6 +76,14 @@ class Router(unittest.TestCase):
             self.run_with([reply('nope'), reply('{"decision": "surface"}')])
         self.assertEqual(e.exception.code, 'candidate_schema_invalid')
 
+    def test_a_read_receipt_is_not_evidence_and_earns_the_repair_turn(self):
+        bad = {'decision': 'surface', 'topic': 't', 'why_now': 'w', 'what_changed': 'c', 'unknowns': 'u',
+               'next_step': 'n', 'evidence_ids': ['rr_' + 'a' * 32], 'source_policies': ['durable']}
+        good = dict(bad, evidence_ids=['rec_' + 'a' * 32])
+        cand, _ = self.run_with([reply(json.dumps(bad)), reply(json.dumps(good))])
+        self.assertEqual(cand['evidence_ids'], good['evidence_ids'])
+        self.assertIn('rr_' + 'a' * 32, self.sent[1]['messages'][-1]['content'])
+
     def test_missing_key_never_calls_the_router(self):
         with patch.object(model, 'keychain_get', return_value=None), patch.object(model, '_post') as post:
             with self.assertRaises(model.ModelError) as e:
@@ -123,6 +131,28 @@ class Packet(unittest.TestCase):
                      'already_cited_by', f'set question_id to {q}'):
             self.assertIn(part, text)
         self.assertLess(len(text), worker.PACKET_CHARS)
+
+    def test_observation_windows_are_disjoint_and_place_new_values_in_the_old_range(self):
+        self.store.register_source('synthetic:watch', 'Synthetic Watch')
+
+        def batch(days, value):
+            self.n += 1
+            self.store.ingest_batch(request_id=f'SYNTHETIC-{self.n}', source_id='synthetic:watch', deleted_ids=[],
+                                    cursor=str(self.n), samples=[
+                {'native_id': f'n{d}', 'metric': 'RestingHeartRate', 'start_at': f'2026-09-{d:02d}T07:00:00-05:00',
+                 'end_at': f'2026-09-{d:02d}T07:30:00-05:00', 'value_num': value(d), 'unit': 'count/min'}
+                for d in days])
+        batch(range(1, 11), lambda d: 56 + d % 3)
+        self.rec('question', 'SYNTHETIC resting heart rate', {'state': 'open', 'watch_metrics': ['RestingHeartRate']})
+        with self.store.transaction() as c:
+            c.execute("INSERT INTO meta VALUES('worker_watermark', (SELECT max(seq) FROM changes)) "
+                      'ON CONFLICT(key) DO UPDATE SET value=excluded.value')
+        batch(range(11, 14), lambda d: 63)
+        worker.plan(self.store, self.cfg)
+        text = worker.packet(self.store, self.job())
+        m = json.loads(text[text.index('{"change":"observations"'):].splitlines()[0])['metrics'][0]
+        self.assertEqual((m['previous_28_days_same_source']['n'], m['previous_28_days_same_source']['max']), (10, 58))
+        self.assertEqual(m['new_values_vs_previous_range']['above_previous_max'], 3)
 
     def test_oversized_sections_say_what_was_left_out(self):
         text = worker._section('T', [{'x': 'y' * 50}] * 10, 120, 'none')

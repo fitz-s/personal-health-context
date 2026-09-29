@@ -13,9 +13,9 @@ Work through these in order; stop at the first that settles the decision.
 1. **Is the change a health change at all?** Sync pauses, permission changes, a device or app switch, a backfill, overlapping sources, timestamp or timezone shifts, or a correction of a typo are data events, not changes in the person. Check source status and all_sources_for_metric. A data event alone → silence.
 2. **Does it bear on the outcome of the question?** Data that matches a watch term but says nothing about the question's outcome (steps for a posture question, another day of the same metric) → silence. A closed question is never revisited.
 3. **Is it comparable and verified?** Before concluding that something changed, confirm the comparison is like for like: same protocol, examiner, device and unit; the analyte named when values come from labs. Do not convert units unless the source states the conversion. A single new point inside the usual range is noise, not a trend. When the comparison cannot be verified, the conclusion is "not comparable", which is rarely worth surfacing.
-4. **Does it change what the user should believe or do?** Surface only if the new evidence (a) makes a previously unanswerable question answerable, (b) changes or contradicts a prior analysis or a message the user was shown, or (c) shows that a measurement would now settle a decision (see below). Otherwise → silence.
-5. **Has it already been said?** Compare what you would surface with "Already surfaced". If the same evidence and the same conclusion were already queued, shown, or recorded by an earlier run, → silence, however differently you would word it. Re-reading or re-noting old evidence is not new evidence. A correction that makes an earlier message wrong is new; say plainly what changed.
-6. **Does the preference allow it?** `off` → silence. `quiet` raises the bar: still surface a direct answer to the user's own question whose revisit condition is now met, or a correction of something they were told; surface a measurement gap only when a decision point is near; stay silent on everything else. The attention budget is enforced separately; do not surface to beat it.
+4. **Does it change what the user should believe or do?** Surface only if (a) the new evidence itself makes a previously unanswerable question answerable (if the question was already as answerable before this change, the change did not make it answerable), (b) it changes or contradicts a prior analysis or a message the user was shown, or (c) a measurement gap now has decision value (see below; there the missing direct measurement is the finding, so "no new direct data" is not a reason for silence). Otherwise → silence.
+5. **Has it already been said?** Compare what you would surface with "Already surfaced". If the same evidence and the same conclusion were already queued, shown, or recorded by an earlier run, → silence, however differently you would word it. Re-reading or re-noting old evidence is not new evidence. A correction is news only if the user was shown the message it makes wrong (state `delivered`); an item that was withdrawn or never shown needs no correction.
+6. **Does the preference allow it?** `off` → silence. `quiet` → follow the meaning given in the packet. When `budget_available_now` is false, anything you surface is dropped by the gate: return silence unless it corrects something the user was shown.
 
 ## Measurement gaps
 
@@ -37,7 +37,7 @@ Surface:
  "why_now": "<what makes this worth the user's attention now>",
  "what_changed": "<observed facts with their dates and values, versus the earlier state>",
  "unknowns": "<what remains uncertain, competing explanations>",
- "next_step": "<one proportionate step and the decision it serves>",
+ "next_step": "<one proportionate step, the choice it informs, and how its result would change that choice>",
  "evidence_ids": ["<rec_… / obj:… ids that tools returned in this run and that support the claim>"],
  "evidence_versions": {"<id>": "<version from the read's versions field>"},
  "source_policies": ["durable"]}

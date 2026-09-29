@@ -15,6 +15,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -190,6 +191,7 @@ def normalize(raw: dict) -> dict:
     return c
 
 
+EVIDENCE = re.compile(r'(rec|obs)_[0-9a-f]{32,64}|obj:[0-9a-f]{64}(#p[1-9][0-9]{0,4})?')
 ROUTER_URL = 'http://127.0.0.1:20128/v1/chat/completions'
 ROUTER_KEY = 'phctx-router-key'  # Keychain service (account phctx); read per call, never stored or logged
 RETRY = {429, 500, 502, 503, 504}
@@ -281,7 +283,7 @@ def run_router(system: str, user: str, *, model_id: str, reasoning_effort: str, 
             if repaired:
                 raise ModelError(e.code, trace) from None
             repaired = last = True
-            why = getattr(e.__cause__, 'message', e.code)
+            why = getattr(e.__cause__, 'message', None) or (str(e.__cause__) if e.__cause__ else e.code)
             messages += [{'role': 'assistant', 'content': text},
                          {'role': 'user', 'content': f'That reply is not a valid candidate ({why}). Reply with only '
                                                      'the JSON object.'}]
@@ -298,7 +300,12 @@ def parse_candidate(text: str) -> dict:
         raise ModelError('candidate_not_json') from None
     if not isinstance(raw, dict):
         raise ModelError('candidate_not_json')
-    return validate_candidate(normalize(raw))
+    cand = validate_candidate(normalize(raw))
+    if bad := [e for e in cand.get('evidence_ids', []) if not EVIDENCE.fullmatch(e)]:
+        # A read_receipt, question text or table name is not evidence; the repair turn names what was wrong.
+        raise ModelError('candidate_evidence_invalid') from ValueError(
+            f'evidence_ids must be rec_…, obs_… or obj:… ids returned by tools, not {", ".join(bad[:3])}')
+    return cand
 
 
 def investigate(backend: str, model_id: str, task: str, *, config_path: str,

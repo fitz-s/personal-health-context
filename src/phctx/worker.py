@@ -160,6 +160,18 @@ def calls_today(store: Store) -> int:
                          (start,)).fetchone()[0]
 
 
+JOBS = {'revisit': 'This job was triggered by new data matching one open question. Decide whether it changes what '
+                   'the user should know about that question.',
+        'review': 'This is the periodic review; no question triggered it. Look across the recorded goals, routines and '
+                  'open questions for a measurement gap or an unasked question with decision value now (see Measurement '
+                  'gaps), and otherwise stay silent.'}
+SCHEMA = ('## Tables you can query (context_query, SQLite)\n'
+          'canonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, '
+          'source_name): one row per sample, times UTC ISO text; there is no observed_at column.\n'
+          'active_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, '
+          'created_at): current records; kind in event, routine, question, analysis, note, attachment.\n'
+          'observation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, '
+          'last_success_at, latest_sample_at). Field names in this packet are not tables.')
 PACKET_CHARS = 60_000  # ≈15–20k tokens: the fixed context; everything else the model retrieves with tools
 MEANING = {'pending': 'queued, not yet shown to the user', 'delivered': 'shown to the user',
            'dismissed': 'shown, dismissed by the user', 'stale': 'withdrawn before showing: its evidence changed',
@@ -207,29 +219,44 @@ def _citing(c, ref: str) -> list[dict]:
         'WHERE e.value=?', (ref, ref))]
 
 
-def _stats(c, source: str, metric: str, lo: str, hi: str) -> dict:
-    row = c.execute('SELECT count(*) n, round(avg(value_num), 2) mean, min(value_num) min, max(value_num) max, '
-                    'min(start_at) first, max(start_at) last, group_concat(DISTINCT unit) unit '
-                    'FROM canonical_observations WHERE source_id=? AND metric=? AND start_at>=? AND start_at<=?',
-                    (source, metric, lo, hi)).fetchone()
-    return dict(row) if row['n'] else {'n': 0}
+def _values(c, source: str, metric: str, lo: str, hi: str) -> list[tuple]:
+    """(start_at, value_num, unit) with lo <= start_at < hi, from one source."""
+    return c.execute('SELECT start_at, value_num, unit FROM canonical_observations WHERE source_id=? AND metric=? '
+                     'AND start_at>=? AND start_at<? AND value_num IS NOT NULL ORDER BY start_at',
+                     (source, metric, lo, hi)).fetchall()
+
+
+def _stats(rows: list[tuple]) -> dict:
+    if not rows:
+        return {'n': 0}
+    v = [r[1] for r in rows]
+    return {'n': len(v), 'mean': round(sum(v) / len(v), 2), 'min': min(v), 'max': max(v), 'first': rows[0][0],
+            'last': rows[-1][0], 'unit': ','.join(sorted({r[2] or '' for r in rows}))}
 
 
 def _observation_change(c, source: str, detail: dict) -> dict:
-    """Deterministic before/after for one ingested batch: per-sample stats of the batch window against the 28 days
-    before it from the same source, plus every source that reports the metric (device switches show up here)."""
-    lo, hi = detail['start'], detail['end']
+    """Deterministic before/after for one ingested batch: the batch window's samples against the 28 days before it
+    (disjoint) from the same source, where each new value falls relative to that range, and every source that reports
+    the metric (device switches show up here)."""
+    lo = detail['start']
+    hi = (datetime.fromisoformat(detail['end']) + timedelta(microseconds=1)).isoformat(timespec='microseconds')
     base = (datetime.fromisoformat(lo) - timedelta(days=28)).isoformat(timespec='microseconds')
     metrics = []
     for m in detail.get('metrics', [])[:8]:
-        metrics.append({'metric': m, 'new_window': _stats(c, source, m, lo, hi),
-                        'previous_28_days_same_source': _stats(c, source, m, base, lo),
-                        'all_sources_for_metric': [dict(r) for r in c.execute(
-                            'SELECT source_id, unit, n, first_at, last_at FROM observation_catalog WHERE metric=?',
-                            (m,))]})
-    return {'source_id': source, 'window': [lo, hi], 'upserted': detail.get('upserted'),
+        new, old = _values(c, source, m, lo, hi), _values(c, source, m, base, lo)
+        entry = {'metric': m, 'new_window': _stats(new), 'previous_28_days_same_source': _stats(old)}
+        if new and old:
+            top, bottom = max(r[1] for r in old), min(r[1] for r in old)
+            entry['new_values_vs_previous_range'] = {
+                'new_values': [r[1] for r in new][:30], 'previous_range': [bottom, top],
+                'above_previous_max': sum(r[1] > top for r in new), 'below_previous_min': sum(r[1] < bottom for r in new),
+                'inside_previous_range': sum(bottom <= r[1] <= top for r in new)}
+        entry['sources_reporting_metric'] = [dict(r) for r in c.execute(
+            'SELECT source_id, unit, n, first_at, last_at FROM observation_catalog WHERE metric=?', (m,))]
+        metrics.append(entry)
+    return {'source_id': source, 'window': [lo, detail['end']], 'upserted': detail.get('upserted'),
             'deleted': detail.get('deleted'), 'metrics': metrics,
-            'note': 'Per-sample statistics, not daily totals; the baseline window ends where the new one starts.'}
+            'note': 'Per-sample values, not daily totals; the previous window ends where the new one starts.'}
 
 
 def _trigger(c, ev: dict):
@@ -280,16 +307,22 @@ def packet(store: Store, job: dict, now: datetime | None = None) -> str:
     prefs = store.preferences()
     store.pending_insights()  # closes pending insights whose evidence changed, so "already surfaced" is current
     parts = [f'# Background investigation packet\nNow: {now.isoformat(timespec="seconds")}. Job: {job["type"]}. '
-             'Assembled from the local store just now; each section is complete unless it says it was truncated.']
+             'Assembled from the local store just now; each section is complete unless it says it was truncated.',
+             JOBS[job['type']], SCHEMA]
     with store.connect() as c:
         last = c.execute("SELECT max(created_at) FROM insights WHERE state IN('pending','delivered')").fetchone()[0]
         hours = 168 if prefs['proactivity'] == 'quiet' else 72
+        spent = bool(last) and now - datetime.fromisoformat(last) < timedelta(hours=hours)
         attention = {'proactivity': prefs['proactivity'],
                      'meaning': {'normal': 'the user accepts occasional proactive messages',
-                                 'quiet': 'the user asked to be interrupted less: a higher bar',
+                                 'quiet': 'the user asked to be interrupted less: surface only a direct answer to their '
+                                          'own question that the new evidence itself provides, a correction of '
+                                          'something they were shown, or a measurement gap tied to a decision the '
+                                          'records date within about two weeks; everything else is silence',
                                  'off': 'the user turned proactive messages off'}.get(prefs['proactivity']),
                      'last_insight_queued_or_shown_at': last,
-                     'attention_budget': f'at most one proactive message per {hours} h (enforced by the gate)'}
+                     'attention_budget': f'at most one proactive message per {hours} h (enforced by the gate)',
+                     'budget_available_now': not spent}
         if job['type'] == 'revisit':
             qid = p['question_id']
             q = _record(c, qid) or {'id': qid, 'text': '(missing)'}
