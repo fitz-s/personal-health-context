@@ -1,0 +1,269 @@
+{
+ "record": {
+  "case_id": "B11",
+  "run": 3,
+  "category": "silence",
+  "split": "dev",
+  "severity": "critical",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "deterministic: no surface candidate, so no semantic content to judge",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "no_new_surface",
+    "ok": true,
+    "detail": "jobs=1 queued=0 model_silence=1 gate_blocked=0",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "model_silent",
+    "ok": true,
+    "detail": "jobs=1 queued=0 model_silence=1 gate_blocked=0",
+    "hard": true,
+    "needs_turn": false
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-luna",
+  "judge_model": "cx/gpt-6-luna",
+  "seconds": 13.3,
+  "tool_calls": [
+   "context_bootstrap",
+   "context_read",
+   "context_query",
+   "context_search"
+  ],
+  "error": null,
+  "turns": 3,
+  "tokens": {
+   "prompt": 15104,
+   "completion": 381
+  },
+  "effort": "high",
+  "decisions": [
+   "silence"
+  ],
+  "prompt_sha256": "40e567e66a68aaaf1f2172091b788d6ed8c326cdb15e83a86f7c6880aa5d6c06"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_940ea1578a434c6fb18aee884ad0964e",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_b098e3e853334bd687f7737ad07cbf31:1ae3592f8248c3f8"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_b098e3e853334bd687f7737ad07cbf31:1ae3592f8248c3f8",
+     "outcome": "silence",
+     "gate": {
+      "queued": false,
+      "reason": "silence"
+     },
+     "tool_calls": 7
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_940ea1578a434c6fb18aee884ad0964e\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_b098e3e853334bd687f7737ad07cbf31:1ae3592f8248c3f8\"]}, \"jobs\": [{\"job\": \"revisit:rec_b098e3e853334bd687f7737ad07cbf31:1ae3592f8248c3f8\", \"outcome\": \"silence\", \"gate\": {\"queued\": false, \"reason\": \"silence\"}, \"tool_calls\": 7}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_b098e3e853334bd687f7737ad07cbf31:1ae3592f8248c3f8",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by new data matching one open question. Decide whether it changes what the user should know about that question.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_b098e3e853334bd687f7737ad07cbf31\",\"kind\":\"question\",\"occurred_at\":\"2026-08-15T14:00:00.000000+00:00\",\"payload\":{\"state\":\"open\",\"watch_metrics\":[\"SleepAnalysis\"]},\"text\":\"SYNTHETIC: Is my sleep getting worse?\"}\n\n## Prior analyses of this question (newest first)\nNone: this question was never analysed.\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"days_since_latest_sample\":0.4,\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_success_at\":\"2026-09-29T14:35:03.517373+00:00\",\"latest_sample_at\":\"2026-09-23T04:00:30.000000+00:00\",\"state\":\"ready\"}\n\n## Passive data available (observation catalog)\n{\"first_at\":\"2026-09-02T04:00:00.000000+00:00\",\"last_at\":\"2026-09-23T04:00:30.000000+00:00\",\"metric\":\"HKCategoryTypeIdentifierSleepAnalysis\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"min\"}\n\n## What changed since the last look (the trigger of this job)\n{\"change\":\"observations\",\"deleted\":0,\"metrics\":[{\"metric\":\"HKCategoryTypeIdentifierSleepAnalysis\",\"new_values_vs_previous_range\":{\"above_previous_max\":0,\"below_previous_min\":1,\"inside_previous_range\":0,\"new_values_in_time_order\":[[\"2026-09-23\",330.0]],\"previous_range\":[410.0,439.0]},\"new_window\":{\"first\":\"2026-09-23T04:00:00.000000+00:00\",\"last\":\"2026-09-23T04:00:00.000000+00:00\",\"max\":330.0,\"mean\":330.0,\"min\":330.0,\"n\":1,\"unit\":\"min\"},\"previous_28_days_same_source\":{\"first\":\"2026-09-02T04:00:00.000000+00:00\",\"last\":\"2026-09-22T04:00:00.000000+00:00\",\"max\":439.0,\"mean\":424.29,\"min\":410.0,\"n\":21,\"unit\":\"min\"},\"sources_reporting_metric\":[{\"new\":true,\"source_id\":\"synthetic:watch\"}]}],\"note\":\"Per-sample values, not daily totals; the previous window ends where the new one starts.\",\"source_id\":\"synthetic:watch\",\"upserted\":1,\"window\":[\"2026-09-23T04:00:00.000000+00:00\",\"2026-09-23T04:00:30.000000+00:00\"]}\n\nIf you surface, set question_id to rec_b098e3e853334bd687f7737ad07cbf31.",
+    "candidate": {
+     "decision": "silence",
+     "question_id": "rec_b098e3e853334bd687f7737ad07cbf31",
+     "topic": "单次睡眠记录偏低，尚不足以判断是否持续变差"
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3197,
+      "completion_tokens": 15,
+      "tool_calls": 1,
+      "seconds": 2.3
+     },
+     {
+      "tool": "context_bootstrap",
+      "arguments": {},
+      "is_error": false,
+      "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T14:35:03.521341+00:00\",\"last_worker_run_at\":\"2026-09-29T14:35:03.521341+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":5,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T14:35:03.514631+00:00\",\"id\":\"rec_b679b9ba399c4bcda68cf35e37cc5770\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T22:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-22T17:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: double espresso at 17:00.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:35:03.513278+00:00\",\"id\":\"rec_b098e3e853334bd687f7737ad07cbf31\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-08-15T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-15T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"SleepAnalysis\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my sleep getting worse?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[{\"first_at\":\"2026-09-02T04:00:00.000000+00:00\",\"last_at\":\"2026-09-23T04:00:30.000000+00:00\",\"metric\":\"HKCategoryTypeIdentifierSleepAnalysis\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"min\"}],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_eb7f3fb664764c0fa167939923521033\",\"recent\":[],\"record_counts\":{\"note\":1,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T14:35:05.867733+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":22,\"coverage\":{},\"cursor\":\"fixture-231\",\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_attempt_at\":\"2026-09-29T14:35:03.517373+00:00\",\"last_success_at\":\"2026-09-29T14:35:03.517373+00:00\",\"latest_sample_at\":\"2026-09-23T04:00:30.000000+00:00\",\"policy\":\"durable\",\"state\":\"ready\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4278,
+      "completion_tokens": 245,
+      "tool_calls": 3,
+      "seconds": 6.1
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_b098e3e853334bd687f7737ad07cbf31",
+        "rec_b679b9ba399c4bcda68cf35e37cc5770"
+       ],
+       "include_history": true
+      },
+      "is_error": false,
+      "result_text": "{\"history\":{\"rec_b098e3e853334bd687f7737ad07cbf31\":[\"rec_b098e3e853334bd687f7737ad07cbf31\"],\"rec_b679b9ba399c4bcda68cf35e37cc5770\":[\"rec_b679b9ba399c4bcda68cf35e37cc5770\"]},\"missing_ids\":[],\"read_receipt\":\"rr_901120eab5ac4df890cb9511a460edd8\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T14:35:03.513278+00:00\",\"id\":\"rec_b098e3e853334bd687f7737ad07cbf31\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-08-15T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-15T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"SleepAnalysis\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my sleep getting worse?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:35:03.514631+00:00\",\"id\":\"rec_b679b9ba399c4bcda68cf35e37cc5770\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T22:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-22T17:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: double espresso at 17:00.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_b098e3e853334bd687f7737ad07cbf31\":\"active\",\"rec_b679b9ba399c4bcda68cf35e37cc5770\":\"active\"}}"
+     },
+     {
+      "tool": "context_query",
+      "arguments": {
+       "sql": "SELECT id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name FROM canonical_observations WHERE metric = ? ORDER BY start_at",
+       "parameters": [
+        "HKCategoryTypeIdentifierSleepAnalysis"
+       ],
+       "limit": 100
+      },
+      "is_error": false,
+      "result_text": "{\"columns\":[\"id\",\"source_id\",\"metric\",\"start_at\",\"end_at\",\"timezone\",\"value_num\",\"value_text\",\"unit\",\"source_name\"],\"max_rows\":100,\"query_sha256\":\"7967d88d2d4c572c09fbce754e71026c21b7deb662562dfb033c68e2298a6f92\",\"read_receipt\":\"rr_77c06a13d8704815bd8a955e11e2e96f\",\"reads_observations\":true,\"rows\":[[\"obs_d4065f726996c6d90e8eba7fa513a12c173a37e6fe519c7dd347cc38c3bc65bc\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-02T04:00:00.000000+00:00\",\"2026-09-02T04:00:30.000000+00:00\",\"America/Chicago\",410.0,null,\"min\",\"Synthetic Watch\"],[\"obs_8b0beb1e9d3b47749679f4b8846f449f2e29f905ff25f28da7cc2dac1bbd8f52\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-03T04:00:00.000000+00:00\",\"2026-09-03T04:00:30.000000+00:00\",\"America/Chicago\",417.0,null,\"min\",\"Synthetic Watch\"],[\"obs_1151efba9e558a5c4d1d7a9dafa7cfce093c296107dbef54fa42411cf6b64214\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-04T04:00:00.000000+00:00\",\"2026-09-04T04:00:30.000000+00:00\",\"America/Chicago\",424.0,null,\"min\",\"Synthetic Watch\"],[\"obs_a0a028c1e81614af9112a371827744038d009998c60d0fc0b535b24ff42bcb35\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-05T04:00:00.000000+00:00\",\"2026-09-05T04:00:30.000000+00:00\",\"America/Chicago\",431.0,null,\"min\",\"Synthetic Watch\"],[\"obs_f19e11315c358b350c5528c9773dc18992b1080dae92a4163e1fe310e7cf9b54\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-06T04:00:00.000000+00:00\",\"2026-09-06T04:00:30.000000+00:00\",\"America/Chicago\",438.0,null,\"min\",\"Synthetic Watch\"],[\"obs_a2a996bd6d108efd60073df613e2c0ba14e7360cc5482c16aa9caf1570892844\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-07T04:00:00.000000+00:00\",\"2026-09-07T04:00:30.000000+00:00\",\"America/Chicago\",415.0,null,\"min\",\"Synthetic Watch\"],[\"obs_6873e2ae1bd1cd4d37aa70617fdc0130b8ba5e900528ca4aa84c5867442d1c51\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-08T04:00:00.000000+00:00\",\"2026-09-08T04:00:30.000000+00:00\",\"America/Chicago\",422.0,null,\"min\",\"Synthetic Watch\"],[\"obs_cd14a3c4bff7e8c357dec8ad15f64de273992467ef00e1199c5669796f26b1b6\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-09T04:00:00.000000+00:00\",\"2026-09-09T04:00:30.000000+00:00\",\"America/Chicago\",429.0,null,\"min\",\"Synthetic Watch\"],[\"obs_b328edf506c9250bad22d771f3db9ac2c7bdf728647f037e9fff0cf3ee6c0b83\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-10T04:00:00.000000+00:00\",\"2026-09-10T04:00:30.000000+00:00\",\"America/Chicago\",436.0,null,\"min\",\"Synthetic Watch\"],[\"obs_731432fbfb701f4b00eeb67ca2cdd90117fea6fa309ac9899d64b944c10f6f70\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-11T04:00:00.000000+00:00\",\"2026-09-11T04:00:30.000000+00:00\",\"America/Chicago\",413.0,null,\"min\",\"Synthetic Watch\"],[\"obs_e6ac954d9be0143d1aa4064b3e94ef2427288fa147a9924fb32e60f6afeb40de\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-12T04:00:00.000000+00:00\",\"2026-09-12T04:00:30.000000+00:00\",\"America/Chicago\",420.0,null,\"min\",\"Synthetic Watch\"],[\"obs_42178cd577e122015ffe82254bc4890486faff3b1922e3b1596ccae90f5a3b62\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-13T04:00:00.000000+00:00\",\"2026-09-13T04:00:30.000000+00:00\",\"America/Chicago\",427.0,null,\"min\",\"Synthetic Watch\"],[\"obs_2175948a89aa4b0fa5af1915790640afa951e4ae11eb5ebd1e29803e4678c09a\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-14T04:00:00.000000+00:00\",\"2026-09-14T04:00:30.000000+00:00\",\"America/Chicago\",434.0,null,\"min\",\"Synthetic Watch\"],[\"obs_fecb9a63cff8ac273971f55f4875ce92db5780d7d243b49727e757336b605fa6\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-15T04:00:00.000000+00:00\",\"2026-09-15T04:00:30.000000+00:00\",\"America/Chicago\",411.0,null,\"min\",\"Synthetic Watch\"],[\"obs_de98106d8394f171721ec6b0e07c6c52c02cb12b421166645a3b49fd3f0cff68\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-16T04:00:00.000000+00:00\",\"2026-09-16T04:00:30.000000+00:00\",\"America/Chicago\",418.0,null,\"min\",\"Synthetic Watch\"],[\"obs_b7ac01af3bb62472d496553cbf612267e75c12290bd02c7ba70db90bd8f50098\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-17T04:00:00.000000+00:00\",\"2026-09-17T04:00:30.000000+00:00\",\"America/Chicago\",425.0,null,\"min\",\"Synthetic Watch\"],[\"obs_3df4d47054fb6f359abc62e78cec452658a0ee72299367256bfe40e121cb09e3\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-18T04:00:00.000000+00:00\",\"2026-09-18T04:00:30.000000+00:00\",\"America/Chicago\",432.0,null,\"min\",\"Synthetic Watch\"],[\"obs_bbf5a2f6af958612d056d3108843d55cc0f58848de5c8741e6e8bbeff9ccf0d6\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-19T04:00:00.000000+00:00\",\"2026-09-19T04:00:30.000000+00:00\",\"America/Chicago\",439.0,null,\"min\",\"Synthetic Watch\"],[\"obs_d81eea0344ae368c7a59e75a4719c80387d2fa9da9e13f94cdda0c6e805c90c3\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-20T04:00:00.000000+00:00\",\"2026-09-20T04:00:30.000000+00:00\",\"America/Chicago\",416.0,null,\"min\",\"Synthetic Watch\"],[\"obs_d3545171ba314747b678d761acecd405419df6260a8897c792ad1f323eedac19\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-21T04:00:00.000000+00:00\",\"2026-09-21T04:00:30.000000+00:00\",\"America/Chicago\",423.0,null,\"min\",\"Synthetic Watch\"],[\"obs_ac09ceb499c5e0f2711d507f383dff4f610ed5401943f0e79809388696a5bdfa\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-22T04:00:00.000000+00:00\",\"2026-09-22T04:00:30.000000+00:00\",\"America/Chicago\",430.0,null,\"min\",\"Synthetic Watch\"],[\"obs_796b4f76ee757535df493f868a44ffd59b4ea7603384c61d10c6458d7679c50e\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-23T04:00:00.000000+00:00\",\"2026-09-23T04:00:30.000000+00:00\",\"America/Chicago\",330.0,null,\"min\",\"Synthetic Watch\"]],\"tables_read\":[\"canonical_observations\",\"canonical_observations_raw\",\"observations\",\"supersessions\"],\"truncated\":false}"
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "sleep",
+       "kind": "event",
+       "start_at": "2026-08-01T00:00:00Z",
+       "end_at": "2026-09-30T23:59:59Z",
+       "limit": 100,
+       "cursor": "",
+       "include_superseded": false
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_90490c0a5a8c496081c4e80710f97cc2\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"sleep\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_b098e3e853334bd687f7737ad07cbf31\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my sleep getting worse?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 7629,
+      "completion_tokens": 121,
+      "tool_calls": 0,
+      "seconds": 4.8
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3197,
+    "completion_tokens": 15,
+    "tool_calls": 1,
+    "seconds": 2.3
+   },
+   {
+    "tool": "context_bootstrap",
+    "arguments": {},
+    "is_error": false,
+    "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T14:35:03.521341+00:00\",\"last_worker_run_at\":\"2026-09-29T14:35:03.521341+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":5,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T14:35:03.514631+00:00\",\"id\":\"rec_b679b9ba399c4bcda68cf35e37cc5770\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T22:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-22T17:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: double espresso at 17:00.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:35:03.513278+00:00\",\"id\":\"rec_b098e3e853334bd687f7737ad07cbf31\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-08-15T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-15T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"SleepAnalysis\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my sleep getting worse?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[{\"first_at\":\"2026-09-02T04:00:00.000000+00:00\",\"last_at\":\"2026-09-23T04:00:30.000000+00:00\",\"metric\":\"HKCategoryTypeIdentifierSleepAnalysis\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"min\"}],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_eb7f3fb664764c0fa167939923521033\",\"recent\":[],\"record_counts\":{\"note\":1,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T14:35:05.867733+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":22,\"coverage\":{},\"cursor\":\"fixture-231\",\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_attempt_at\":\"2026-09-29T14:35:03.517373+00:00\",\"last_success_at\":\"2026-09-29T14:35:03.517373+00:00\",\"latest_sample_at\":\"2026-09-23T04:00:30.000000+00:00\",\"policy\":\"durable\",\"state\":\"ready\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4278,
+    "completion_tokens": 245,
+    "tool_calls": 3,
+    "seconds": 6.1
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_b098e3e853334bd687f7737ad07cbf31",
+      "rec_b679b9ba399c4bcda68cf35e37cc5770"
+     ],
+     "include_history": true
+    },
+    "is_error": false,
+    "result_text": "{\"history\":{\"rec_b098e3e853334bd687f7737ad07cbf31\":[\"rec_b098e3e853334bd687f7737ad07cbf31\"],\"rec_b679b9ba399c4bcda68cf35e37cc5770\":[\"rec_b679b9ba399c4bcda68cf35e37cc5770\"]},\"missing_ids\":[],\"read_receipt\":\"rr_901120eab5ac4df890cb9511a460edd8\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T14:35:03.513278+00:00\",\"id\":\"rec_b098e3e853334bd687f7737ad07cbf31\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-08-15T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-15T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"SleepAnalysis\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my sleep getting worse?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:35:03.514631+00:00\",\"id\":\"rec_b679b9ba399c4bcda68cf35e37cc5770\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T22:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-22T17:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: double espresso at 17:00.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_b098e3e853334bd687f7737ad07cbf31\":\"active\",\"rec_b679b9ba399c4bcda68cf35e37cc5770\":\"active\"}}"
+   },
+   {
+    "tool": "context_query",
+    "arguments": {
+     "sql": "SELECT id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name FROM canonical_observations WHERE metric = ? ORDER BY start_at",
+     "parameters": [
+      "HKCategoryTypeIdentifierSleepAnalysis"
+     ],
+     "limit": 100
+    },
+    "is_error": false,
+    "result_text": "{\"columns\":[\"id\",\"source_id\",\"metric\",\"start_at\",\"end_at\",\"timezone\",\"value_num\",\"value_text\",\"unit\",\"source_name\"],\"max_rows\":100,\"query_sha256\":\"7967d88d2d4c572c09fbce754e71026c21b7deb662562dfb033c68e2298a6f92\",\"read_receipt\":\"rr_77c06a13d8704815bd8a955e11e2e96f\",\"reads_observations\":true,\"rows\":[[\"obs_d4065f726996c6d90e8eba7fa513a12c173a37e6fe519c7dd347cc38c3bc65bc\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-02T04:00:00.000000+00:00\",\"2026-09-02T04:00:30.000000+00:00\",\"America/Chicago\",410.0,null,\"min\",\"Synthetic Watch\"],[\"obs_8b0beb1e9d3b47749679f4b8846f449f2e29f905ff25f28da7cc2dac1bbd8f52\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-03T04:00:00.000000+00:00\",\"2026-09-03T04:00:30.000000+00:00\",\"America/Chicago\",417.0,null,\"min\",\"Synthetic Watch\"],[\"obs_1151efba9e558a5c4d1d7a9dafa7cfce093c296107dbef54fa42411cf6b64214\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-04T04:00:00.000000+00:00\",\"2026-09-04T04:00:30.000000+00:00\",\"America/Chicago\",424.0,null,\"min\",\"Synthetic Watch\"],[\"obs_a0a028c1e81614af9112a371827744038d009998c60d0fc0b535b24ff42bcb35\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-05T04:00:00.000000+00:00\",\"2026-09-05T04:00:30.000000+00:00\",\"America/Chicago\",431.0,null,\"min\",\"Synthetic Watch\"],[\"obs_f19e11315c358b350c5528c9773dc18992b1080dae92a4163e1fe310e7cf9b54\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-06T04:00:00.000000+00:00\",\"2026-09-06T04:00:30.000000+00:00\",\"America/Chicago\",438.0,null,\"min\",\"Synthetic Watch\"],[\"obs_a2a996bd6d108efd60073df613e2c0ba14e7360cc5482c16aa9caf1570892844\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-07T04:00:00.000000+00:00\",\"2026-09-07T04:00:30.000000+00:00\",\"America/Chicago\",415.0,null,\"min\",\"Synthetic Watch\"],[\"obs_6873e2ae1bd1cd4d37aa70617fdc0130b8ba5e900528ca4aa84c5867442d1c51\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-08T04:00:00.000000+00:00\",\"2026-09-08T04:00:30.000000+00:00\",\"America/Chicago\",422.0,null,\"min\",\"Synthetic Watch\"],[\"obs_cd14a3c4bff7e8c357dec8ad15f64de273992467ef00e1199c5669796f26b1b6\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-09T04:00:00.000000+00:00\",\"2026-09-09T04:00:30.000000+00:00\",\"America/Chicago\",429.0,null,\"min\",\"Synthetic Watch\"],[\"obs_b328edf506c9250bad22d771f3db9ac2c7bdf728647f037e9fff0cf3ee6c0b83\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-10T04:00:00.000000+00:00\",\"2026-09-10T04:00:30.000000+00:00\",\"America/Chicago\",436.0,null,\"min\",\"Synthetic Watch\"],[\"obs_731432fbfb701f4b00eeb67ca2cdd90117fea6fa309ac9899d64b944c10f6f70\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-11T04:00:00.000000+00:00\",\"2026-09-11T04:00:30.000000+00:00\",\"America/Chicago\",413.0,null,\"min\",\"Synthetic Watch\"],[\"obs_e6ac954d9be0143d1aa4064b3e94ef2427288fa147a9924fb32e60f6afeb40de\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-12T04:00:00.000000+00:00\",\"2026-09-12T04:00:30.000000+00:00\",\"America/Chicago\",420.0,null,\"min\",\"Synthetic Watch\"],[\"obs_42178cd577e122015ffe82254bc4890486faff3b1922e3b1596ccae90f5a3b62\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-13T04:00:00.000000+00:00\",\"2026-09-13T04:00:30.000000+00:00\",\"America/Chicago\",427.0,null,\"min\",\"Synthetic Watch\"],[\"obs_2175948a89aa4b0fa5af1915790640afa951e4ae11eb5ebd1e29803e4678c09a\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-14T04:00:00.000000+00:00\",\"2026-09-14T04:00:30.000000+00:00\",\"America/Chicago\",434.0,null,\"min\",\"Synthetic Watch\"],[\"obs_fecb9a63cff8ac273971f55f4875ce92db5780d7d243b49727e757336b605fa6\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-15T04:00:00.000000+00:00\",\"2026-09-15T04:00:30.000000+00:00\",\"America/Chicago\",411.0,null,\"min\",\"Synthetic Watch\"],[\"obs_de98106d8394f171721ec6b0e07c6c52c02cb12b421166645a3b49fd3f0cff68\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-16T04:00:00.000000+00:00\",\"2026-09-16T04:00:30.000000+00:00\",\"America/Chicago\",418.0,null,\"min\",\"Synthetic Watch\"],[\"obs_b7ac01af3bb62472d496553cbf612267e75c12290bd02c7ba70db90bd8f50098\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-17T04:00:00.000000+00:00\",\"2026-09-17T04:00:30.000000+00:00\",\"America/Chicago\",425.0,null,\"min\",\"Synthetic Watch\"],[\"obs_3df4d47054fb6f359abc62e78cec452658a0ee72299367256bfe40e121cb09e3\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-18T04:00:00.000000+00:00\",\"2026-09-18T04:00:30.000000+00:00\",\"America/Chicago\",432.0,null,\"min\",\"Synthetic Watch\"],[\"obs_bbf5a2f6af958612d056d3108843d55cc0f58848de5c8741e6e8bbeff9ccf0d6\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-19T04:00:00.000000+00:00\",\"2026-09-19T04:00:30.000000+00:00\",\"America/Chicago\",439.0,null,\"min\",\"Synthetic Watch\"],[\"obs_d81eea0344ae368c7a59e75a4719c80387d2fa9da9e13f94cdda0c6e805c90c3\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-20T04:00:00.000000+00:00\",\"2026-09-20T04:00:30.000000+00:00\",\"America/Chicago\",416.0,null,\"min\",\"Synthetic Watch\"],[\"obs_d3545171ba314747b678d761acecd405419df6260a8897c792ad1f323eedac19\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-21T04:00:00.000000+00:00\",\"2026-09-21T04:00:30.000000+00:00\",\"America/Chicago\",423.0,null,\"min\",\"Synthetic Watch\"],[\"obs_ac09ceb499c5e0f2711d507f383dff4f610ed5401943f0e79809388696a5bdfa\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-22T04:00:00.000000+00:00\",\"2026-09-22T04:00:30.000000+00:00\",\"America/Chicago\",430.0,null,\"min\",\"Synthetic Watch\"],[\"obs_796b4f76ee757535df493f868a44ffd59b4ea7603384c61d10c6458d7679c50e\",\"synthetic:watch\",\"HKCategoryTypeIdentifierSleepAnalysis\",\"2026-09-23T04:00:00.000000+00:00\",\"2026-09-23T04:00:30.000000+00:00\",\"America/Chicago\",330.0,null,\"min\",\"Synthetic Watch\"]],\"tables_read\":[\"canonical_observations\",\"canonical_observations_raw\",\"observations\",\"supersessions\"],\"truncated\":false}"
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "sleep",
+     "kind": "event",
+     "start_at": "2026-08-01T00:00:00Z",
+     "end_at": "2026-09-30T23:59:59Z",
+     "limit": 100,
+     "cursor": "",
+     "include_superseded": false
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_90490c0a5a8c496081c4e80710f97cc2\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"sleep\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_b098e3e853334bd687f7737ad07cbf31\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my sleep getting worse?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 7629,
+    "completion_tokens": 121,
+    "tool_calls": 0,
+    "seconds": 4.8
+   }
+  ],
+  "error": null,
+  "seconds": 13.3,
+  "turns": 3,
+  "tokens": {
+   "prompt": 15104,
+   "completion": 381
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "violated_forbidden": [],
+  "reason": "deterministic: no surface candidate, so no semantic content to judge"
+ }
+}

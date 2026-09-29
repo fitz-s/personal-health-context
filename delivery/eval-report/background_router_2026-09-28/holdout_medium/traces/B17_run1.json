@@ -1,0 +1,283 @@
+{
+ "record": {
+  "case_id": "B17",
+  "run": 1,
+  "category": "measurement",
+  "split": "holdout",
+  "severity": "normal",
+  "status": "FAIL",
+  "hard_failure": false,
+  "reason": "Surfacing was appropriate: the new follow-up appointment makes the unresolved blood-pressure question decision-relevant, and the suggested home readings are proportionate and tied to whether lifestyle changes are enough. The candidate correctly says the available data cannot establish whether blood pressure fell after reducing salt. However, it omits the required clarification that a watch’s heart-rate data cannot measure blood pressure.",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_709bb43ce6dc49fda6aa40c611f20bc0\", \"request_id\": \"worker:job_a805bf6453504dbe85cc68f54de325ce:0:w_7a09d9bea532408890e214e55f19825f\", \"status\": \"committed\", \"request_hash\": \"195b730c05bb6cb0d5405347804e6245fa76345f4aceb18555f265ba4ca00f7f\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_448f1769d2584781ab38d488459dba3a",
+    "hard": true
+   },
+   {
+    "check": "gap_names_outcome_and_decision",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-luna",
+  "judge_model": "cx/gpt-6-luna",
+  "seconds": 21.4,
+  "tool_calls": [
+   "context_bootstrap",
+   "context_read"
+  ],
+  "error": null,
+  "turns": 3,
+  "tokens": {
+   "prompt": 13893,
+   "completion": 468
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "prompt_sha256": "40e567e66a68aaaf1f2172091b788d6ed8c326cdb15e83a86f7c6880aa5d6c06"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_70f5a44d61cc48a3ad492dcd85e178fa",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_448f1769d2584781ab38d488459dba3a:fe94b827f0455bee"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_448f1769d2584781ab38d488459dba3a:fe94b827f0455bee",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_709bb43ce6dc49fda6aa40c611f20bc0",
+      "request_id": "worker:job_a805bf6453504dbe85cc68f54de325ce:0:w_7a09d9bea532408890e214e55f19825f",
+      "status": "committed",
+      "request_hash": "195b730c05bb6cb0d5405347804e6245fa76345f4aceb18555f265ba4ca00f7f"
+     },
+     "tool_calls": 5
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_70f5a44d61cc48a3ad492dcd85e178fa\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_448f1769d2584781ab38d488459dba3a:fe94b827f0455bee\"]}, \"jobs\": [{\"job\": \"revisit:rec_448f1769d2584781ab38d488459dba3a:fe94b827f0455bee\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_709bb43ce6dc49fda6aa40c611f20bc0\", \"request_id\": \"worker:job_a805bf6453504dbe85cc68f54de325ce:0:w_7a09d9bea532408890e214e55f19825f\", \"status\": \"committed\", \"request_hash\": \"195b730c05bb6cb0d5405347804e6245fa76345f4aceb18555f265ba4ca00f7f\"}, \"tool_calls\": 5}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_448f1769d2584781ab38d488459dba3a:fe94b827f0455bee",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by new data matching one open question. Decide whether it changes what the user should know about that question.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_448f1769d2584781ab38d488459dba3a\",\"kind\":\"question\",\"occurred_at\":\"2026-07-10T14:00:00.000000+00:00\",\"payload\":{\"outcome\":\"blood_pressure\",\"state\":\"open\",\"watch_terms\":[\"blood pressure\",\"doctor\",\"appointment\"]},\"text\":\"SYNTHETIC: Is my blood pressure lower since I cut salt?\"}\n\n## Prior analyses of this question (newest first)\n{\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_448f1769d2584781ab38d488459dba3a\",\"rec_ea5ea70ac93345ad82f862500743c962\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_e1979c53bf394789b0adbb091530c4b4\",\"occurred_at\":\"2026-07-11T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis (July): one clinic reading only; no home readings. Wearable heart rate does not measure blood pressure.\"}\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"days_since_latest_sample\":0.5,\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_success_at\":\"2026-09-29T14:20:57.104980+00:00\",\"latest_sample_at\":\"2026-09-23T02:00:30.000000+00:00\",\"state\":\"ready\"}\n\n## Passive data available (observation catalog)\n{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierHeartRate\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count/min\"}\n{\"first_at\":\"2026-09-02T02:00:00.000000+00:00\",\"last_at\":\"2026-09-23T02:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count\"}\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"record\":{\"id\":\"rec_e55f587f7adb45b380f3768661addb3b\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: doctor follow-up appointment on 2026-10-02 to decide whether the lifestyle changes are enough.\"}}\n\nIf you surface, set question_id to rec_448f1769d2584781ab38d488459dba3a.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_448f1769d2584781ab38d488459dba3a",
+     "topic": "复诊前血压变化仍无法判断",
+     "why_now": "你记录了10月2日复诊，届时要讨论生活方式改变是否足够；现在记录一次血压，可能帮助这项决定。",
+     "what_changed": "新增记录显示复诊安排在2026年10月2日。现有记录只有7月一次诊所血压138/88；没有新的血压读数。",
+     "unknowns": "目前无法判断减盐后血压是否降低；单次读数也无法说明变化是否持续或由减盐造成。",
+     "next_step": "若手边有血压计，可在复诊前按其说明记录几次血压，并把记录带去讨论生活方式改变是否足够；这些读数能补充近期血压情况，但不能单独证明变化是减盐造成的。",
+     "evidence_ids": [
+      "rec_448f1769d2584781ab38d488459dba3a",
+      "rec_e55f587f7adb45b380f3768661addb3b",
+      "rec_ea5ea70ac93345ad82f862500743c962"
+     ],
+     "evidence_versions": {
+      "rec_448f1769d2584781ab38d488459dba3a": "active",
+      "rec_e55f587f7adb45b380f3768661addb3b": "active",
+      "rec_ea5ea70ac93345ad82f862500743c962": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3212,
+      "completion_tokens": 15,
+      "tool_calls": 1,
+      "seconds": 3.1
+     },
+     {
+      "tool": "context_bootstrap",
+      "arguments": {},
+      "is_error": false,
+      "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T14:20:57.114616+00:00\",\"last_worker_run_at\":\"2026-09-29T14:20:57.114616+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":6,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T14:20:57.110033+00:00\",\"id\":\"rec_e55f587f7adb45b380f3768661addb3b\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: doctor follow-up appointment on 2026-10-02 to decide whether the lifestyle changes are enough.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:20:57.106879+00:00\",\"id\":\"rec_448f1769d2584781ab38d488459dba3a\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-10T09:00:00-05:00\",\"payload\":{\"outcome\":\"blood_pressure\",\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"blood pressure\",\"doctor\",\"appointment\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my blood pressure lower since I cut salt?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:20:57.107940+00:00\",\"id\":\"rec_ea5ea70ac93345ad82f862500743c962\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-07-08T15:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-08T10:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: clinic blood pressure 138/88 (July visit).\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierHeartRate\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count/min\"},{\"first_at\":\"2026-09-02T02:00:00.000000+00:00\",\"last_at\":\"2026-09-23T02:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count\"}],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_6197c06456514453b8d137dc13304a99\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T14:20:57.109029+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_448f1769d2584781ab38d488459dba3a\",\"rec_ea5ea70ac93345ad82f862500743c962\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_e1979c53bf394789b0adbb091530c4b4\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-11T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-11T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_448f1769d2584781ab38d488459dba3a\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): one clinic reading only; no home readings. Wearable heart rate does not measure blood pressure.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":2,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T14:21:00.285231+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":44,\"coverage\":{},\"cursor\":\"fixture-119\",\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_attempt_at\":\"2026-09-29T14:20:57.104980+00:00\",\"last_success_at\":\"2026-09-29T14:20:57.104980+00:00\",\"latest_sample_at\":\"2026-09-23T02:00:30.000000+00:00\",\"policy\":\"durable\",\"state\":\"ready\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4833,
+      "completion_tokens": 101,
+      "tool_calls": 1,
+      "seconds": 3.3
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_448f1769d2584781ab38d488459dba3a",
+        "rec_e1979c53bf394789b0adbb091530c4b4",
+        "rec_e55f587f7adb45b380f3768661addb3b",
+        "rec_ea5ea70ac93345ad82f862500743c962"
+       ],
+       "include_history": false
+      },
+      "is_error": false,
+      "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_fe60652822dc4ba4af47df7b7007c013\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T14:20:57.106879+00:00\",\"id\":\"rec_448f1769d2584781ab38d488459dba3a\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-10T09:00:00-05:00\",\"payload\":{\"outcome\":\"blood_pressure\",\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"blood pressure\",\"doctor\",\"appointment\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my blood pressure lower since I cut salt?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:20:57.109029+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_448f1769d2584781ab38d488459dba3a\",\"rec_ea5ea70ac93345ad82f862500743c962\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_e1979c53bf394789b0adbb091530c4b4\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-11T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-11T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_448f1769d2584781ab38d488459dba3a\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): one clinic reading only; no home readings. Wearable heart rate does not measure blood pressure.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:20:57.110033+00:00\",\"id\":\"rec_e55f587f7adb45b380f3768661addb3b\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: doctor follow-up appointment on 2026-10-02 to decide whether the lifestyle changes are enough.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:20:57.107940+00:00\",\"id\":\"rec_ea5ea70ac93345ad82f862500743c962\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-07-08T15:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-08T10:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: clinic blood pressure 138/88 (July visit).\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_448f1769d2584781ab38d488459dba3a\":\"active\",\"rec_e1979c53bf394789b0adbb091530c4b4\":\"active\",\"rec_e55f587f7adb45b380f3768661addb3b\":\"active\",\"rec_ea5ea70ac93345ad82f862500743c962\":\"active\"}}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 5848,
+      "completion_tokens": 352,
+      "tool_calls": 0,
+      "seconds": 14.8
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3212,
+    "completion_tokens": 15,
+    "tool_calls": 1,
+    "seconds": 3.1
+   },
+   {
+    "tool": "context_bootstrap",
+    "arguments": {},
+    "is_error": false,
+    "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T14:20:57.114616+00:00\",\"last_worker_run_at\":\"2026-09-29T14:20:57.114616+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":6,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T14:20:57.110033+00:00\",\"id\":\"rec_e55f587f7adb45b380f3768661addb3b\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: doctor follow-up appointment on 2026-10-02 to decide whether the lifestyle changes are enough.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:20:57.106879+00:00\",\"id\":\"rec_448f1769d2584781ab38d488459dba3a\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-10T09:00:00-05:00\",\"payload\":{\"outcome\":\"blood_pressure\",\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"blood pressure\",\"doctor\",\"appointment\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my blood pressure lower since I cut salt?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:20:57.107940+00:00\",\"id\":\"rec_ea5ea70ac93345ad82f862500743c962\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-07-08T15:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-08T10:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: clinic blood pressure 138/88 (July visit).\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierHeartRate\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count/min\"},{\"first_at\":\"2026-09-02T02:00:00.000000+00:00\",\"last_at\":\"2026-09-23T02:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count\"}],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_6197c06456514453b8d137dc13304a99\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T14:20:57.109029+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_448f1769d2584781ab38d488459dba3a\",\"rec_ea5ea70ac93345ad82f862500743c962\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_e1979c53bf394789b0adbb091530c4b4\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-11T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-11T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_448f1769d2584781ab38d488459dba3a\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): one clinic reading only; no home readings. Wearable heart rate does not measure blood pressure.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":2,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T14:21:00.285231+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":44,\"coverage\":{},\"cursor\":\"fixture-119\",\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_attempt_at\":\"2026-09-29T14:20:57.104980+00:00\",\"last_success_at\":\"2026-09-29T14:20:57.104980+00:00\",\"latest_sample_at\":\"2026-09-23T02:00:30.000000+00:00\",\"policy\":\"durable\",\"state\":\"ready\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4833,
+    "completion_tokens": 101,
+    "tool_calls": 1,
+    "seconds": 3.3
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_448f1769d2584781ab38d488459dba3a",
+      "rec_e1979c53bf394789b0adbb091530c4b4",
+      "rec_e55f587f7adb45b380f3768661addb3b",
+      "rec_ea5ea70ac93345ad82f862500743c962"
+     ],
+     "include_history": false
+    },
+    "is_error": false,
+    "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_fe60652822dc4ba4af47df7b7007c013\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T14:20:57.106879+00:00\",\"id\":\"rec_448f1769d2584781ab38d488459dba3a\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-10T09:00:00-05:00\",\"payload\":{\"outcome\":\"blood_pressure\",\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"blood pressure\",\"doctor\",\"appointment\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my blood pressure lower since I cut salt?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:20:57.109029+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_448f1769d2584781ab38d488459dba3a\",\"rec_ea5ea70ac93345ad82f862500743c962\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_e1979c53bf394789b0adbb091530c4b4\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-11T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-11T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_448f1769d2584781ab38d488459dba3a\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): one clinic reading only; no home readings. Wearable heart rate does not measure blood pressure.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:20:57.110033+00:00\",\"id\":\"rec_e55f587f7adb45b380f3768661addb3b\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: doctor follow-up appointment on 2026-10-02 to decide whether the lifestyle changes are enough.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:20:57.107940+00:00\",\"id\":\"rec_ea5ea70ac93345ad82f862500743c962\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-07-08T15:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-08T10:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: clinic blood pressure 138/88 (July visit).\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_448f1769d2584781ab38d488459dba3a\":\"active\",\"rec_e1979c53bf394789b0adbb091530c4b4\":\"active\",\"rec_e55f587f7adb45b380f3768661addb3b\":\"active\",\"rec_ea5ea70ac93345ad82f862500743c962\":\"active\"}}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 5848,
+    "completion_tokens": 352,
+    "tool_calls": 0,
+    "seconds": 14.8
+   }
+  ],
+  "error": null,
+  "seconds": 21.4,
+  "turns": 3,
+  "tokens": {
+   "prompt": 13893,
+   "completion": 468
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_709bb43ce6dc49fda6aa40c611f20bc0",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_448f1769d2584781ab38d488459dba3a",
+      "rec_e55f587f7adb45b380f3768661addb3b",
+      "rec_ea5ea70ac93345ad82f862500743c962"
+     ],
+     "evidence_versions": {
+      "rec_448f1769d2584781ab38d488459dba3a": "active",
+      "rec_e55f587f7adb45b380f3768661addb3b": "active",
+      "rec_ea5ea70ac93345ad82f862500743c962": "active"
+     },
+     "next_step": "若手边有血压计，可在复诊前按其说明记录几次血压，并把记录带去讨论生活方式改变是否足够；这些读数能补充近期血压情况，但不能单独证明变化是减盐造成的。",
+     "question_id": "rec_448f1769d2584781ab38d488459dba3a",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "复诊前血压变化仍无法判断",
+     "unknowns": "目前无法判断减盐后血压是否降低；单次读数也无法说明变化是否持续或由减盐造成。",
+     "what_changed": "新增记录显示复诊安排在2026年10月2日。现有记录只有7月一次诊所血压138/88；没有新的血压读数。",
+     "why_now": "你记录了10月2日复诊，届时要讨论生活方式改变是否足够；现在记录一次血压，可能帮助这项决定。"
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "FAIL",
+  "hard_failure": false,
+  "reason": "Surfacing was appropriate: the new follow-up appointment makes the unresolved blood-pressure question decision-relevant, and the suggested home readings are proportionate and tied to whether lifestyle changes are enough. The candidate correctly says the available data cannot establish whether blood pressure fell after reducing salt. However, it omits the required clarification that a watch’s heart-rate data cannot measure blood pressure.",
+  "violated_forbidden": []
+ }
+}

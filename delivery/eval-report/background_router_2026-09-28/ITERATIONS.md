@@ -235,3 +235,57 @@ Remaining failure: **E046 r3** was silent on the fat-loss goal with "checkpoint 
 iterations 3–6, E046 was the one case whose failure survived every context change: it passed 1/3, 1/3, 1/3 and
 2/3 in iterations 3–6. Treat it as the model's residual uncertainty on "is a goal checkpoint a decision point" rather
 than a loop gap.
+
+## Holdout (run once on the frozen loop bf98499; no loop change was made after it)
+Holdout split: 14 cases (6 silence, 4 revisit, 4 measurement), 3 runs each, 42 runs per effort.
+
+**Checker defect found by the holdout (eval-side, not loop).** The posture cases' `outcome_terms` lacked `姿势`, the
+word the model actually uses for posture, so `gap_names_outcome_and_decision` failed 8 correct candidates that the
+judge had passed (holdout B20 and B24). The term list is fixed in `evals/cases_background.jsonl`. `rescore_gap_terms.py`
+recomputes that one check from the stored candidate text and writes `summary_rescored.json`. A run flips to PASS only
+if that check was its sole failed hard check and the judge passed it. The as-run `summary.json` files are untouched.
+This changes the eval, not the loop; it is disclosed because it was found by looking at holdout traces.
+
+| effort | silence | revisit | measurement (as run → rescored) | trust failures | s / investigation |
+|---|---|---|---|---|---|
+| low | 18/18 | 12/12 | 4/12 → **9/12 (0.75)** | 0 | 17.1 |
+| medium | 18/18 | 12/12 | 2/12 → **5/12 (0.42)** | 0 | 19.0 |
+| high | 18/18 | 12/12 | 10/12 → **10/12 (0.83)** | 0 | 30.0 |
+
+At medium effort the holdout milestone is **not met** (measurement 0.42). Silence and revisit hold at 1.00, with zero
+trust failures at every effort.
+
+Holdout measurement failures by case (passes out of 3, after rescoring):
+- **B17** (blood-pressure appointment gap): low 0/3, medium 0/3, high 1/3. In 8 of 9 runs the model surfaced correctly,
+  and every deterministic check passed (surface, evidence, question_id, no causal wording, outcome and decision named).
+  The judge failed them on specifics from the case's expected text: it did not say "watch heart rate cannot measure
+  blood pressure", or it recommended "a reading before the visit" rather than "a home blood-pressure log". This is
+  next-step specificity scored by a same-model judge against a narrow expected text, not a wrong decision. One low run
+  stayed silent.
+- **B24** (posture, passive data stopped adding information): low 3/3, **medium 0/3** (two silent, one judged as not
+  stating that passive data adds nothing), high 3/3.
+- **B19** (quiet preference plus a gap with a near decision): low 3/3, medium 2/3 (one silent: "a revisit time is not a
+  decision"), high 3/3.
+
+## Effort comparison (same frozen loop bf98499, dev and holdout, 3 runs per case)
+
+| split | effort | silence | revisit | measurement | trust | prompt tok | completion tok | turns | s mean (max) | router s/turn |
+|---|---|---|---|---|---|---|---|---|---|---|
+| dev | low | 36/36 | 21/21 | 15/15 | 0 | 17.1k | 495 | 3.4 | 19.4 (65) | 5.7 |
+| dev | medium (iter6) | 36/36 | 21/21 | 14/15 | 0 | 15.7k | 429 | 3.2 | 27.3 (103) | 8.3 |
+| dev | high | 36/36 | 21/21 | 14/15 | 0 | 16.4k | 838 | 3.2 | 38.9 (112) | 11.9 |
+| holdout | low | 18/18 | 12/12 | 9/12 | 0 | 14.8k | 423 | 3.1 | 17.1 (28) | 5.4 |
+| holdout | medium | 18/18 | 12/12 | 5/12 | 0 | 14.6k | 397 | 3.1 | 19.0 (51) | 6.2 |
+| holdout | high | 18/18 | 12/12 | 10/12 | 0 | 15.4k | 783 | 3.1 | 30.0 (80) | 9.5 |
+
+(Holdout measurement is after the gap-term rescore. Dev had nothing to rescore.)
+
+Reading:
+- The dev split is saturated at every effort (71–72 of 72), so effort cannot be judged on dev.
+- Holdout measurement is non-monotonic in effort (low 9 > medium 5 < high 10 of 12). Only 4 cases × 3 runs sit in that
+  bucket, and the medium dip comes from B24 (0/3 against 3/3 at both other efforts). That pattern is sampling variance on
+  borderline cases, not an effort effect. Effort buys nothing measurable here. High effort doubles completion tokens and
+  adds about 50–100 % latency.
+- The loop was the lever. On the same model and the same effort, the context change alone took dev from
+  silence 0.53 / revisit 0.24 / measurement 0.40 with 36 trust failures (iteration 0) to 1.00 / 1.00 / 0.93 with none
+  (iteration 6).

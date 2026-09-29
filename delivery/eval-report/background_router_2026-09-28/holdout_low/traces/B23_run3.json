@@ -1,0 +1,273 @@
+{
+ "record": {
+  "case_id": "B23",
+  "run": 3,
+  "category": "silence",
+  "split": "holdout",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "deterministic: no surface candidate, so no semantic content to judge",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "no_new_surface",
+    "ok": true,
+    "detail": "jobs=1 queued=0 model_silence=1 gate_blocked=0",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "model_silent",
+    "ok": true,
+    "detail": "jobs=1 queued=0 model_silence=1 gate_blocked=0",
+    "hard": true,
+    "needs_turn": false
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-luna",
+  "judge_model": "cx/gpt-6-luna",
+  "seconds": 12.9,
+  "tool_calls": [
+   "context_bootstrap",
+   "context_read",
+   "context_search",
+   "context_query"
+  ],
+  "error": null,
+  "turns": 3,
+  "tokens": {
+   "prompt": 15658,
+   "completion": 336
+  },
+  "effort": "low",
+  "decisions": [
+   "silence"
+  ],
+  "prompt_sha256": "40e567e66a68aaaf1f2172091b788d6ed8c326cdb15e83a86f7c6880aa5d6c06"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_69f9e13aa1e74c0aaae9d5d9a06bf19a",
+   "extraction": 0,
+   "plan": {
+    "changes": 2,
+    "enqueued": [
+     "revisit:rec_ebfb5a50b1c64044aef03950b6999e7b:fe94b827f0455bee"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_ebfb5a50b1c64044aef03950b6999e7b:fe94b827f0455bee",
+     "outcome": "silence",
+     "gate": {
+      "queued": false,
+      "reason": "silence"
+     },
+     "tool_calls": 7
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_69f9e13aa1e74c0aaae9d5d9a06bf19a\", \"extraction\": 0, \"plan\": {\"changes\": 2, \"enqueued\": [\"revisit:rec_ebfb5a50b1c64044aef03950b6999e7b:fe94b827f0455bee\"]}, \"jobs\": [{\"job\": \"revisit:rec_ebfb5a50b1c64044aef03950b6999e7b:fe94b827f0455bee\", \"outcome\": \"silence\", \"gate\": {\"queued\": false, \"reason\": \"silence\"}, \"tool_calls\": 7}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_ebfb5a50b1c64044aef03950b6999e7b:fe94b827f0455bee",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by new data matching one open question. Decide whether it changes what the user should know about that question.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_ebfb5a50b1c64044aef03950b6999e7b\",\"kind\":\"question\",\"occurred_at\":\"2026-06-10T14:00:00.000000+00:00\",\"payload\":{\"outcome\":\"posture\",\"state\":\"open\",\"watch_terms\":[\"posture\",\"corrective\",\"pelvic\"]},\"text\":\"SYNTHETIC: Is my posture correction (anterior pelvic tilt) improving?\"}\n\n## Prior analyses of this question (newest first)\n{\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_6ad37dbb58144d94a9f1de9a55691a53\",\"rec_ebfb5a50b1c64044aef03950b6999e7b\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_aa809e414b1b44bda42cc700ea33ba5a\",\"occurred_at\":\"2026-06-11T14:00:00.000000+00:00\",\"revisit_when\":\"after 12 weeks\",\"text\":\"SYNTHETIC analysis (June): baseline only; wearable metrics do not measure posture. Check after 12 weeks whether anything recorded since can answer the question.\"}\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 168 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user asked to be interrupted less: surface only a direct answer to their own question that the new evidence itself provides, a correction of something they were shown, or a measurement gap tied to a choice the user has said they are making within about two weeks (a revisit time an analysis set is not such a choice); everything else is silence\",\"proactivity\":\"quiet\"}\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"days_since_latest_sample\":1.1,\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_success_at\":\"2026-09-29T14:29:29.080444+00:00\",\"latest_sample_at\":\"2026-09-22T12:00:30.000000+00:00\",\"state\":\"ready\"}\n\n## Passive data available (observation catalog)\n{\"first_at\":\"2026-06-02T02:00:00.000000+00:00\",\"last_at\":\"2026-08-01T02:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":61,\"source_id\":\"synthetic:watch\",\"unit\":\"count\"}\n{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierHeartRateVariabilitySDNN\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"ms\"}\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"record\":{\"id\":\"rec_919336b0f9344e67b7948a6ab45f6f95\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: corrective exercises week 14, same routine, no new assessment planned.\"}}\n\nIf you surface, set question_id to rec_ebfb5a50b1c64044aef03950b6999e7b.",
+    "candidate": {
+     "decision": "silence",
+     "question_id": "rec_ebfb5a50b1c64044aef03950b6999e7b",
+     "topic": "仍无新的姿势评估；运动记录不能回答是否改善，且目前没有近期选择或检查点使测量缺口需要提醒"
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3300,
+      "completion_tokens": 15,
+      "tool_calls": 1,
+      "seconds": 2.1
+     },
+     {
+      "tool": "context_bootstrap",
+      "arguments": {},
+      "is_error": false,
+      "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T14:29:29.093641+00:00\",\"last_worker_run_at\":\"2026-09-29T14:29:29.093641+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":7,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T14:29:29.088630+00:00\",\"id\":\"rec_919336b0f9344e67b7948a6ab45f6f95\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: corrective exercises week 14, same routine, no new assessment planned.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:29:29.086565+00:00\",\"id\":\"rec_6ad37dbb58144d94a9f1de9a55691a53\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T17:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T12:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio assessment 2026-06-10, photo protocol P1 (side view, fixed camera height): anterior pelvic tilt estimate 14 deg.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:29:29.085698+00:00\",\"id\":\"rec_ebfb5a50b1c64044aef03950b6999e7b\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T09:00:00-05:00\",\"payload\":{\"outcome\":\"posture\",\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"posture\",\"corrective\",\"pelvic\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my posture correction (anterior pelvic tilt) improving?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierHeartRateVariabilitySDNN\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"ms\"},{\"first_at\":\"2026-06-02T02:00:00.000000+00:00\",\"last_at\":\"2026-08-01T02:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":61,\"source_id\":\"synthetic:watch\",\"unit\":\"count\"}],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"quiet\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_33dea4f6b19c4949b1d909180612b75b\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T14:29:29.087422+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_6ad37dbb58144d94a9f1de9a55691a53\",\"rec_ebfb5a50b1c64044aef03950b6999e7b\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_aa809e414b1b44bda42cc700ea33ba5a\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-06-11T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-11T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_ebfb5a50b1c64044aef03950b6999e7b\",\"revisit_when\":\"after 12 weeks\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): baseline only; wearable metrics do not measure posture. Check after 12 weeks whether anything recorded since can answer the question.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":2,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T14:29:31.240291+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":83,\"coverage\":{},\"cursor\":\"fixture-190\",\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_attempt_at\":\"2026-09-29T14:29:29.080444+00:00\",\"last_success_at\":\"2026-09-29T14:29:29.080444+00:00\",\"latest_sample_at\":\"2026-09-22T12:00:30.000000+00:00\",\"policy\":\"durable\",\"state\":\"ready\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4979,
+      "completion_tokens": 252,
+      "tool_calls": 3,
+      "seconds": 6.8
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_ebfb5a50b1c64044aef03950b6999e7b",
+        "rec_6ad37dbb58144d94a9f1de9a55691a53",
+        "rec_aa809e414b1b44bda42cc700ea33ba5a",
+        "rec_919336b0f9344e67b7948a6ab45f6f95"
+       ],
+       "include_history": true
+      },
+      "is_error": false,
+      "result_text": "{\"history\":{\"rec_6ad37dbb58144d94a9f1de9a55691a53\":[\"rec_6ad37dbb58144d94a9f1de9a55691a53\"],\"rec_919336b0f9344e67b7948a6ab45f6f95\":[\"rec_919336b0f9344e67b7948a6ab45f6f95\"],\"rec_aa809e414b1b44bda42cc700ea33ba5a\":[\"rec_aa809e414b1b44bda42cc700ea33ba5a\"],\"rec_ebfb5a50b1c64044aef03950b6999e7b\":[\"rec_ebfb5a50b1c64044aef03950b6999e7b\"]},\"missing_ids\":[],\"read_receipt\":\"rr_a63ac95224604b52badc16e0d5b0c5de\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T14:29:29.086565+00:00\",\"id\":\"rec_6ad37dbb58144d94a9f1de9a55691a53\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T17:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T12:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio assessment 2026-06-10, photo protocol P1 (side view, fixed camera height): anterior pelvic tilt estimate 14 deg.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:29:29.088630+00:00\",\"id\":\"rec_919336b0f9344e67b7948a6ab45f6f95\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: corrective exercises week 14, same routine, no new assessment planned.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:29:29.087422+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_6ad37dbb58144d94a9f1de9a55691a53\",\"rec_ebfb5a50b1c64044aef03950b6999e7b\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_aa809e414b1b44bda42cc700ea33ba5a\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-06-11T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-11T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_ebfb5a50b1c64044aef03950b6999e7b\",\"revisit_when\":\"after 12 weeks\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): baseline only; wearable metrics do not measure posture. Check after 12 weeks whether anything recorded since can answer the question.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:29:29.085698+00:00\",\"id\":\"rec_ebfb5a50b1c64044aef03950b6999e7b\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T09:00:00-05:00\",\"payload\":{\"outcome\":\"posture\",\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"posture\",\"corrective\",\"pelvic\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my posture correction (anterior pelvic tilt) improving?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_6ad37dbb58144d94a9f1de9a55691a53\":\"active\",\"rec_919336b0f9344e67b7948a6ab45f6f95\":\"active\",\"rec_aa809e414b1b44bda42cc700ea33ba5a\":\"active\",\"rec_ebfb5a50b1c64044aef03950b6999e7b\":\"active\"}}"
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "posture pelvic assessment photo",
+       "kind": "note",
+       "start_at": "2026-01-01T00:00:00Z",
+       "end_at": "2026-09-30T00:00:00Z",
+       "limit": 100,
+       "cursor": "",
+       "include_superseded": true
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_906e84247d2e4e79afd31d3ec857b7e1\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T14:29:29.088630+00:00\",\"id\":\"rec_919336b0f9344e67b7948a6ab45f6f95\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: corrective exercises week 14, same routine, no new assessment planned.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:29:29.086565+00:00\",\"id\":\"rec_6ad37dbb58144d94a9f1de9a55691a53\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T17:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T12:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio assessment 2026-06-10, photo protocol P1 (side view, fixed camera height): anterior pelvic tilt estimate 14 deg.\",\"timezone\":\"America/Chicago\"}],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"posture\",\"pelvic\",\"assessment\",\"photo\"],\"total_matches\":2,\"zero_hit_hint\":null}"
+     },
+     {
+      "tool": "context_query",
+      "arguments": {
+       "sql": "SELECT id, kind, occurred_at, text, payload_json, source_id FROM active_records WHERE kind IN ('question','analysis','note','event') ORDER BY occurred_at",
+       "parameters": [],
+       "limit": 500
+      },
+      "is_error": false,
+      "result_text": "{\"columns\":[\"id\",\"kind\",\"occurred_at\",\"text\",\"payload_json\",\"source_id\"],\"max_rows\":500,\"query_sha256\":\"16de3c3d62e81973454e9f1e1c3eb5908d39dbf5f6c0d6e3baa78500392ba4e7\",\"read_receipt\":\"rr_94d8c30e02cc41ef8e1e485e449a8c6b\",\"reads_observations\":false,\"rows\":[[\"rec_ebfb5a50b1c64044aef03950b6999e7b\",\"question\",\"2026-06-10T14:00:00.000000+00:00\",\"SYNTHETIC: Is my posture correction (anterior pelvic tilt) improving?\",\"{\\\"outcome\\\":\\\"posture\\\",\\\"state\\\":\\\"open\\\",\\\"synthetic\\\":true,\\\"watch_terms\\\":[\\\"posture\\\",\\\"corrective\\\",\\\"pelvic\\\"]}\",\"user\"],[\"rec_6ad37dbb58144d94a9f1de9a55691a53\",\"note\",\"2026-06-10T17:00:00.000000+00:00\",\"SYNTHETIC physio assessment 2026-06-10, photo protocol P1 (side view, fixed camera height): anterior pelvic tilt estimate 14 deg.\",\"{\\\"synthetic\\\":true}\",\"user\"],[\"rec_aa809e414b1b44bda42cc700ea33ba5a\",\"analysis\",\"2026-06-11T14:00:00.000000+00:00\",\"SYNTHETIC analysis (June): baseline only; wearable metrics do not measure posture. Check after 12 weeks whether anything recorded since can answer the question.\",\"{\\\"question_id\\\":\\\"rec_ebfb5a50b1c64044aef03950b6999e7b\\\",\\\"revisit_when\\\":\\\"after 12 weeks\\\",\\\"synthetic\\\":true}\",\"user\"],[\"rec_919336b0f9344e67b7948a6ab45f6f95\",\"note\",\"2026-09-22T01:00:00.000000+00:00\",\"SYNTHETIC: corrective exercises week 14, same routine, no new assessment planned.\",\"{\\\"synthetic\\\":true}\",\"user\"]],\"tables_read\":[\"active_records\",\"records\"],\"truncated\":false}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 7379,
+      "completion_tokens": 69,
+      "tool_calls": 0,
+      "seconds": 3.8
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3300,
+    "completion_tokens": 15,
+    "tool_calls": 1,
+    "seconds": 2.1
+   },
+   {
+    "tool": "context_bootstrap",
+    "arguments": {},
+    "is_error": false,
+    "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T14:29:29.093641+00:00\",\"last_worker_run_at\":\"2026-09-29T14:29:29.093641+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":7,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T14:29:29.088630+00:00\",\"id\":\"rec_919336b0f9344e67b7948a6ab45f6f95\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: corrective exercises week 14, same routine, no new assessment planned.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:29:29.086565+00:00\",\"id\":\"rec_6ad37dbb58144d94a9f1de9a55691a53\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T17:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T12:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio assessment 2026-06-10, photo protocol P1 (side view, fixed camera height): anterior pelvic tilt estimate 14 deg.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:29:29.085698+00:00\",\"id\":\"rec_ebfb5a50b1c64044aef03950b6999e7b\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T09:00:00-05:00\",\"payload\":{\"outcome\":\"posture\",\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"posture\",\"corrective\",\"pelvic\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my posture correction (anterior pelvic tilt) improving?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierHeartRateVariabilitySDNN\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"ms\"},{\"first_at\":\"2026-06-02T02:00:00.000000+00:00\",\"last_at\":\"2026-08-01T02:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":61,\"source_id\":\"synthetic:watch\",\"unit\":\"count\"}],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"quiet\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_33dea4f6b19c4949b1d909180612b75b\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T14:29:29.087422+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_6ad37dbb58144d94a9f1de9a55691a53\",\"rec_ebfb5a50b1c64044aef03950b6999e7b\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_aa809e414b1b44bda42cc700ea33ba5a\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-06-11T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-11T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_ebfb5a50b1c64044aef03950b6999e7b\",\"revisit_when\":\"after 12 weeks\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): baseline only; wearable metrics do not measure posture. Check after 12 weeks whether anything recorded since can answer the question.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":2,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T14:29:31.240291+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":83,\"coverage\":{},\"cursor\":\"fixture-190\",\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_attempt_at\":\"2026-09-29T14:29:29.080444+00:00\",\"last_success_at\":\"2026-09-29T14:29:29.080444+00:00\",\"latest_sample_at\":\"2026-09-22T12:00:30.000000+00:00\",\"policy\":\"durable\",\"state\":\"ready\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4979,
+    "completion_tokens": 252,
+    "tool_calls": 3,
+    "seconds": 6.8
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_ebfb5a50b1c64044aef03950b6999e7b",
+      "rec_6ad37dbb58144d94a9f1de9a55691a53",
+      "rec_aa809e414b1b44bda42cc700ea33ba5a",
+      "rec_919336b0f9344e67b7948a6ab45f6f95"
+     ],
+     "include_history": true
+    },
+    "is_error": false,
+    "result_text": "{\"history\":{\"rec_6ad37dbb58144d94a9f1de9a55691a53\":[\"rec_6ad37dbb58144d94a9f1de9a55691a53\"],\"rec_919336b0f9344e67b7948a6ab45f6f95\":[\"rec_919336b0f9344e67b7948a6ab45f6f95\"],\"rec_aa809e414b1b44bda42cc700ea33ba5a\":[\"rec_aa809e414b1b44bda42cc700ea33ba5a\"],\"rec_ebfb5a50b1c64044aef03950b6999e7b\":[\"rec_ebfb5a50b1c64044aef03950b6999e7b\"]},\"missing_ids\":[],\"read_receipt\":\"rr_a63ac95224604b52badc16e0d5b0c5de\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T14:29:29.086565+00:00\",\"id\":\"rec_6ad37dbb58144d94a9f1de9a55691a53\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T17:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T12:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio assessment 2026-06-10, photo protocol P1 (side view, fixed camera height): anterior pelvic tilt estimate 14 deg.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:29:29.088630+00:00\",\"id\":\"rec_919336b0f9344e67b7948a6ab45f6f95\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: corrective exercises week 14, same routine, no new assessment planned.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:29:29.087422+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_6ad37dbb58144d94a9f1de9a55691a53\",\"rec_ebfb5a50b1c64044aef03950b6999e7b\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_aa809e414b1b44bda42cc700ea33ba5a\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-06-11T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-11T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_ebfb5a50b1c64044aef03950b6999e7b\",\"revisit_when\":\"after 12 weeks\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): baseline only; wearable metrics do not measure posture. Check after 12 weeks whether anything recorded since can answer the question.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:29:29.085698+00:00\",\"id\":\"rec_ebfb5a50b1c64044aef03950b6999e7b\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T09:00:00-05:00\",\"payload\":{\"outcome\":\"posture\",\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"posture\",\"corrective\",\"pelvic\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my posture correction (anterior pelvic tilt) improving?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_6ad37dbb58144d94a9f1de9a55691a53\":\"active\",\"rec_919336b0f9344e67b7948a6ab45f6f95\":\"active\",\"rec_aa809e414b1b44bda42cc700ea33ba5a\":\"active\",\"rec_ebfb5a50b1c64044aef03950b6999e7b\":\"active\"}}"
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "posture pelvic assessment photo",
+     "kind": "note",
+     "start_at": "2026-01-01T00:00:00Z",
+     "end_at": "2026-09-30T00:00:00Z",
+     "limit": 100,
+     "cursor": "",
+     "include_superseded": true
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_906e84247d2e4e79afd31d3ec857b7e1\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T14:29:29.088630+00:00\",\"id\":\"rec_919336b0f9344e67b7948a6ab45f6f95\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: corrective exercises week 14, same routine, no new assessment planned.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:29:29.086565+00:00\",\"id\":\"rec_6ad37dbb58144d94a9f1de9a55691a53\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T17:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T12:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio assessment 2026-06-10, photo protocol P1 (side view, fixed camera height): anterior pelvic tilt estimate 14 deg.\",\"timezone\":\"America/Chicago\"}],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"posture\",\"pelvic\",\"assessment\",\"photo\"],\"total_matches\":2,\"zero_hit_hint\":null}"
+   },
+   {
+    "tool": "context_query",
+    "arguments": {
+     "sql": "SELECT id, kind, occurred_at, text, payload_json, source_id FROM active_records WHERE kind IN ('question','analysis','note','event') ORDER BY occurred_at",
+     "parameters": [],
+     "limit": 500
+    },
+    "is_error": false,
+    "result_text": "{\"columns\":[\"id\",\"kind\",\"occurred_at\",\"text\",\"payload_json\",\"source_id\"],\"max_rows\":500,\"query_sha256\":\"16de3c3d62e81973454e9f1e1c3eb5908d39dbf5f6c0d6e3baa78500392ba4e7\",\"read_receipt\":\"rr_94d8c30e02cc41ef8e1e485e449a8c6b\",\"reads_observations\":false,\"rows\":[[\"rec_ebfb5a50b1c64044aef03950b6999e7b\",\"question\",\"2026-06-10T14:00:00.000000+00:00\",\"SYNTHETIC: Is my posture correction (anterior pelvic tilt) improving?\",\"{\\\"outcome\\\":\\\"posture\\\",\\\"state\\\":\\\"open\\\",\\\"synthetic\\\":true,\\\"watch_terms\\\":[\\\"posture\\\",\\\"corrective\\\",\\\"pelvic\\\"]}\",\"user\"],[\"rec_6ad37dbb58144d94a9f1de9a55691a53\",\"note\",\"2026-06-10T17:00:00.000000+00:00\",\"SYNTHETIC physio assessment 2026-06-10, photo protocol P1 (side view, fixed camera height): anterior pelvic tilt estimate 14 deg.\",\"{\\\"synthetic\\\":true}\",\"user\"],[\"rec_aa809e414b1b44bda42cc700ea33ba5a\",\"analysis\",\"2026-06-11T14:00:00.000000+00:00\",\"SYNTHETIC analysis (June): baseline only; wearable metrics do not measure posture. Check after 12 weeks whether anything recorded since can answer the question.\",\"{\\\"question_id\\\":\\\"rec_ebfb5a50b1c64044aef03950b6999e7b\\\",\\\"revisit_when\\\":\\\"after 12 weeks\\\",\\\"synthetic\\\":true}\",\"user\"],[\"rec_919336b0f9344e67b7948a6ab45f6f95\",\"note\",\"2026-09-22T01:00:00.000000+00:00\",\"SYNTHETIC: corrective exercises week 14, same routine, no new assessment planned.\",\"{\\\"synthetic\\\":true}\",\"user\"]],\"tables_read\":[\"active_records\",\"records\"],\"truncated\":false}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 7379,
+    "completion_tokens": 69,
+    "tool_calls": 0,
+    "seconds": 3.8
+   }
+  ],
+  "error": null,
+  "seconds": 12.9,
+  "turns": 3,
+  "tokens": {
+   "prompt": 15658,
+   "completion": 336
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [],
+  "preferences_before": {
+   "proactivity": "quiet"
+  },
+  "preferences_after": {
+   "proactivity": "quiet"
+  },
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "violated_forbidden": [],
+  "reason": "deterministic: no surface candidate, so no semantic content to judge"
+ }
+}

@@ -1,0 +1,229 @@
+{
+ "meta": {
+  "started_at": "2026-09-29T14:19:49.648595+00:00",
+  "model": "cx/gpt-6-luna",
+  "judge_model": "cx/gpt-6-luna",
+  "backend": "router (local OpenAI-compatible, in-process read-only tools), reasoning_effort=medium",
+  "split": "holdout",
+  "cases": [
+   "E032",
+   "E040",
+   "B02",
+   "B04",
+   "B06",
+   "B08",
+   "B10",
+   "B13",
+   "B15",
+   "B17",
+   "B19",
+   "B20",
+   "B23",
+   "B24"
+  ],
+  "runs": 42,
+  "hashes": {
+   "prompts/foreground.md": "d8bee81c6e65da62087a8fe6341ffd02c2821a36f5b289232ff424deae8ae8e2",
+   "prompts/background.md": "40e567e66a68aaaf1f2172091b788d6ed8c326cdb15e83a86f7c6880aa5d6c06",
+   "contracts/tools.json": "d7065f366c16c91d01b030d152a82f155aded2ad85268995836119479b77c32b",
+   "evals/cases.jsonl": "29771142da76a6ca6e89e55d26923f800849bf9771c5f694702c98b223153df1",
+   "evals/cases_background.jsonl": "e32f9f78aa63f65058c0e75ee525f95b98064aa3e39294fa8a217c657082ea04",
+   "evals/fixtures.py": "f0af27c00f01a0fdf7b0d5a0b4b982406066073ff395e6935a37ecb6a54e3378",
+   "evals/harness.py": "2e4b30921c704b389d42f3ed685264936c3e962afcfb0a7ec6f03acb4e88b451",
+   "src": "99c059b4689902c48d7a695d4e9591559584897f549249c05f69ab47eeef2e7e"
+  },
+  "finished_at": "2026-09-29T14:23:07.169765+00:00"
+ },
+ "buckets": {
+  "measurement": {
+   "pass": 2,
+   "run": 12,
+   "not_run": 0,
+   "rate": 0.167,
+   "per_run": {
+    "1": 0.25,
+    "2": 0.0,
+    "3": 0.25
+   }
+  },
+  "revisit": {
+   "pass": 12,
+   "run": 12,
+   "not_run": 0,
+   "rate": 1.0,
+   "per_run": {
+    "1": 1.0,
+    "2": 1.0,
+    "3": 1.0
+   }
+  },
+  "silence": {
+   "pass": 18,
+   "run": 18,
+   "not_run": 0,
+   "rate": 1.0,
+   "per_run": {
+    "1": 1.0,
+    "2": 1.0,
+    "3": 1.0
+   }
+  }
+ },
+ "by_expected_decision": {
+  "silence": {
+   "pass": 21,
+   "run": 21,
+   "not_run": 0,
+   "rate": 1.0,
+   "per_run": {
+    "1": 1.0,
+    "2": 1.0,
+    "3": 1.0
+   }
+  },
+  "surface": {
+   "pass": 11,
+   "run": 21,
+   "not_run": 0,
+   "rate": 0.524,
+   "per_run": {
+    "1": 0.571,
+    "2": 0.429,
+    "3": 0.571
+   }
+  }
+ },
+ "failures": [
+  {
+   "case_id": "B17",
+   "run": 1,
+   "status": "FAIL",
+   "hard": false,
+   "decisions": [
+    "surface"
+   ],
+   "failed_checks": [],
+   "reason": "Surfacing was appropriate: the new follow-up appointment makes the unresolved blood-pressure question decision-relevant, and the suggested home readings are proportionate and tied to whether lifestyle changes are enough. The candidate correctly says the available data cannot establish whether blood "
+  },
+  {
+   "case_id": "B17",
+   "run": 2,
+   "status": "FAIL",
+   "hard": false,
+   "decisions": [
+    "surface"
+   ],
+   "failed_checks": [],
+   "reason": "The candidate correctly surfaces the new follow-up, states that the available readings cannot show whether blood pressure fell, and recommends a home blood-pressure log to inform the decision about continuing the lifestyle plan. But it omits the expected clarification that watch heart-rate data cann"
+  },
+  {
+   "case_id": "B17",
+   "run": 3,
+   "status": "FAIL",
+   "hard": false,
+   "decisions": [
+    "surface"
+   ],
+   "failed_checks": [],
+   "reason": "Surfacing the new follow-up appointment was appropriate, and the candidate correctly says the records cannot establish whether blood pressure fell or whether salt reduction caused a change. It also links new readings to the follow-up decision. However, it does not explicitly state that wearable hear"
+  },
+  {
+   "case_id": "B19",
+   "run": 2,
+   "status": "FAIL",
+   "hard": true,
+   "decisions": [
+    "silence"
+   ],
+   "failed_checks": [
+    "surfaced"
+   ],
+   "reason": "deterministic: no surface candidate, so no semantic content to judge"
+  },
+  {
+   "case_id": "B20",
+   "run": 1,
+   "status": "FAIL",
+   "hard": true,
+   "decisions": [
+    "surface"
+   ],
+   "failed_checks": [
+    "gap_names_outcome_and_decision"
+   ],
+   "reason": "Surfacing was appropriate: the new physio check-in creates an upcoming decision about continuing the program, and nothing had previously been surfaced. The candidate says improvement cannot currently be judged, recommends a repeat P1 side-view photo compared with the June baseline, and explains that"
+  },
+  {
+   "case_id": "B20",
+   "run": 2,
+   "status": "FAIL",
+   "hard": true,
+   "decisions": [
+    "surface"
+   ],
+   "failed_checks": [
+    "gap_names_outcome_and_decision"
+   ],
+   "reason": "正确选择提醒：新的复诊记录说明10月1日将决定是否继续计划，且自6月以来没有新姿势照片。候选明确指出手表的步数和HRV无法判断姿势是否改善，并建议按相同P1流程复拍、与6月14°基线比较，说明结果如何帮助复诊决策。该测量与待回答的问题相关，并非不必要新增测量；没有把共同出现的记录说成原因。"
+  },
+  {
+   "case_id": "B20",
+   "run": 3,
+   "status": "FAIL",
+   "hard": true,
+   "decisions": [
+    "surface"
+   ],
+   "failed_checks": [
+    "gap_names_outcome_and_decision"
+   ],
+   "reason": "正确地因10月1日复诊将决定是否继续矫正计划而主动提示。说明现有手表数据不能回答姿势是否改善，并建议复拍与6月相同的P1协议照片；解释该结果可用于复诊时的继续与否决策。比较协议有证据支持，且没有把相关记录说成原因。"
+  },
+  {
+   "case_id": "B24",
+   "run": 1,
+   "status": "FAIL",
+   "hard": false,
+   "decisions": [
+    "surface"
+   ],
+   "failed_checks": [],
+   "reason": "Surfacing was appropriate: the week-14 note is new, and the candidate names a repeat assessment using the same P1 photo protocol, comparison with the 14° baseline, and how the result could inform whether to continue or reassess. However, it does not explicitly say that the available passive wearable"
+  },
+  {
+   "case_id": "B24",
+   "run": 2,
+   "status": "FAIL",
+   "hard": true,
+   "decisions": [
+    "silence"
+   ],
+   "failed_checks": [
+    "surfaced"
+   ],
+   "reason": "deterministic: no surface candidate, so no semantic content to judge"
+  },
+  {
+   "case_id": "B24",
+   "run": 3,
+   "status": "FAIL",
+   "hard": true,
+   "decisions": [
+    "silence"
+   ],
+   "failed_checks": [
+    "surfaced"
+   ],
+   "reason": "deterministic: no surface candidate, so no semantic content to judge"
+  }
+ ],
+ "cost": {
+  "investigations": 42,
+  "mean_prompt_tokens": 14628,
+  "mean_completion_tokens": 397,
+  "mean_seconds": 19.0,
+  "mean_turns": 3.1,
+  "max_seconds": 51.3
+ },
+ "critical_trust_failures": []
+}
