@@ -90,6 +90,46 @@ class CompanionTests(unittest.TestCase):
             self.assertEqual(c.execute("SELECT count(*) FROM observations WHERE native_id='SYNTHETIC-retry'")
                              .fetchone()[0], 1)
 
+    def test_a_write_slower_than_the_apps_timeout_is_acknowledged_in_time_and_applied_later(self):
+        """Live: every phone sync took longer than the app's 30 s timeout, so the app showed "Webhook failed" on each
+        one although the data was stored. The body is spooled and acknowledged (202) before the timeout."""
+        from unittest import mock
+        real, gate = self.store.ingest_batch, threading.Event()
+        payload = {'steps': [{'uuid': 'SYNTHETIC-slow', 'start_time': '2026-09-20T08:00:00-05:00',
+                              'end_time': '2026-09-20T08:10:00-05:00', 'count': 5, 'source': 'SYNTHETIC'}]}
+        with mock.patch.object(companion, 'ACK_WAIT_S', 0.3), \
+                mock.patch.object(self.store, 'ingest_batch', side_effect=lambda **kw: gate.wait(5) and real(**kw)):
+            started = time.monotonic()
+            status, ack = self.post_json(payload)
+            self.assertLess(time.monotonic() - started, 2)
+            self.assertEqual((status, ack), (202, {'accepted': True, 'queued': True}))
+            self.assertEqual(len(list((self.store.root / 'companion-spool').glob('*.json'))), 1)
+            gate.set()
+            for _ in range(50):
+                if not list((self.store.root / 'companion-spool').glob('*.json')):
+                    break
+                time.sleep(0.1)
+        with self.store.connect() as c:
+            self.assertEqual(c.execute("SELECT count(*) FROM observations WHERE native_id='SYNTHETIC-slow'")
+                             .fetchone()[0], 1)
+        self.assertEqual(self.post_json(payload)[0], 200)  # the app's re-send of a queued body replays
+
+    def test_a_body_spooled_before_a_restart_is_applied_at_startup(self):
+        body = json.dumps({'steps': [{'uuid': 'SYNTHETIC-spooled', 'start_time': '2026-09-20T08:00:00-05:00',
+                                      'end_time': '2026-09-20T08:10:00-05:00', 'count': 7,
+                                      'source': 'SYNTHETIC'}]}).encode()
+        spool = self.store.root / 'companion-spool'
+        (spool / (hashlib.sha256(body).hexdigest() + '.json')).write_bytes(body)
+        writer = companion._Writer(self.store, 'America/Chicago')
+        self.addCleanup(writer.stop)
+        for _ in range(50):
+            if not list(spool.glob('*.json')):
+                break
+            time.sleep(0.1)
+        with self.store.connect() as c:
+            self.assertEqual(c.execute("SELECT value_num FROM observations WHERE native_id='SYNTHETIC-spooled'")
+                             .fetchone()[0], 7)
+
     def post(self, payload, *, secret=SECRET, header=True):
         body = json.dumps(payload).encode()
         headers = {'Content-Type': 'application/json'}

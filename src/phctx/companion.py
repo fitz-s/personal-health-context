@@ -21,6 +21,8 @@ import hmac
 import json
 import logging
 import math
+import os
+import queue
 import secrets
 import socket
 import threading
@@ -361,6 +363,10 @@ MAX_CONN = 8
 PER_PEER = 2
 REQUEST_S = 60
 IDLE_S = 20
+# The app gives up after 30 s and re-queues the payload; a reply after that reads as a failed sync on the phone even
+# when the data was stored. A verified body is spooled to disk first, so it can be acknowledged by this deadline.
+ACK_WAIT_S = 20
+BUSY_RETRY_S = 15
 
 
 class _BadRequest(Exception):
@@ -370,6 +376,8 @@ class _BadRequest(Exception):
 
 class _Server(ThreadingHTTPServer):
     daemon_threads = True
+
+    writer: '_Writer | None' = None
 
     def __init__(self, addr, handler):
         super().__init__(addr, handler)
@@ -416,13 +424,104 @@ class _Server(ThreadingHTTPServer):
     def handle_error(self, request, client_address):
         log.debug('companion_connection_error', exc_info=True)
 
+    def server_close(self):
+        super().server_close()
+        if self.writer:
+            self.writer.stop()
+
+
+class _Job:
+    """One spooled body: the request thread that spooled it waits on `done` for `result` (status, body)."""
+    def __init__(self, sha: str):
+        self.sha, self.done, self.result = sha, threading.Event(), None
+
+
+class _Writer:
+    """The only thread that writes companion data. Bodies wait in `spool` (one file per body hash, so an identical
+    retry is the same file) until their ingest commits; a body left there by a restart is applied at startup."""
+    def __init__(self, store: Store, tz: str):
+        self.store, self.tz = store, tz
+        self.spool = store.root / 'companion-spool'
+        (self.spool / 'failed').mkdir(parents=True, exist_ok=True, mode=0o700)
+        self.jobs: queue.Queue = queue.Queue()
+        self.last: dict[str, tuple[int, dict]] = {}  # sha -> result of its most recent apply
+        for f in sorted(self.spool.glob('*.json'), key=lambda f: f.stat().st_mtime):
+            self.jobs.put(_Job(f.stem))
+        self.thread = threading.Thread(target=self.run, daemon=True)
+        self.thread.start()
+
+    def submit(self, raw: bytes) -> _Job:
+        sha = hashlib.sha256(raw).hexdigest()
+        tmp = self.spool / f'.{sha}.{secrets.token_hex(4)}.tmp'
+        with open(tmp, 'wb') as f:
+            f.write(raw)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, self.spool / f'{sha}.json')
+        fd = os.open(self.spool, os.O_RDONLY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+        job = _Job(sha)
+        self.jobs.put(job)
+        return job
+
+    def stop(self) -> None:
+        self.jobs.put(None)
+
+    def run(self) -> None:
+        while (job := self.jobs.get()) is not None:
+            try:
+                job.result = self.apply(job)
+            except Exception:
+                log.exception('companion_ingest_error')  # never the payload: no health values logged
+                job.result = (503, {'error': 'storage_unavailable'})
+            if job.result is None:  # storage busy: the body stays spooled and is retried
+                threading.Timer(BUSY_RETRY_S, self.jobs.put, (_Job(job.sha),)).start()
+            else:
+                job.done.set()
+
+    def apply(self, job: _Job) -> tuple[int, dict] | None:
+        path = self.spool / f'{job.sha}.json'
+        try:
+            raw = path.read_bytes()
+        except FileNotFoundError:  # an identical body already applied
+            return self.last.get(job.sha, (200, {'accepted': True}))
+        samples, unmapped, skipped = translate(json.loads(raw), self.tz)
+        if skipped:
+            log.info('skipped %d malformed healthkit_samples records', skipped)
+        request_id = 'companion:' + job.sha  # identical retries are idempotent
+        # cursor must be a function of the request body, not wall-clock time: the store's own idempotency check
+        # re-hashes the whole ingest_batch body (cursor included), so a byte-identical retry needs a byte-identical
+        # cursor to be recognized as a replay rather than an "idempotency_conflict".
+        upserted = 0  # the store takes at most 5000 samples a page
+        try:
+            for i in range(0, len(samples), 5000):
+                result = self.store.ingest_batch(request_id=f'{request_id}:{i}', source_id=SOURCE_ID,
+                                                 samples=samples[i:i + 5000], deleted_ids=[], cursor=request_id,
+                                                 coverage={'kind': 'life_dashboard_companion_webhook'})
+                upserted += result['upserted']
+        except StoreError as e:
+            log.info('store_error %s after %d/%d samples', e.code, upserted, len(samples))
+            if e.code in {'storage_busy', 'storage_unavailable'}:
+                return None
+            path.replace(self.spool / 'failed' / path.name)
+            return 422, {'error': e.code}
+        path.unlink(missing_ok=True)
+        log.info('applied %s samples=%d upserted=%d', job.sha[:12], len(samples), upserted)
+        self.last[job.sha] = (200, {'accepted': True, 'upserted': upserted, 'unmapped_types': sorted(unmapped),
+                                    'skipped': skipped})
+        if len(self.last) > 256:
+            del self.last[next(iter(self.last))]
+        return self.last[job.sha]
+
 
 def make_server(store: Store, host: str, port: int, secret: str, tz: str) -> ThreadingHTTPServer:
     store.register_source(SOURCE_ID, SOURCE_LABEL, 'durable')
-    # One ingest at a time: the app retries a request its 30 s timeout gave up on while the first copy is still
-    # writing; unserialized, the retry waited out the store's busy timeout and got 503. Serialized, it waits for the
-    # first copy and replays its committed result (same request_id).
-    writing = threading.Lock()
+    # One ingest at a time (a single writer thread): a retry never races the first copy for the write lock, and it
+    # replays the first copy's committed result (same request_id).
+    writer = _Writer(store, tz)
 
     class Handler(BaseHTTPRequestHandler):
         server_version = 'phctx-companion/1'
@@ -494,38 +593,19 @@ def make_server(store: Store, host: str, port: int, secret: str, tz: str) -> Thr
             except ValueError:
                 self.reply(400, {'error': 'malformed_json'})
                 return
-            samples, unmapped, skipped = translate(payload, tz)
-            if skipped:
-                log.info('skipped %d malformed healthkit_samples records', skipped)
-            request_id = 'companion:' + hashlib.sha256(raw).hexdigest()  # identical retries are idempotent
-            try:
-                # cursor must be a function of the request body, not wall-clock time: the store's own
-                # idempotency check re-hashes the whole ingest_batch body (cursor included), so a
-                # byte-identical retry needs a byte-identical cursor to be recognized as a replay
-                # rather than an "idempotency_conflict".
-                upserted = 0  # the store takes at most 5000 samples a page; the reply comes only after every page
-                with writing:
-                    for i in range(0, len(samples), 5000):
-                        result = store.ingest_batch(request_id=f'{request_id}:{i}', source_id=SOURCE_ID,
-                                                   samples=samples[i:i + 5000], deleted_ids=[], cursor=request_id,
-                                                   coverage={'kind': 'life_dashboard_companion_webhook'})
-                        upserted += result['upserted']
-            except StoreError as e:
-                log.info('store_error %s after %d/%d samples', e.code, upserted, len(samples))
-                status = 503 if e.code in {'storage_busy', 'storage_unavailable'} else 422
-                self.reply(status, {'error': e.code})
-                return
-            except Exception:
-                log.exception('companion_ingest_error')  # never the payload: no health values logged
-                self.reply(503, {'error': 'storage_unavailable'})
-                return
-            self.reply(200, {'accepted': True, 'upserted': upserted, 'unmapped_types': sorted(unmapped),
-                             'skipped': skipped})
+            job = writer.submit(raw)  # durable before any reply: a 2xx means the body will be applied
+            if job.done.wait(ACK_WAIT_S):
+                self.reply(*job.result)
+            else:
+                log.info('queued %s', job.sha[:12])
+                self.reply(202, {'accepted': True, 'queued': True})
 
         def do_GET(self):  # noqa: N802
             self.reply(404, {'error': 'not_found'})
 
-    return _Server((host, port), Handler)
+    srv = _Server((host, port), Handler)
+    srv.writer = writer
+    return srv
 
 
 def serve_background(srv: ThreadingHTTPServer) -> threading.Thread:
