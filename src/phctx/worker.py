@@ -399,10 +399,25 @@ def packet(store: Store, job: dict, now: datetime | None = None) -> str:
                 "SELECT * FROM active_records WHERE kind='analysis' AND (json_extract(payload_json, '$.question_id')=? "
                 'OR id IN (SELECT record_id FROM evidence_links WHERE evidence_id=?)) ORDER BY occurred_at DESC',
                 (qid, qid))]
+            since = [dict(r) for r in c.execute(
+                "SELECT id, kind, occurred_at, substr(text, 1, 300) text FROM active_records WHERE kind != 'analysis' "
+                'AND id != ? AND occurred_at > ? ORDER BY occurred_at', (qid, analyses[0]['occurred_at']))][:20] \
+                if analyses else []
             parts.append(_section('Prior analyses of this question (newest first)', [
-                {'id': a['id'], 'occurred_at': a['occurred_at'], 'text': _cut(a['text'], 2000),
+                {'id': a['id'], 'occurred_at': a['occurred_at'],
+                 'days_ago': (now - datetime.fromisoformat(a['occurred_at'])).days, 'text': _cut(a['text'], 2000),
                  'revisit_when': a['payload'].get('revisit_when'), 'evidence_status': _evidence_status(a)}
                 for a in analyses], 12_000, 'None: this question was never analysed.'))
+            if analyses:
+                at = analyses[0]['occurred_at']
+                added = [dict(r) for r in c.execute(
+                    'SELECT source_id, metric, count(*) n, min(start_at) first, max(start_at) last FROM '
+                    'canonical_observations WHERE start_at > ? GROUP BY source_id, metric ORDER BY n DESC LIMIT 20', (at,))]
+                parts.append(_section(f'Since the newest analysis ({at[:10]}): records written', since, 5_000, 'None.')
+                             + '\n' + _section('Since the newest analysis: passive samples added', added, 3_000, 'None.')
+                             + '\nCompare these with the analysis text itself: does anything here meet a condition it '
+                             'set (a named repeat, a date, a number of weeks), or show that the data accumulating since '
+                             'cannot answer the question?')
             told = [_insight(r) for r in c.execute('SELECT * FROM insights WHERE question_id=? ORDER BY created_at DESC',
                                                    (qid,))]
             told += [_insight(r, True) for r in c.execute(
