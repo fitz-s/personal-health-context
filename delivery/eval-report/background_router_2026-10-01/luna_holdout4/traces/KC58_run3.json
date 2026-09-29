@@ -1,0 +1,317 @@
+{
+ "record": {
+  "case_id": "KC58",
+  "run": 3,
+  "category": "measurement",
+  "split": "holdout4",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "Surfacing is appropriate before the recorded physio decision. The candidate explains that step counts cannot answer whether the ankle has recovered, proposes a specific pain-rating method to inform the return-to-football discussion, and does not treat the older hopping score and new walking ratings as a like-for-like comparison or claim causation.",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_d9e687605c0b4bf9bfe8a8c694501648\", \"request_id\": \"worker:job_056d960c403c438688cf4f0bea4aa8bf:0:w_156d637314a449209a46054b8f6ffef2\", \"status\": \"committed\", \"request_hash\": \"5b364e12cde721cf82a337cb9a0b7cab6fb19dd80a7fb005446877e3a274ffeb\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_99f7c37788654b76b861387fed15a89a",
+    "hard": true
+   },
+   {
+    "check": "next_step_names_a_method",
+    "ok": true,
+    "detail": "0–10,0–10",
+    "hard": true
+   },
+   {
+    "check": "gap_names_outcome_and_decision",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-luna",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 76.7,
+  "tool_calls": [
+   "context_bootstrap",
+   "context_read",
+   "context_search"
+  ],
+  "error": null,
+  "turns": 3,
+  "tokens": {
+   "prompt": 15147,
+   "completion": 878
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "guards": [],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_6c78986eff724178a27ac2279e2429f2",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_99f7c37788654b76b861387fed15a89a:fe94b827f0455bee"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_99f7c37788654b76b861387fed15a89a:fe94b827f0455bee",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_d9e687605c0b4bf9bfe8a8c694501648",
+      "request_id": "worker:job_056d960c403c438688cf4f0bea4aa8bf:0:w_156d637314a449209a46054b8f6ffef2",
+      "status": "committed",
+      "request_hash": "5b364e12cde721cf82a337cb9a0b7cab6fb19dd80a7fb005446877e3a274ffeb"
+     },
+     "tool_calls": 6
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_6c78986eff724178a27ac2279e2429f2\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_99f7c37788654b76b861387fed15a89a:fe94b827f0455bee\"]}, \"jobs\": [{\"job\": \"revisit:rec_99f7c37788654b76b861387fed15a89a:fe94b827f0455bee\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_d9e687605c0b4bf9bfe8a8c694501648\", \"request_id\": \"worker:job_056d960c403c438688cf4f0bea4aa8bf:0:w_156d637314a449209a46054b8f6ffef2\", \"status\": \"committed\", \"request_hash\": \"5b364e12cde721cf82a337cb9a0b7cab6fb19dd80a7fb005446877e3a274ffeb\"}, \"tool_calls\": 6}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_99f7c37788654b76b861387fed15a89a:fe94b827f0455bee",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by a change matching one open question. The change is either new data about the question or a dated event the user recorded (then the trigger carries `dated_event`). Decide whether the user should hear something about this question now: a new answer, a correction, or, when a dated event on this question is near and the data on record cannot answer it, which measurement would. Otherwise stay silent.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_99f7c37788654b76b861387fed15a89a\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"outcome\":\"knee\",\"state\":\"open\",\"watch_metrics\":[\"ankle\",\"physio\"],\"watch_terms\":[\"ankle\",\"physio\"]},\"text\":\"SYNTHETIC: Is my ankle sprain recovering?\"}\n\n## Prior analyses of this question (newest first)\n{\"days_ago\":83,\"evidence_status\":\"not verifiable (written without read receipts); not known to be stale\",\"id\":\"rec_67f2374147734a2da61640207337e28b\",\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis (Aug): ankle pain 5/10 on hopping; steps do not measure it.\"}\n\n## Since the newest analysis (2026-07-02): records written\n{\"id\":\"rec_55b3b89fd6a64268b77a52a42e424416\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: physio on 2026-09-29 to decide whether I can return to football; I stopped rating the ankle in August.\"}\n## Since the newest analysis: passive samples added\n{\"first\":\"2026-09-02T02:00:00.000000+00:00\",\"last\":\"2026-09-23T02:00:00.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\"}\nThe newest analysis set no revisit condition field; read its text for one before assuming there is none.\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\n{\"date\":\"2026-09-29\",\"days_until\":6,\"kind\":\"note\",\"mentions_questions\":[\"rec_99f7c37788654b76b861387fed15a89a\"],\"note\":\"6 days left: anything measured for this must be done before then\",\"read_as\":\"explicit date\",\"record_id\":\"rec_55b3b89fd6a64268b77a52a42e424416\",\"text\":\"SYNTHETIC: physio on 2026-09-29 to decide whether I can return to football; I stopped rating the ankle in August.\"}\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"days_since_latest_sample\":0.5,\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_success_at\":\"2026-09-29T20:29:31.461382+00:00\",\"latest_sample_at\":\"2026-09-23T02:00:30.000000+00:00\",\"state\":\"ready\"}\n\n## Passive data available (observation catalog)\n{\"first_at\":\"2026-09-02T02:00:00.000000+00:00\",\"last_at\":\"2026-09-23T02:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count\"}\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"dated_event\":{\"date\":\"2026-09-29\",\"days_until\":6,\"meaning\":\"this record is a dated event the user recorded, not a measurement\"},\"record\":{\"id\":\"rec_55b3b89fd6a64268b77a52a42e424416\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: physio on 2026-09-29 to decide whether I can return to football; I stopped rating the ankle in August.\"}}\n\nIf you surface, set question_id to rec_99f7c37788654b76b861387fed15a89a.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_99f7c37788654b76b861387fed15a89a",
+     "topic": "为 9 月 29 日的足球复出决定补上脚踝记录",
+     "why_now": "你记录了 9 月 29 日要和理疗师决定能否回足球，距离现在 6 天；目前缺少近期、直接反映脚踝情况的记录，趁会面前补充可帮助讨论。",
+     "what_changed": "7 月 2 日的分析记载，当时跳跃时脚踝疼痛为 5/10，并指出步数不能衡量脚踝情况。9 月 22 日你说自己 8 月起停止给脚踝评分。9 月 2 日至 23 日有 22 条步数样本，但它们不能回答脚踝是否恢复。",
+     "unknowns": "现有记录无法说明近期脚踝疼痛或功能是否改善，也不能单独判断是否适合复出。",
+     "next_step": "在理疗会面前，每天用 0–10 分记录一次脚踝在日常步行中的疼痛，并注明当时活动；把记录带去讨论是否复出。它能补充近期症状变化，但不能单独证明已准备好踢球，也不能说明变化原因。",
+     "evidence_ids": [
+      "rec_99f7c37788654b76b861387fed15a89a",
+      "rec_67f2374147734a2da61640207337e28b",
+      "rec_55b3b89fd6a64268b77a52a42e424416"
+     ],
+     "evidence_versions": {
+      "rec_99f7c37788654b76b861387fed15a89a": "active",
+      "rec_67f2374147734a2da61640207337e28b": "active",
+      "rec_55b3b89fd6a64268b77a52a42e424416": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3612,
+      "completion_tokens": 15,
+      "tool_calls": 1,
+      "seconds": 1.8
+     },
+     {
+      "tool": "context_bootstrap",
+      "arguments": {},
+      "is_error": false,
+      "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T20:29:31.516883+00:00\",\"last_worker_run_at\":\"2026-09-29T20:29:31.516883+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":6,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T20:29:31.483418+00:00\",\"id\":\"rec_55b3b89fd6a64268b77a52a42e424416\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: physio on 2026-09-29 to decide whether I can return to football; I stopped rating the ankle in August.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:29:31.433663+00:00\",\"id\":\"rec_d786c5ebd0754352a13564e755956bae\",\"kind\":\"routine\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC ankle rehab daily.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:29:31.427631+00:00\",\"id\":\"rec_99f7c37788654b76b861387fed15a89a\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"knee\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"ankle\",\"physio\"],\"watch_terms\":[\"ankle\",\"physio\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my ankle sprain recovering?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[{\"first_at\":\"2026-09-02T02:00:00.000000+00:00\",\"last_at\":\"2026-09-23T02:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count\"}],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_b90bbf834758483983a8711d4523514f\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T20:29:31.438193+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_99f7c37788654b76b861387fed15a89a\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_67f2374147734a2da61640207337e28b\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_99f7c37788654b76b861387fed15a89a\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (Aug): ankle pain 5/10 on hopping; steps do not measure it.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":1,\"question\":1,\"routine\":1},\"source_status\":{\"checked_at\":\"2026-09-29T20:29:33.440177+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":22,\"coverage\":{},\"cursor\":\"fixture-149\",\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_attempt_at\":\"2026-09-29T20:29:31.461382+00:00\",\"last_success_at\":\"2026-09-29T20:29:31.461382+00:00\",\"latest_sample_at\":\"2026-09-23T02:00:30.000000+00:00\",\"policy\":\"durable\",\"state\":\"ready\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 5146,
+      "completion_tokens": 169,
+      "tool_calls": 2,
+      "seconds": 23.5
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_99f7c37788654b76b861387fed15a89a",
+        "rec_67f2374147734a2da61640207337e28b",
+        "rec_55b3b89fd6a64268b77a52a42e424416"
+       ],
+       "include_history": true
+      },
+      "is_error": false,
+      "result_text": "{\"history\":{\"rec_55b3b89fd6a64268b77a52a42e424416\":[\"rec_55b3b89fd6a64268b77a52a42e424416\"],\"rec_67f2374147734a2da61640207337e28b\":[\"rec_67f2374147734a2da61640207337e28b\"],\"rec_99f7c37788654b76b861387fed15a89a\":[\"rec_99f7c37788654b76b861387fed15a89a\"]},\"missing_ids\":[],\"read_receipt\":\"rr_5bcffc19eb984929892216d644ac3218\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:29:31.483418+00:00\",\"id\":\"rec_55b3b89fd6a64268b77a52a42e424416\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: physio on 2026-09-29 to decide whether I can return to football; I stopped rating the ankle in August.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:29:31.438193+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_99f7c37788654b76b861387fed15a89a\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_67f2374147734a2da61640207337e28b\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_99f7c37788654b76b861387fed15a89a\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (Aug): ankle pain 5/10 on hopping; steps do not measure it.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:29:31.427631+00:00\",\"id\":\"rec_99f7c37788654b76b861387fed15a89a\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"knee\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"ankle\",\"physio\"],\"watch_terms\":[\"ankle\",\"physio\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my ankle sprain recovering?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_55b3b89fd6a64268b77a52a42e424416\":\"active\",\"rec_67f2374147734a2da61640207337e28b\":\"active\",\"rec_99f7c37788654b76b861387fed15a89a\":\"active\"}}"
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "ankle physio hopping",
+       "kind": "event",
+       "start_at": "2026-06-01T00:00:00Z",
+       "end_at": "2026-09-29T23:59:59Z",
+       "limit": 100,
+       "cursor": "",
+       "include_superseded": false
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_2df56ea4f853432f925f19680173a846\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"ankle\",\"physio\",\"hopping\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_d786c5ebd0754352a13564e755956bae\",\"kind\":\"routine\",\"text\":\"SYNTHETIC ankle rehab daily.\"},{\"id\":\"rec_99f7c37788654b76b861387fed15a89a\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my ankle sprain recovering?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 6389,
+      "completion_tokens": 694,
+      "tool_calls": 0,
+      "seconds": 51.1
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3612,
+    "completion_tokens": 15,
+    "tool_calls": 1,
+    "seconds": 1.8
+   },
+   {
+    "tool": "context_bootstrap",
+    "arguments": {},
+    "is_error": false,
+    "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T20:29:31.516883+00:00\",\"last_worker_run_at\":\"2026-09-29T20:29:31.516883+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":6,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T20:29:31.483418+00:00\",\"id\":\"rec_55b3b89fd6a64268b77a52a42e424416\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: physio on 2026-09-29 to decide whether I can return to football; I stopped rating the ankle in August.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:29:31.433663+00:00\",\"id\":\"rec_d786c5ebd0754352a13564e755956bae\",\"kind\":\"routine\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC ankle rehab daily.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:29:31.427631+00:00\",\"id\":\"rec_99f7c37788654b76b861387fed15a89a\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"knee\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"ankle\",\"physio\"],\"watch_terms\":[\"ankle\",\"physio\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my ankle sprain recovering?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[{\"first_at\":\"2026-09-02T02:00:00.000000+00:00\",\"last_at\":\"2026-09-23T02:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count\"}],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_b90bbf834758483983a8711d4523514f\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T20:29:31.438193+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_99f7c37788654b76b861387fed15a89a\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_67f2374147734a2da61640207337e28b\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_99f7c37788654b76b861387fed15a89a\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (Aug): ankle pain 5/10 on hopping; steps do not measure it.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":1,\"question\":1,\"routine\":1},\"source_status\":{\"checked_at\":\"2026-09-29T20:29:33.440177+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":22,\"coverage\":{},\"cursor\":\"fixture-149\",\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_attempt_at\":\"2026-09-29T20:29:31.461382+00:00\",\"last_success_at\":\"2026-09-29T20:29:31.461382+00:00\",\"latest_sample_at\":\"2026-09-23T02:00:30.000000+00:00\",\"policy\":\"durable\",\"state\":\"ready\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 5146,
+    "completion_tokens": 169,
+    "tool_calls": 2,
+    "seconds": 23.5
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_99f7c37788654b76b861387fed15a89a",
+      "rec_67f2374147734a2da61640207337e28b",
+      "rec_55b3b89fd6a64268b77a52a42e424416"
+     ],
+     "include_history": true
+    },
+    "is_error": false,
+    "result_text": "{\"history\":{\"rec_55b3b89fd6a64268b77a52a42e424416\":[\"rec_55b3b89fd6a64268b77a52a42e424416\"],\"rec_67f2374147734a2da61640207337e28b\":[\"rec_67f2374147734a2da61640207337e28b\"],\"rec_99f7c37788654b76b861387fed15a89a\":[\"rec_99f7c37788654b76b861387fed15a89a\"]},\"missing_ids\":[],\"read_receipt\":\"rr_5bcffc19eb984929892216d644ac3218\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:29:31.483418+00:00\",\"id\":\"rec_55b3b89fd6a64268b77a52a42e424416\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: physio on 2026-09-29 to decide whether I can return to football; I stopped rating the ankle in August.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:29:31.438193+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_99f7c37788654b76b861387fed15a89a\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_67f2374147734a2da61640207337e28b\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_99f7c37788654b76b861387fed15a89a\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (Aug): ankle pain 5/10 on hopping; steps do not measure it.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:29:31.427631+00:00\",\"id\":\"rec_99f7c37788654b76b861387fed15a89a\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"knee\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"ankle\",\"physio\"],\"watch_terms\":[\"ankle\",\"physio\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my ankle sprain recovering?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_55b3b89fd6a64268b77a52a42e424416\":\"active\",\"rec_67f2374147734a2da61640207337e28b\":\"active\",\"rec_99f7c37788654b76b861387fed15a89a\":\"active\"}}"
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "ankle physio hopping",
+     "kind": "event",
+     "start_at": "2026-06-01T00:00:00Z",
+     "end_at": "2026-09-29T23:59:59Z",
+     "limit": 100,
+     "cursor": "",
+     "include_superseded": false
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_2df56ea4f853432f925f19680173a846\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"ankle\",\"physio\",\"hopping\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_d786c5ebd0754352a13564e755956bae\",\"kind\":\"routine\",\"text\":\"SYNTHETIC ankle rehab daily.\"},{\"id\":\"rec_99f7c37788654b76b861387fed15a89a\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my ankle sprain recovering?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 6389,
+    "completion_tokens": 694,
+    "tool_calls": 0,
+    "seconds": 51.1
+   }
+  ],
+  "error": null,
+  "seconds": 76.7,
+  "turns": 3,
+  "tokens": {
+   "prompt": 15147,
+   "completion": 878
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_d9e687605c0b4bf9bfe8a8c694501648",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_99f7c37788654b76b861387fed15a89a",
+      "rec_67f2374147734a2da61640207337e28b",
+      "rec_55b3b89fd6a64268b77a52a42e424416"
+     ],
+     "evidence_versions": {
+      "rec_55b3b89fd6a64268b77a52a42e424416": "active",
+      "rec_67f2374147734a2da61640207337e28b": "active",
+      "rec_99f7c37788654b76b861387fed15a89a": "active"
+     },
+     "next_step": "在理疗会面前，每天用 0–10 分记录一次脚踝在日常步行中的疼痛，并注明当时活动；把记录带去讨论是否复出。它能补充近期症状变化，但不能单独证明已准备好踢球，也不能说明变化原因。",
+     "question_id": "rec_99f7c37788654b76b861387fed15a89a",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "为 9 月 29 日的足球复出决定补上脚踝记录",
+     "unknowns": "现有记录无法说明近期脚踝疼痛或功能是否改善，也不能单独判断是否适合复出。",
+     "what_changed": "7 月 2 日的分析记载，当时跳跃时脚踝疼痛为 5/10，并指出步数不能衡量脚踝情况。9 月 22 日你说自己 8 月起停止给脚踝评分。9 月 2 日至 23 日有 22 条步数样本，但它们不能回答脚踝是否恢复。",
+     "why_now": "你记录了 9 月 29 日要和理疗师决定能否回足球，距离现在 6 天；目前缺少近期、直接反映脚踝情况的记录，趁会面前补充可帮助讨论。"
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "Surfacing is appropriate before the recorded physio decision. The candidate explains that step counts cannot answer whether the ankle has recovered, proposes a specific pain-rating method to inform the return-to-football discussion, and does not treat the older hopping score and new walking ratings as a like-for-like comparison or claim causation.",
+  "violated_forbidden": []
+ }
+}
