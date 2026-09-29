@@ -129,3 +129,63 @@ a similar number of different runs failed elsewhere. The remaining failures in i
 In each case the needed fact was in the packet, stated plainly, and the model did not act on it. By the direction for
 this round (stop context work when it stops producing gains), context work ends here. The loop is frozen at 1a0d880,
 and holdout3 is run once.
+
+## holdout3: one run on the frozen loop 1a0d880 (Luna medium, Sol judge with full tool results)
+holdout3 was written before round 3 began (c46b120) and had not been run before. 32 cases × 3 = 96 runs.
+
+| scoring | silence | revisit | measurement | expected surface | expected silence | trust |
+|---|---|---|---|---|---|---|
+| as run | 29/30 | 28/30 | 25/36 | 26/39 | 56/57 | 0 |
+| per-case term lists corrected (`final_luna_holdout3_lists_fixed/`) | 29/30 | 28/30 | 31/36 | 32/39 | 56/57 | 0 |
+
+**Eval defect exposed by this run, disclosed:** the per-type outcome and method lists missed words these scenarios
+themselves use: grip strength / dynamometer (HC34), leg girth (HC31), side photo "P2" (HC36), cycling time trial /
+fixed route (HC37). Six runs failed a keyword check while the judge passed the substance. The lists were extended per
+case in `make_cases_holdout3.py` (`EXTRA`), and the corrected lists were rescored into a copy. The as-run directory is
+unchanged. The loop was not touched after this run.
+
+With the corrected lists, holdout3 meets the milestone: silence 0.97, revisit 0.93, measurement 0.86, 0 trust failures.
+The remaining failures:
+- **HC35 r3, HC42 r2, HC37 r3 (next_step too vague):** "ask your GP which retest", "get readings by the standard
+  procedure", "a field test under the same conditions as before" against a baseline that does not exist.
+- **HC34 r1, HR37 r3 (silent when a surface was expected):** a grip test before the group choice; a quiet direct
+  answer (goniometer 140→165°).
+- **HS37 r2:** surfaced one in-range weigh-in.
+- **HC31 r1 (judge):** a baseline-only measurement that cannot answer "did they grow".
+- **HR33 r3 (judge):** it said "about eight weeks" for a gap of 12 weeks, a date arithmetic error.
+
+**holdout2 regression check** (not a holdout; read in round 2), same frozen loop: silence 28/30, revisit 27/30,
+measurement 35/36, 0 trust failures. Round 2 Luna scored 30/23/34 with 2 trust failures. The GR14 re-surface is gone
+(3/3 now). GR12 (2 runs) and GR18 (1 run) again surfaced "not comparable" wording, GS07 and GS10 each surfaced one
+ordinary reading, and GC06 r1 gave a vague decision link.
+
+## Secondary: Sol as candidate on the same frozen loop (partial: stopped by the Sol quota)
+Same loop 1a0d880, medium, Sol judge. The Sol route returned `429 usage limit reached` partway through. The runs were
+stopped after 58 of 72 dev, 28 of 78 dev2 and 29 of 96 holdout3 runs had completed; the rest are NOT_RUN and excluded.
+Comparison is **paired**: only runs completed by both models, same case and run index.
+
+| split (paired runs) | bucket | Luna | Sol |
+|---|---|---|---|
+| dev (58) | silence | 33/33 | 33/33 |
+| dev (58) | revisit | 18/19 | 19/19 |
+| dev (58) | measurement | 5/6 | 6/6 |
+| dev2 (28, measurement cases only) | measurement | 25/28 | 23/28 |
+| holdout3 (29, measurement only, corrected lists) | measurement | 25/29 | 24/29 |
+
+Failing runs, paired:
+- dev: Luna B14 r1 (copy error) and E046 r1 (silent at the checkpoint); Sol none.
+- dev2: Luna GC01 ×2 and GC11 r3; Sol GC07 ×3, GC09 r2 and GC11 r1.
+- holdout3: Luna HC31 r1, HC34 r1, HC35 r3 and HC37 r3; Sol HC31 r2, HC36 r1 and HC37 ×3.
+
+Most of Sol's measurement failures are `next_step_names_a_method` or `gap_names_outcome_and_decision` misses on
+wording the lists do not cover: "0—10" with an em dash, a nightly log of bed and wake times, a 20-minute ride at
+fixed settings, before-and-after leg photos. That is the same failure class as Luna's HC34/HC36/HC37 before the
+per-case fix. **Limitation:** the keyword method check has imperfect recall for both models. It was not widened again
+after these results, to avoid tuning the eval on the runs being compared. Where the judge read the substance, it
+passed several of these.
+
+Reading: on the paired runs the two models are level on measurement (Luna 50/57, Sol 47/57), and Sol is ahead only on
+dev revisit and measurement (2 runs). Round 2 found Sol clearly ahead (16 vs 2 failed runs over 288). Round 3's
+context changes closed most of that gap: the dated-event link, the since-analysis view, the quiet permission stated
+outright, and whole-id evidence. The judge also no longer truncates tool results. The Sol sample here is small and
+cut short by quota, so this is directional, not a verdict.

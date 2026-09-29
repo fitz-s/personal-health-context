@@ -1,0 +1,395 @@
+{
+ "record": {
+  "case_id": "HC33",
+  "run": 3,
+  "category": "measurement",
+  "split": "holdout3",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "Surfacing is appropriate before the October 2 decision. The candidate correctly explains that weight records cannot answer whether belly fat changed, proposes a proportionate waist measurement and how it would inform the follow-up, and avoids claiming that the diet caused any change. Nothing had already been surfaced.",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_e8275c089a1540a6acea8b4be4c82879\", \"request_id\": \"worker:job_53aaa3562c054c0eb68e0eab4aac1097:0:w_7cbfbcf7668640a2bd53feb06a08d88f\", \"status\": \"committed\", \"request_hash\": \"49776fc53c2692e651b32ec70b646f3f67b66246c9c49c88afe8a12580ad9faf\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_f5b74396e5694998aaa9bde3ce56d3a5",
+    "hard": true
+   },
+   {
+    "check": "next_step_names_a_method",
+    "ok": true,
+    "detail": "waist",
+    "hard": true
+   },
+   {
+    "check": "gap_names_outcome_and_decision",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-sol",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 57.4,
+  "tool_calls": [
+   "context_read",
+   "context_query",
+   "context_search",
+   "context_search",
+   "context_query",
+   "context_query"
+  ],
+  "error": null,
+  "turns": 3,
+  "tokens": {
+   "prompt": 15401,
+   "completion": 1143
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_921037d0533d4b6f9c20bb1ec3a4bc75",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_f5b74396e5694998aaa9bde3ce56d3a5:fe94b827f0455bee"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_f5b74396e5694998aaa9bde3ce56d3a5:fe94b827f0455bee",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_e8275c089a1540a6acea8b4be4c82879",
+      "request_id": "worker:job_53aaa3562c054c0eb68e0eab4aac1097:0:w_7cbfbcf7668640a2bd53feb06a08d88f",
+      "status": "committed",
+      "request_hash": "49776fc53c2692e651b32ec70b646f3f67b66246c9c49c88afe8a12580ad9faf"
+     },
+     "tool_calls": 9
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_921037d0533d4b6f9c20bb1ec3a4bc75\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_f5b74396e5694998aaa9bde3ce56d3a5:fe94b827f0455bee\"]}, \"jobs\": [{\"job\": \"revisit:rec_f5b74396e5694998aaa9bde3ce56d3a5:fe94b827f0455bee\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_e8275c089a1540a6acea8b4be4c82879\", \"request_id\": \"worker:job_53aaa3562c054c0eb68e0eab4aac1097:0:w_7cbfbcf7668640a2bd53feb06a08d88f\", \"status\": \"committed\", \"request_hash\": \"49776fc53c2692e651b32ec70b646f3f67b66246c9c49c88afe8a12580ad9faf\"}, \"tool_calls\": 9}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_f5b74396e5694998aaa9bde3ce56d3a5:fe94b827f0455bee",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by a change matching one open question. The change is either new data about the question or a dated event the user recorded (then the trigger carries `dated_event`). Decide whether the user should hear something about this question now: a new answer, a correction, or, when a dated event on this question is near and the data on record cannot answer it, which measurement would. Otherwise stay silent.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_f5b74396e5694998aaa9bde3ce56d3a5\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"outcome\":\"fat\",\"state\":\"open\",\"watch_metrics\":[\"diet\",\"fat\"],\"watch_terms\":[\"diet\",\"fat\"]},\"text\":\"SYNTHETIC: Am I losing belly fat with the diet?\"}\n\n## Prior analyses of this question (newest first)\n{\"days_ago\":83,\"evidence_status\":\"not verifiable (written without read receipts); not known to be stale\",\"id\":\"rec_01bb850ac27a4adab479278578918128\",\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis (Aug): weight alone does not show where fat is lost.\"}\n\n## Since the newest analysis (2026-07-02): records written\n{\"id\":\"rec_2ac6456c6c7747f79cd02acb8372da8d\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: dietitian follow-up on 2026-10-02 to decide whether to change the plan.\"}\n## Since the newest analysis: passive samples added\n{\"first\":\"2026-09-01T12:00:00.000000+00:00\",\"last\":\"2026-09-22T12:00:00.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierBodyMass\",\"n\":22,\"source_id\":\"synthetic:watch\"}\nThe newest analysis set no revisit condition field; read its text for one before assuming there is none.\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\n{\"date\":\"2026-10-02\",\"days_until\":9,\"kind\":\"note\",\"mentions_questions\":[\"rec_f5b74396e5694998aaa9bde3ce56d3a5\"],\"note\":\"9 days left: anything measured for this must be done before then\",\"read_as\":\"explicit date\",\"record_id\":\"rec_2ac6456c6c7747f79cd02acb8372da8d\",\"text\":\"SYNTHETIC: dietitian follow-up on 2026-10-02 to decide whether to change the plan.\"}\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"days_since_latest_sample\":1.1,\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_success_at\":\"2026-09-29T17:06:23.908321+00:00\",\"latest_sample_at\":\"2026-09-22T12:00:30.000000+00:00\",\"state\":\"ready\"}\n\n## Passive data available (observation catalog)\n{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierBodyMass\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"kg\"}\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"dated_event\":{\"date\":\"2026-10-02\",\"days_until\":9,\"meaning\":\"this record is a dated event the user recorded, not a measurement\"},\"record\":{\"id\":\"rec_2ac6456c6c7747f79cd02acb8372da8d\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: dietitian follow-up on 2026-10-02 to decide whether to change the plan.\"}}\n\nIf you surface, set question_id to rec_f5b74396e5694998aaa9bde3ce56d3a5.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_f5b74396e5694998aaa9bde3ce56d3a5",
+     "topic": "A waist measurement before the dietitian follow-up",
+     "why_now": "The October 2 dietitian follow-up is nine days away, when you plan to decide whether to change the diet. The available weight records cannot answer your question about belly fat.",
+     "what_changed": "A September 22 note records the October 2 decision point. Weight records run from 84.0 kg on September 1 to 83.79 kg on September 22, but there is no waist measurement on record. The earlier analysis noted that weight alone does not show where fat is lost.",
+     "unknowns": "It remains unknown whether your waist has changed since the diet began in August. Even a smaller waist would not establish how much belly fat changed or whether the diet caused the change.",
+     "next_step": "Measure your waist at the same marked location, such as at the navel, now and once more just before October 2, using the same tape method and measuring at the end of a normal exhale. Bring both measurements to the follow-up: a decrease would give you and the dietitian some short-term evidence to weigh when deciding whether to continue or revise the plan; little change would not support a claim of short-term waist reduction. Two readings taken now cannot establish what happened since August or prove fat loss.",
+     "evidence_ids": [
+      "rec_f5b74396e5694998aaa9bde3ce56d3a5",
+      "rec_2ac6456c6c7747f79cd02acb8372da8d",
+      "rec_01bb850ac27a4adab479278578918128"
+     ],
+     "evidence_versions": {
+      "rec_f5b74396e5694998aaa9bde3ce56d3a5": "active",
+      "rec_2ac6456c6c7747f79cd02acb8372da8d": "active",
+      "rec_01bb850ac27a4adab479278578918128": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3590,
+      "completion_tokens": 293,
+      "tool_calls": 4,
+      "seconds": 18.1
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_f5b74396e5694998aaa9bde3ce56d3a5",
+        "rec_01bb850ac27a4adab479278578918128",
+        "rec_2ac6456c6c7747f79cd02acb8372da8d"
+       ],
+       "include_history": false
+      },
+      "is_error": false,
+      "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_91a5c09e1e14431d828581f5e20c9522\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T17:06:23.903675+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_f5b74396e5694998aaa9bde3ce56d3a5\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_01bb850ac27a4adab479278578918128\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_f5b74396e5694998aaa9bde3ce56d3a5\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (Aug): weight alone does not show where fat is lost.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T17:06:23.909761+00:00\",\"id\":\"rec_2ac6456c6c7747f79cd02acb8372da8d\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: dietitian follow-up on 2026-10-02 to decide whether to change the plan.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T17:06:23.900903+00:00\",\"id\":\"rec_f5b74396e5694998aaa9bde3ce56d3a5\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"fat\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"diet\",\"fat\"],\"watch_terms\":[\"diet\",\"fat\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Am I losing belly fat with the diet?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_01bb850ac27a4adab479278578918128\":\"active\",\"rec_2ac6456c6c7747f79cd02acb8372da8d\":\"active\",\"rec_f5b74396e5694998aaa9bde3ce56d3a5\":\"active\"}}"
+     },
+     {
+      "tool": "context_query",
+      "arguments": {
+       "sql": "SELECT metric, source_id, unit, n, first_at, last_at FROM observation_catalog ORDER BY metric",
+       "parameters": [],
+       "limit": 100
+      },
+      "is_error": false,
+      "result_text": "{\"columns\":[\"metric\",\"source_id\",\"unit\",\"n\",\"first_at\",\"last_at\"],\"max_rows\":100,\"query_sha256\":\"15f61fffed0f57b800563787fb3601fe66c88e8d65f7c7355f27a4bc6458e8b1\",\"read_receipt\":\"rr_fe7b99f6396940c7b2b27934f7a444e4\",\"reads_observations\":true,\"rows\":[[\"HKQuantityTypeIdentifierBodyMass\",\"synthetic:watch\",\"kg\",22,\"2026-09-01T12:00:00.000000+00:00\",\"2026-09-22T12:00:30.000000+00:00\"]],\"tables_read\":[\"observation_catalog\"],\"truncated\":false}"
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "腰围",
+       "kind": "note",
+       "start_at": "2026-01-01T00:00:00Z",
+       "end_at": "2026-10-03T00:00:00Z",
+       "limit": 100,
+       "cursor": "",
+       "include_superseded": false
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_3af96016ae3f4059a60cc7d7fed80685\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"腰围\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_b7e26c05f99b4fd0954655299dee19c0\",\"kind\":\"routine\",\"text\":\"SYNTHETIC diet change since August.\"},{\"id\":\"rec_f5b74396e5694998aaa9bde3ce56d3a5\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Am I losing belly fat with the diet?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "fat",
+       "kind": "event",
+       "start_at": "2026-01-01T00:00:00Z",
+       "end_at": "2026-10-03T00:00:00Z",
+       "limit": 100,
+       "cursor": "",
+       "include_superseded": false
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_0286feba90074730ad36f0447295c3e4\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"fat\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_b7e26c05f99b4fd0954655299dee19c0\",\"kind\":\"routine\",\"text\":\"SYNTHETIC diet change since August.\"},{\"id\":\"rec_f5b74396e5694998aaa9bde3ce56d3a5\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Am I losing belly fat with the diet?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 5218,
+      "completion_tokens": 138,
+      "tool_calls": 2,
+      "seconds": 18.1
+     },
+     {
+      "tool": "context_query",
+      "arguments": {
+       "sql": "SELECT id, kind, occurred_at, text, source_id, object_sha FROM active_records ORDER BY occurred_at DESC LIMIT 100",
+       "parameters": [],
+       "limit": 100
+      },
+      "is_error": false,
+      "result_text": "{\"columns\":[\"id\",\"kind\",\"occurred_at\",\"text\",\"source_id\",\"object_sha\"],\"max_rows\":100,\"query_sha256\":\"c7679d49ea9d7f461a681ec65b9a07a81e26e1d1e669fa207433f3f1280a35b6\",\"read_receipt\":\"rr_ca55e80029dd4c378ab572e4bf1e7444\",\"reads_observations\":false,\"rows\":[[\"rec_2ac6456c6c7747f79cd02acb8372da8d\",\"note\",\"2026-09-22T01:00:00.000000+00:00\",\"SYNTHETIC: dietitian follow-up on 2026-10-02 to decide whether to change the plan.\",\"user\",null],[\"rec_01bb850ac27a4adab479278578918128\",\"analysis\",\"2026-07-02T14:00:00.000000+00:00\",\"SYNTHETIC analysis (Aug): weight alone does not show where fat is lost.\",\"user\",null],[\"rec_b7e26c05f99b4fd0954655299dee19c0\",\"routine\",\"2026-07-01T14:00:00.000000+00:00\",\"SYNTHETIC diet change since August.\",\"user\",null],[\"rec_f5b74396e5694998aaa9bde3ce56d3a5\",\"question\",\"2026-07-01T14:00:00.000000+00:00\",\"SYNTHETIC: Am I losing belly fat with the diet?\",\"user\",null]],\"tables_read\":[\"active_records\",\"records\"],\"truncated\":false}"
+     },
+     {
+      "tool": "context_query",
+      "arguments": {
+       "sql": "SELECT start_at, value_num, value_text, unit, source_id FROM canonical_observations WHERE metric = 'HKQuantityTypeIdentifierBodyMass' ORDER BY start_at",
+       "parameters": [],
+       "limit": 100
+      },
+      "is_error": false,
+      "result_text": "{\"columns\":[\"start_at\",\"value_num\",\"value_text\",\"unit\",\"source_id\"],\"max_rows\":100,\"query_sha256\":\"9e7b357b7e814e42e05bb4301825e5b817f5b990ecd673beac927f92d3042bc3\",\"read_receipt\":\"rr_067f67eda9cf4b04839502cf27c6d8c3\",\"reads_observations\":true,\"rows\":[[\"2026-09-01T12:00:00.000000+00:00\",84.0,null,\"kg\",\"synthetic:watch\"],[\"2026-09-02T12:00:00.000000+00:00\",83.99,null,\"kg\",\"synthetic:watch\"],[\"2026-09-03T12:00:00.000000+00:00\",83.98,null,\"kg\",\"synthetic:watch\"],[\"2026-09-04T12:00:00.000000+00:00\",83.97,null,\"kg\",\"synthetic:watch\"],[\"2026-09-05T12:00:00.000000+00:00\",83.96,null,\"kg\",\"synthetic:watch\"],[\"2026-09-06T12:00:00.000000+00:00\",83.95,null,\"kg\",\"synthetic:watch\"],[\"2026-09-07T12:00:00.000000+00:00\",83.94,null,\"kg\",\"synthetic:watch\"],[\"2026-09-08T12:00:00.000000+00:00\",83.93,null,\"kg\",\"synthetic:watch\"],[\"2026-09-09T12:00:00.000000+00:00\",83.92,null,\"kg\",\"synthetic:watch\"],[\"2026-09-10T12:00:00.000000+00:00\",83.91,null,\"kg\",\"synthetic:watch\"],[\"2026-09-11T12:00:00.000000+00:00\",83.9,null,\"kg\",\"synthetic:watch\"],[\"2026-09-12T12:00:00.000000+00:00\",83.89,null,\"kg\",\"synthetic:watch\"],[\"2026-09-13T12:00:00.000000+00:00\",83.88,null,\"kg\",\"synthetic:watch\"],[\"2026-09-14T12:00:00.000000+00:00\",83.87,null,\"kg\",\"synthetic:watch\"],[\"2026-09-15T12:00:00.000000+00:00\",83.86,null,\"kg\",\"synthetic:watch\"],[\"2026-09-16T12:00:00.000000+00:00\",83.85,null,\"kg\",\"synthetic:watch\"],[\"2026-09-17T12:00:00.000000+00:00\",83.84,null,\"kg\",\"synthetic:watch\"],[\"2026-09-18T12:00:00.000000+00:00\",83.83,null,\"kg\",\"synthetic:watch\"],[\"2026-09-19T12:00:00.000000+00:00\",83.82,null,\"kg\",\"synthetic:watch\"],[\"2026-09-20T12:00:00.000000+00:00\",83.81,null,\"kg\",\"synthetic:watch\"],[\"2026-09-21T12:00:00.000000+00:00\",83.8,null,\"kg\",\"synthetic:watch\"],[\"2026-09-22T12:00:00.000000+00:00\",83.79,null,\"kg\",\"synthetic:watch\"]],\"tables_read\":[\"canonical_observations\",\"canonical_observations_raw\",\"observations\",\"supersessions\"],\"truncated\":false}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 6593,
+      "completion_tokens": 712,
+      "tool_calls": 0,
+      "seconds": 21.1
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3590,
+    "completion_tokens": 293,
+    "tool_calls": 4,
+    "seconds": 18.1
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_f5b74396e5694998aaa9bde3ce56d3a5",
+      "rec_01bb850ac27a4adab479278578918128",
+      "rec_2ac6456c6c7747f79cd02acb8372da8d"
+     ],
+     "include_history": false
+    },
+    "is_error": false,
+    "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_91a5c09e1e14431d828581f5e20c9522\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T17:06:23.903675+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_f5b74396e5694998aaa9bde3ce56d3a5\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_01bb850ac27a4adab479278578918128\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_f5b74396e5694998aaa9bde3ce56d3a5\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (Aug): weight alone does not show where fat is lost.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T17:06:23.909761+00:00\",\"id\":\"rec_2ac6456c6c7747f79cd02acb8372da8d\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: dietitian follow-up on 2026-10-02 to decide whether to change the plan.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T17:06:23.900903+00:00\",\"id\":\"rec_f5b74396e5694998aaa9bde3ce56d3a5\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"fat\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"diet\",\"fat\"],\"watch_terms\":[\"diet\",\"fat\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Am I losing belly fat with the diet?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_01bb850ac27a4adab479278578918128\":\"active\",\"rec_2ac6456c6c7747f79cd02acb8372da8d\":\"active\",\"rec_f5b74396e5694998aaa9bde3ce56d3a5\":\"active\"}}"
+   },
+   {
+    "tool": "context_query",
+    "arguments": {
+     "sql": "SELECT metric, source_id, unit, n, first_at, last_at FROM observation_catalog ORDER BY metric",
+     "parameters": [],
+     "limit": 100
+    },
+    "is_error": false,
+    "result_text": "{\"columns\":[\"metric\",\"source_id\",\"unit\",\"n\",\"first_at\",\"last_at\"],\"max_rows\":100,\"query_sha256\":\"15f61fffed0f57b800563787fb3601fe66c88e8d65f7c7355f27a4bc6458e8b1\",\"read_receipt\":\"rr_fe7b99f6396940c7b2b27934f7a444e4\",\"reads_observations\":true,\"rows\":[[\"HKQuantityTypeIdentifierBodyMass\",\"synthetic:watch\",\"kg\",22,\"2026-09-01T12:00:00.000000+00:00\",\"2026-09-22T12:00:30.000000+00:00\"]],\"tables_read\":[\"observation_catalog\"],\"truncated\":false}"
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "腰围",
+     "kind": "note",
+     "start_at": "2026-01-01T00:00:00Z",
+     "end_at": "2026-10-03T00:00:00Z",
+     "limit": 100,
+     "cursor": "",
+     "include_superseded": false
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_3af96016ae3f4059a60cc7d7fed80685\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"腰围\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_b7e26c05f99b4fd0954655299dee19c0\",\"kind\":\"routine\",\"text\":\"SYNTHETIC diet change since August.\"},{\"id\":\"rec_f5b74396e5694998aaa9bde3ce56d3a5\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Am I losing belly fat with the diet?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "fat",
+     "kind": "event",
+     "start_at": "2026-01-01T00:00:00Z",
+     "end_at": "2026-10-03T00:00:00Z",
+     "limit": 100,
+     "cursor": "",
+     "include_superseded": false
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_0286feba90074730ad36f0447295c3e4\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"fat\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_b7e26c05f99b4fd0954655299dee19c0\",\"kind\":\"routine\",\"text\":\"SYNTHETIC diet change since August.\"},{\"id\":\"rec_f5b74396e5694998aaa9bde3ce56d3a5\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Am I losing belly fat with the diet?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 5218,
+    "completion_tokens": 138,
+    "tool_calls": 2,
+    "seconds": 18.1
+   },
+   {
+    "tool": "context_query",
+    "arguments": {
+     "sql": "SELECT id, kind, occurred_at, text, source_id, object_sha FROM active_records ORDER BY occurred_at DESC LIMIT 100",
+     "parameters": [],
+     "limit": 100
+    },
+    "is_error": false,
+    "result_text": "{\"columns\":[\"id\",\"kind\",\"occurred_at\",\"text\",\"source_id\",\"object_sha\"],\"max_rows\":100,\"query_sha256\":\"c7679d49ea9d7f461a681ec65b9a07a81e26e1d1e669fa207433f3f1280a35b6\",\"read_receipt\":\"rr_ca55e80029dd4c378ab572e4bf1e7444\",\"reads_observations\":false,\"rows\":[[\"rec_2ac6456c6c7747f79cd02acb8372da8d\",\"note\",\"2026-09-22T01:00:00.000000+00:00\",\"SYNTHETIC: dietitian follow-up on 2026-10-02 to decide whether to change the plan.\",\"user\",null],[\"rec_01bb850ac27a4adab479278578918128\",\"analysis\",\"2026-07-02T14:00:00.000000+00:00\",\"SYNTHETIC analysis (Aug): weight alone does not show where fat is lost.\",\"user\",null],[\"rec_b7e26c05f99b4fd0954655299dee19c0\",\"routine\",\"2026-07-01T14:00:00.000000+00:00\",\"SYNTHETIC diet change since August.\",\"user\",null],[\"rec_f5b74396e5694998aaa9bde3ce56d3a5\",\"question\",\"2026-07-01T14:00:00.000000+00:00\",\"SYNTHETIC: Am I losing belly fat with the diet?\",\"user\",null]],\"tables_read\":[\"active_records\",\"records\"],\"truncated\":false}"
+   },
+   {
+    "tool": "context_query",
+    "arguments": {
+     "sql": "SELECT start_at, value_num, value_text, unit, source_id FROM canonical_observations WHERE metric = 'HKQuantityTypeIdentifierBodyMass' ORDER BY start_at",
+     "parameters": [],
+     "limit": 100
+    },
+    "is_error": false,
+    "result_text": "{\"columns\":[\"start_at\",\"value_num\",\"value_text\",\"unit\",\"source_id\"],\"max_rows\":100,\"query_sha256\":\"9e7b357b7e814e42e05bb4301825e5b817f5b990ecd673beac927f92d3042bc3\",\"read_receipt\":\"rr_067f67eda9cf4b04839502cf27c6d8c3\",\"reads_observations\":true,\"rows\":[[\"2026-09-01T12:00:00.000000+00:00\",84.0,null,\"kg\",\"synthetic:watch\"],[\"2026-09-02T12:00:00.000000+00:00\",83.99,null,\"kg\",\"synthetic:watch\"],[\"2026-09-03T12:00:00.000000+00:00\",83.98,null,\"kg\",\"synthetic:watch\"],[\"2026-09-04T12:00:00.000000+00:00\",83.97,null,\"kg\",\"synthetic:watch\"],[\"2026-09-05T12:00:00.000000+00:00\",83.96,null,\"kg\",\"synthetic:watch\"],[\"2026-09-06T12:00:00.000000+00:00\",83.95,null,\"kg\",\"synthetic:watch\"],[\"2026-09-07T12:00:00.000000+00:00\",83.94,null,\"kg\",\"synthetic:watch\"],[\"2026-09-08T12:00:00.000000+00:00\",83.93,null,\"kg\",\"synthetic:watch\"],[\"2026-09-09T12:00:00.000000+00:00\",83.92,null,\"kg\",\"synthetic:watch\"],[\"2026-09-10T12:00:00.000000+00:00\",83.91,null,\"kg\",\"synthetic:watch\"],[\"2026-09-11T12:00:00.000000+00:00\",83.9,null,\"kg\",\"synthetic:watch\"],[\"2026-09-12T12:00:00.000000+00:00\",83.89,null,\"kg\",\"synthetic:watch\"],[\"2026-09-13T12:00:00.000000+00:00\",83.88,null,\"kg\",\"synthetic:watch\"],[\"2026-09-14T12:00:00.000000+00:00\",83.87,null,\"kg\",\"synthetic:watch\"],[\"2026-09-15T12:00:00.000000+00:00\",83.86,null,\"kg\",\"synthetic:watch\"],[\"2026-09-16T12:00:00.000000+00:00\",83.85,null,\"kg\",\"synthetic:watch\"],[\"2026-09-17T12:00:00.000000+00:00\",83.84,null,\"kg\",\"synthetic:watch\"],[\"2026-09-18T12:00:00.000000+00:00\",83.83,null,\"kg\",\"synthetic:watch\"],[\"2026-09-19T12:00:00.000000+00:00\",83.82,null,\"kg\",\"synthetic:watch\"],[\"2026-09-20T12:00:00.000000+00:00\",83.81,null,\"kg\",\"synthetic:watch\"],[\"2026-09-21T12:00:00.000000+00:00\",83.8,null,\"kg\",\"synthetic:watch\"],[\"2026-09-22T12:00:00.000000+00:00\",83.79,null,\"kg\",\"synthetic:watch\"]],\"tables_read\":[\"canonical_observations\",\"canonical_observations_raw\",\"observations\",\"supersessions\"],\"truncated\":false}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 6593,
+    "completion_tokens": 712,
+    "tool_calls": 0,
+    "seconds": 21.1
+   }
+  ],
+  "error": null,
+  "seconds": 57.4,
+  "turns": 3,
+  "tokens": {
+   "prompt": 15401,
+   "completion": 1143
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_e8275c089a1540a6acea8b4be4c82879",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_f5b74396e5694998aaa9bde3ce56d3a5",
+      "rec_2ac6456c6c7747f79cd02acb8372da8d",
+      "rec_01bb850ac27a4adab479278578918128"
+     ],
+     "evidence_versions": {
+      "rec_01bb850ac27a4adab479278578918128": "active",
+      "rec_2ac6456c6c7747f79cd02acb8372da8d": "active",
+      "rec_f5b74396e5694998aaa9bde3ce56d3a5": "active"
+     },
+     "next_step": "Measure your waist at the same marked location, such as at the navel, now and once more just before October 2, using the same tape method and measuring at the end of a normal exhale. Bring both measurements to the follow-up: a decrease would give you and the dietitian some short-term evidence to weigh when deciding whether to continue or revise the plan; little change would not support a claim of short-term waist reduction. Two readings taken now cannot establish what happened since August or prove fat loss.",
+     "question_id": "rec_f5b74396e5694998aaa9bde3ce56d3a5",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "A waist measurement before the dietitian follow-up",
+     "unknowns": "It remains unknown whether your waist has changed since the diet began in August. Even a smaller waist would not establish how much belly fat changed or whether the diet caused the change.",
+     "what_changed": "A September 22 note records the October 2 decision point. Weight records run from 84.0 kg on September 1 to 83.79 kg on September 22, but there is no waist measurement on record. The earlier analysis noted that weight alone does not show where fat is lost.",
+     "why_now": "The October 2 dietitian follow-up is nine days away, when you plan to decide whether to change the diet. The available weight records cannot answer your question about belly fat."
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "Surfacing is appropriate before the October 2 decision. The candidate correctly explains that weight records cannot answer whether belly fat changed, proposes a proportionate waist measurement and how it would inform the follow-up, and avoids claiming that the diet caused any change. Nothing had already been surfaced.",
+  "violated_forbidden": []
+ }
+}

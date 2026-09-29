@@ -1,0 +1,293 @@
+{
+ "record": {
+  "case_id": "B09",
+  "run": 3,
+  "category": "revisit",
+  "split": "dev",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "The assistant surfaced a direct answer to the user’s question, supported by verified records of two 5 km trials on the same course in cool conditions. It calculated the 1:30 improvement correctly, did not attribute it to the running plan, and did not repeat a previously surfaced insight.",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_6265680818d341d397262c7cf45b1529\", \"request_id\": \"worker:job_3db0a806ec594f97bfe60d9929f3cf97:0:w_8740da3f105740c8894505eadad930ef\", \"status\": \"committed\", \"request_hash\": \"d3aedc144a9212be2384c6cff779f4079dcf2e7b5b5d7a4a0bb341d4879f0968\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_4510242546214391bbf0e8c326deebe7",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-sol",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 43.7,
+  "tool_calls": [
+   "context_read",
+   "context_read"
+  ],
+  "error": null,
+  "turns": 3,
+  "tokens": {
+   "prompt": 11898,
+   "completion": 636
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_a46971ed099d44a38438078e96178be7",
+   "extraction": 0,
+   "plan": {
+    "changes": 2,
+    "enqueued": [
+     "revisit:rec_4510242546214391bbf0e8c326deebe7:1ae3592f8248c3f8"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_4510242546214391bbf0e8c326deebe7:1ae3592f8248c3f8",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_6265680818d341d397262c7cf45b1529",
+      "request_id": "worker:job_3db0a806ec594f97bfe60d9929f3cf97:0:w_8740da3f105740c8894505eadad930ef",
+      "status": "committed",
+      "request_hash": "d3aedc144a9212be2384c6cff779f4079dcf2e7b5b5d7a4a0bb341d4879f0968"
+     },
+     "tool_calls": 5
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_a46971ed099d44a38438078e96178be7\", \"extraction\": 0, \"plan\": {\"changes\": 2, \"enqueued\": [\"revisit:rec_4510242546214391bbf0e8c326deebe7:1ae3592f8248c3f8\"]}, \"jobs\": [{\"job\": \"revisit:rec_4510242546214391bbf0e8c326deebe7:1ae3592f8248c3f8\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_6265680818d341d397262c7cf45b1529\", \"request_id\": \"worker:job_3db0a806ec594f97bfe60d9929f3cf97:0:w_8740da3f105740c8894505eadad930ef\", \"status\": \"committed\", \"request_hash\": \"d3aedc144a9212be2384c6cff779f4079dcf2e7b5b5d7a4a0bb341d4879f0968\"}, \"tool_calls\": 5}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_4510242546214391bbf0e8c326deebe7:1ae3592f8248c3f8",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by a change matching one open question. The change is either new data about the question or a dated event the user recorded (then the trigger carries `dated_event`). Decide whether the user should hear something about this question now: a new answer, a correction, or, when a dated event on this question is near and the data on record cannot answer it, which measurement would. Otherwise stay silent.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_4510242546214391bbf0e8c326deebe7\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"state\":\"open\",\"watch_terms\":[\"5 km\",\"time trial\"]},\"text\":\"SYNTHETIC: Is my 5 km time improving with the new running plan?\"}\n\n## Prior analyses of this question (newest first)\n{\"days_ago\":79,\"evidence_status\":\"not verifiable (written without read receipts); not known to be stale\",\"id\":\"rec_505f368e14f349fcaffa45bce2e8c88b\",\"occurred_at\":\"2026-07-06T14:00:00.000000+00:00\",\"revisit_when\":\"second trial on the same course\",\"text\":\"SYNTHETIC analysis (July): one baseline trial (27:40) only; a second trial on the same course in similar conditions is needed to judge change.\"}\n\n## Since the newest analysis (2026-07-06): records written\n{\"id\":\"rec_fb626997a244413f8c628a709e025b19\",\"kind\":\"event\",\"occurred_at\":\"2026-09-20T12:30:00.000000+00:00\",\"text\":\"SYNTHETIC 5 km time trial, same riverside course, cool morning: 26:10.\"}\n## Since the newest analysis: passive samples added\nNone.\nThe newest analysis set a revisit condition: \"second trial on the same course\" (its text may say more).\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 168 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user asked to be interrupted less: surface only a direct answer to their own question that the new evidence itself provides, a correction of something they were shown, or a measurement gap tied to an entry in \\\"Upcoming dated events\\\" with days_until <= 14 that bears on the same outcome; with no such entry a measurement gap is silence\",\"measurement_gap_under_quiet\":\"not allowed: no dated event within 14 days in the user's records\",\"proactivity\":\"quiet\"}\n\n## Upcoming dated events in the user's records (next 21 days)\nNone: no record names a date in the next 21 days.\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n\n## Passive data available (observation catalog)\nNo observations stored.\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"record\":{\"id\":\"rec_fb626997a244413f8c628a709e025b19\",\"kind\":\"event\",\"occurred_at\":\"2026-09-20T12:30:00.000000+00:00\",\"text\":\"SYNTHETIC 5 km time trial, same riverside course, cool morning: 26:10.\"}}\n\nIf you surface, set question_id to rec_4510242546214391bbf0e8c326deebe7.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_4510242546214391bbf0e8c326deebe7",
+     "topic": "5 km time trial comparison",
+     "why_now": "The second trial meets the earlier revisit condition and gives a direct comparison for your question.",
+     "what_changed": "The July 5 trial on the riverside course was 27:40; the September 20 trial on the same course was 26:10. Both records describe a cool morning. The recorded time was 1 minute 30 seconds faster.",
+     "unknowns": "Two trials do not establish a sustained trend or show that the new running plan caused the difference. Other day-to-day factors could affect the time.",
+     "next_step": "Repeat a 5 km time trial on the same course in similar conditions. Another faster result would give you more reason to continue the plan as-is; a return toward 27:40 would make its effect less clear. It still would not establish causation.",
+     "evidence_ids": [
+      "rec_4510242546214391bbf0e8c326deebe7",
+      "rec_505f368e14f349fcaffa45bce2e8c88b",
+      "rec_b4628655817e477698273b9f64ca4bea",
+      "rec_fb626997a244413f8c628a709e025b19"
+     ],
+     "evidence_versions": {
+      "rec_4510242546214391bbf0e8c326deebe7": "active",
+      "rec_505f368e14f349fcaffa45bce2e8c88b": "active",
+      "rec_b4628655817e477698273b9f64ca4bea": "active",
+      "rec_fb626997a244413f8c628a709e025b19": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3326,
+      "completion_tokens": 103,
+      "tool_calls": 1,
+      "seconds": 12.4
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_4510242546214391bbf0e8c326deebe7",
+        "rec_505f368e14f349fcaffa45bce2e8c88b",
+        "rec_fb626997a244413f8c628a709e025b19"
+       ],
+       "include_history": false
+      },
+      "is_error": false,
+      "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_9e73b3a706fc498781e14d423f297c82\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T17:10:00.047353+00:00\",\"id\":\"rec_4510242546214391bbf0e8c326deebe7\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"5 km\",\"time trial\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my 5 km time improving with the new running plan?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T17:10:00.049416+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_4510242546214391bbf0e8c326deebe7\",\"rec_b4628655817e477698273b9f64ca4bea\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_505f368e14f349fcaffa45bce2e8c88b\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-06T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-06T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_4510242546214391bbf0e8c326deebe7\",\"revisit_when\":\"second trial on the same course\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): one baseline trial (27:40) only; a second trial on the same course in similar conditions is needed to judge change.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T17:10:00.050536+00:00\",\"id\":\"rec_fb626997a244413f8c628a709e025b19\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-09-20T12:30:00.000000+00:00\",\"occurred_at_local\":\"2026-09-20T07:30:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 5 km time trial, same riverside course, cool morning: 26:10.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_4510242546214391bbf0e8c326deebe7\":\"active\",\"rec_505f368e14f349fcaffa45bce2e8c88b\":\"active\",\"rec_fb626997a244413f8c628a709e025b19\":\"active\"}}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4150,
+      "completion_tokens": 51,
+      "tool_calls": 1,
+      "seconds": 11.8
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_b4628655817e477698273b9f64ca4bea"
+       ],
+       "include_history": false
+      },
+      "is_error": false,
+      "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_b5aaba92f73749dc9f4a5479d8b297cd\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T17:10:00.048470+00:00\",\"id\":\"rec_b4628655817e477698273b9f64ca4bea\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-07-05T12:30:00.000000+00:00\",\"occurred_at_local\":\"2026-07-05T07:30:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 5 km time trial, riverside course, cool morning: 27:40.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_b4628655817e477698273b9f64ca4bea\":\"active\"}}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 4422,
+      "completion_tokens": 482,
+      "tool_calls": 0,
+      "seconds": 19.5
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3326,
+    "completion_tokens": 103,
+    "tool_calls": 1,
+    "seconds": 12.4
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_4510242546214391bbf0e8c326deebe7",
+      "rec_505f368e14f349fcaffa45bce2e8c88b",
+      "rec_fb626997a244413f8c628a709e025b19"
+     ],
+     "include_history": false
+    },
+    "is_error": false,
+    "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_9e73b3a706fc498781e14d423f297c82\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T17:10:00.047353+00:00\",\"id\":\"rec_4510242546214391bbf0e8c326deebe7\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"5 km\",\"time trial\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my 5 km time improving with the new running plan?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T17:10:00.049416+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_4510242546214391bbf0e8c326deebe7\",\"rec_b4628655817e477698273b9f64ca4bea\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_505f368e14f349fcaffa45bce2e8c88b\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-06T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-06T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_4510242546214391bbf0e8c326deebe7\",\"revisit_when\":\"second trial on the same course\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): one baseline trial (27:40) only; a second trial on the same course in similar conditions is needed to judge change.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T17:10:00.050536+00:00\",\"id\":\"rec_fb626997a244413f8c628a709e025b19\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-09-20T12:30:00.000000+00:00\",\"occurred_at_local\":\"2026-09-20T07:30:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 5 km time trial, same riverside course, cool morning: 26:10.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_4510242546214391bbf0e8c326deebe7\":\"active\",\"rec_505f368e14f349fcaffa45bce2e8c88b\":\"active\",\"rec_fb626997a244413f8c628a709e025b19\":\"active\"}}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4150,
+    "completion_tokens": 51,
+    "tool_calls": 1,
+    "seconds": 11.8
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_b4628655817e477698273b9f64ca4bea"
+     ],
+     "include_history": false
+    },
+    "is_error": false,
+    "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_b5aaba92f73749dc9f4a5479d8b297cd\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T17:10:00.048470+00:00\",\"id\":\"rec_b4628655817e477698273b9f64ca4bea\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-07-05T12:30:00.000000+00:00\",\"occurred_at_local\":\"2026-07-05T07:30:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 5 km time trial, riverside course, cool morning: 27:40.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_b4628655817e477698273b9f64ca4bea\":\"active\"}}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 4422,
+    "completion_tokens": 482,
+    "tool_calls": 0,
+    "seconds": 19.5
+   }
+  ],
+  "error": null,
+  "seconds": 43.7,
+  "turns": 3,
+  "tokens": {
+   "prompt": 11898,
+   "completion": 636
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_6265680818d341d397262c7cf45b1529",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_4510242546214391bbf0e8c326deebe7",
+      "rec_505f368e14f349fcaffa45bce2e8c88b",
+      "rec_b4628655817e477698273b9f64ca4bea",
+      "rec_fb626997a244413f8c628a709e025b19"
+     ],
+     "evidence_versions": {
+      "rec_4510242546214391bbf0e8c326deebe7": "active",
+      "rec_505f368e14f349fcaffa45bce2e8c88b": "active",
+      "rec_b4628655817e477698273b9f64ca4bea": "active",
+      "rec_fb626997a244413f8c628a709e025b19": "active"
+     },
+     "next_step": "Repeat a 5 km time trial on the same course in similar conditions. Another faster result would give you more reason to continue the plan as-is; a return toward 27:40 would make its effect less clear. It still would not establish causation.",
+     "question_id": "rec_4510242546214391bbf0e8c326deebe7",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "5 km time trial comparison",
+     "unknowns": "Two trials do not establish a sustained trend or show that the new running plan caused the difference. Other day-to-day factors could affect the time.",
+     "what_changed": "The July 5 trial on the riverside course was 27:40; the September 20 trial on the same course was 26:10. Both records describe a cool morning. The recorded time was 1 minute 30 seconds faster.",
+     "why_now": "The second trial meets the earlier revisit condition and gives a direct comparison for your question."
+    }
+   }
+  ],
+  "preferences_before": {
+   "proactivity": "quiet"
+  },
+  "preferences_after": {
+   "proactivity": "quiet"
+  },
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "The assistant surfaced a direct answer to the user’s question, supported by verified records of two 5 km trials on the same course in cool conditions. It calculated the 1:30 improvement correctly, did not attribute it to the running plan, and did not repeat a previously surfaced insight.",
+  "violated_forbidden": []
+ }
+}

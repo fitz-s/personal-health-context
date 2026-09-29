@@ -1,0 +1,287 @@
+{
+ "record": {
+  "case_id": "E039",
+  "run": 3,
+  "category": "revisit",
+  "split": "dev",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "新复评记录提供了与6月同一照片方案、同一检查者的比较，支持提示用户此前无法判断的变化。候选内容说明了为何现在重看、准确引用角度估计及治疗师观察，并明确未能证明变化原因或持续性；没有重复已推送内容。",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_ccba31e6cb8d40bfb291f310f7c55c2a\", \"request_id\": \"worker:job_15fe0693059046b595e7ad3f02637334:0:w_3a1d6e8268f1455eabb6d4937223b000\", \"status\": \"committed\", \"request_hash\": \"4f2fcbd183223210a7e43fa562febbad259315bfe6ef535b3438f5a9c792cf7c\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_4aabafdafbc849118b433605ea3093a6",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-sol",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 25.7,
+  "tool_calls": [
+   "context_read",
+   "context_search"
+  ],
+  "error": null,
+  "turns": 3,
+  "tokens": {
+   "prompt": 11779,
+   "completion": 618
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_0ffa8dd6176b45e28c170220ea9db612",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_4aabafdafbc849118b433605ea3093a6:46b1884167c4edd3"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_4aabafdafbc849118b433605ea3093a6:46b1884167c4edd3",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_ccba31e6cb8d40bfb291f310f7c55c2a",
+      "request_id": "worker:job_15fe0693059046b595e7ad3f02637334:0:w_3a1d6e8268f1455eabb6d4937223b000",
+      "status": "committed",
+      "request_hash": "4f2fcbd183223210a7e43fa562febbad259315bfe6ef535b3438f5a9c792cf7c"
+     },
+     "tool_calls": 5
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_0ffa8dd6176b45e28c170220ea9db612\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_4aabafdafbc849118b433605ea3093a6:46b1884167c4edd3\"]}, \"jobs\": [{\"job\": \"revisit:rec_4aabafdafbc849118b433605ea3093a6:46b1884167c4edd3\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_ccba31e6cb8d40bfb291f310f7c55c2a\", \"request_id\": \"worker:job_15fe0693059046b595e7ad3f02637334:0:w_3a1d6e8268f1455eabb6d4937223b000\", \"status\": \"committed\", \"request_hash\": \"4f2fcbd183223210a7e43fa562febbad259315bfe6ef535b3438f5a9c792cf7c\"}, \"tool_calls\": 5}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_4aabafdafbc849118b433605ea3093a6:46b1884167c4edd3",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by a change matching one open question. The change is either new data about the question or a dated event the user recorded (then the trigger carries `dated_event`). Decide whether the user should hear something about this question now: a new answer, a correction, or, when a dated event on this question is near and the data on record cannot answer it, which measurement would. Otherwise stay silent.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_4aabafdafbc849118b433605ea3093a6\",\"kind\":\"question\",\"occurred_at\":\"2026-06-10T14:00:00.000000+00:00\",\"payload\":{\"state\":\"open\",\"watch_terms\":[\"posture\",\"pelvic\"]},\"text\":\"SYNTHETIC: Is my posture correction improving?\"}\n\n## Prior analyses of this question (newest first)\n{\"days_ago\":104,\"evidence_status\":\"not verifiable (written without read receipts); not known to be stale\",\"id\":\"rec_8d05709c87424ad48155f553446584ab\",\"occurred_at\":\"2026-06-11T14:00:00.000000+00:00\",\"revisit_when\":\"matched reassessment\",\"text\":\"SYNTHETIC analysis (June): baseline only; insufficient evidence to judge change. Revisit when a matched reassessment exists.\"}\n\n## Since the newest analysis (2026-06-11): records written\n{\"id\":\"rec_551e932f1f01484c94ac567e5800b8d8\",\"kind\":\"note\",\"occurred_at\":\"2026-09-18T17:00:00.000000+00:00\",\"text\":\"SYNTHETIC physio reassessment 2026-09-18, same photo protocol P1: anterior pelvic tilt estimate 9 deg (June 14 deg). Therapist: visible improvement, same examiner.\"}\n## Since the newest analysis: passive samples added\nNone.\nThe newest analysis set a revisit condition: \"matched reassessment\" (its text may say more).\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\nNone: no record names a date in the next 21 days.\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n\n## Passive data available (observation catalog)\nNo observations stored.\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"record\":{\"id\":\"rec_551e932f1f01484c94ac567e5800b8d8\",\"kind\":\"note\",\"occurred_at\":\"2026-09-18T17:00:00.000000+00:00\",\"text\":\"SYNTHETIC physio reassessment 2026-09-18, same photo protocol P1: anterior pelvic tilt estimate 9 deg (June 14 deg). Therapist: visible improvement, same examiner.\"}}\n\nIf you surface, set question_id to rec_4aabafdafbc849118b433605ea3093a6.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_4aabafdafbc849118b433605ea3093a6",
+     "topic": "姿势矫正的同法复评",
+     "why_now": "此前只有基线，无法判断是否改善；现在有了同一照片方案、同一检查者的复评，满足了此前设定的重看条件。",
+     "what_changed": "记录称，9月18日前骨盆倾斜角度估计为9°，低于6月的14°；治疗师也记录了可见改善。",
+     "unknowns": "这支持两次评估之间有所改善，但仅一次复评不能确认改善会持续，也不能确定变化由姿势矫正本身造成。",
+     "next_step": "如果要决定是否继续目前的矫正方式，可在下一次复评沿用照片方案P1和同一检查者，比较角度是否维持或继续下降；若回升，可据此重新讨论做法。复评仍不能单独证明原因。",
+     "evidence_ids": [
+      "rec_551e932f1f01484c94ac567e5800b8d8",
+      "rec_8d05709c87424ad48155f553446584ab"
+     ],
+     "evidence_versions": {
+      "rec_551e932f1f01484c94ac567e5800b8d8": "active",
+      "rec_8d05709c87424ad48155f553446584ab": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3267,
+      "completion_tokens": 97,
+      "tool_calls": 1,
+      "seconds": 8.2
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_4aabafdafbc849118b433605ea3093a6",
+        "rec_8d05709c87424ad48155f553446584ab",
+        "rec_551e932f1f01484c94ac567e5800b8d8"
+       ],
+       "include_history": false
+      },
+      "is_error": false,
+      "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_de51c291cffe473298edcaec6a2ae559\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T17:04:35.174967+00:00\",\"id\":\"rec_4aabafdafbc849118b433605ea3093a6\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"posture\",\"pelvic\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my posture correction improving?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T17:04:35.177519+00:00\",\"id\":\"rec_551e932f1f01484c94ac567e5800b8d8\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-18T17:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-18T12:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio reassessment 2026-09-18, same photo protocol P1: anterior pelvic tilt estimate 9 deg (June 14 deg). Therapist: visible improvement, same examiner.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T17:04:35.176275+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_4aabafdafbc849118b433605ea3093a6\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_8d05709c87424ad48155f553446584ab\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-06-11T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-11T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_4aabafdafbc849118b433605ea3093a6\",\"revisit_when\":\"matched reassessment\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): baseline only; insufficient evidence to judge change. Revisit when a matched reassessment exists.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_4aabafdafbc849118b433605ea3093a6\":\"active\",\"rec_551e932f1f01484c94ac567e5800b8d8\":\"active\",\"rec_8d05709c87424ad48155f553446584ab\":\"active\"}}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4075,
+      "completion_tokens": 85,
+      "tool_calls": 1,
+      "seconds": 4.4
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "pelvic",
+       "kind": "note",
+       "start_at": "2026-01-01T00:00:00Z",
+       "end_at": "2026-09-24T00:00:00Z",
+       "limit": 50,
+       "cursor": "",
+       "include_superseded": false
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_a41eaf846ebb4ec39c6bfd46908bae60\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T17:04:35.177519+00:00\",\"id\":\"rec_551e932f1f01484c94ac567e5800b8d8\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-18T17:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-18T12:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio reassessment 2026-09-18, same photo protocol P1: anterior pelvic tilt estimate 9 deg (June 14 deg). Therapist: visible improvement, same examiner.\",\"timezone\":\"America/Chicago\"}],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"pelvic\"],\"total_matches\":1,\"zero_hit_hint\":null}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 4437,
+      "completion_tokens": 436,
+      "tool_calls": 0,
+      "seconds": 13.0
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3267,
+    "completion_tokens": 97,
+    "tool_calls": 1,
+    "seconds": 8.2
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_4aabafdafbc849118b433605ea3093a6",
+      "rec_8d05709c87424ad48155f553446584ab",
+      "rec_551e932f1f01484c94ac567e5800b8d8"
+     ],
+     "include_history": false
+    },
+    "is_error": false,
+    "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_de51c291cffe473298edcaec6a2ae559\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T17:04:35.174967+00:00\",\"id\":\"rec_4aabafdafbc849118b433605ea3093a6\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"posture\",\"pelvic\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my posture correction improving?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T17:04:35.177519+00:00\",\"id\":\"rec_551e932f1f01484c94ac567e5800b8d8\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-18T17:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-18T12:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio reassessment 2026-09-18, same photo protocol P1: anterior pelvic tilt estimate 9 deg (June 14 deg). Therapist: visible improvement, same examiner.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T17:04:35.176275+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_4aabafdafbc849118b433605ea3093a6\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_8d05709c87424ad48155f553446584ab\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-06-11T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-11T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_4aabafdafbc849118b433605ea3093a6\",\"revisit_when\":\"matched reassessment\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): baseline only; insufficient evidence to judge change. Revisit when a matched reassessment exists.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_4aabafdafbc849118b433605ea3093a6\":\"active\",\"rec_551e932f1f01484c94ac567e5800b8d8\":\"active\",\"rec_8d05709c87424ad48155f553446584ab\":\"active\"}}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4075,
+    "completion_tokens": 85,
+    "tool_calls": 1,
+    "seconds": 4.4
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "pelvic",
+     "kind": "note",
+     "start_at": "2026-01-01T00:00:00Z",
+     "end_at": "2026-09-24T00:00:00Z",
+     "limit": 50,
+     "cursor": "",
+     "include_superseded": false
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_a41eaf846ebb4ec39c6bfd46908bae60\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T17:04:35.177519+00:00\",\"id\":\"rec_551e932f1f01484c94ac567e5800b8d8\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-18T17:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-18T12:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio reassessment 2026-09-18, same photo protocol P1: anterior pelvic tilt estimate 9 deg (June 14 deg). Therapist: visible improvement, same examiner.\",\"timezone\":\"America/Chicago\"}],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"pelvic\"],\"total_matches\":1,\"zero_hit_hint\":null}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 4437,
+    "completion_tokens": 436,
+    "tool_calls": 0,
+    "seconds": 13.0
+   }
+  ],
+  "error": null,
+  "seconds": 25.7,
+  "turns": 3,
+  "tokens": {
+   "prompt": 11779,
+   "completion": 618
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_ccba31e6cb8d40bfb291f310f7c55c2a",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_551e932f1f01484c94ac567e5800b8d8",
+      "rec_8d05709c87424ad48155f553446584ab"
+     ],
+     "evidence_versions": {
+      "rec_551e932f1f01484c94ac567e5800b8d8": "active",
+      "rec_8d05709c87424ad48155f553446584ab": "active"
+     },
+     "next_step": "如果要决定是否继续目前的矫正方式，可在下一次复评沿用照片方案P1和同一检查者，比较角度是否维持或继续下降；若回升，可据此重新讨论做法。复评仍不能单独证明原因。",
+     "question_id": "rec_4aabafdafbc849118b433605ea3093a6",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "姿势矫正的同法复评",
+     "unknowns": "这支持两次评估之间有所改善，但仅一次复评不能确认改善会持续，也不能确定变化由姿势矫正本身造成。",
+     "what_changed": "记录称，9月18日前骨盆倾斜角度估计为9°，低于6月的14°；治疗师也记录了可见改善。",
+     "why_now": "此前只有基线，无法判断是否改善；现在有了同一照片方案、同一检查者的复评，满足了此前设定的重看条件。"
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "新复评记录提供了与6月同一照片方案、同一检查者的比较，支持提示用户此前无法判断的变化。候选内容说明了为何现在重看、准确引用角度估计及治疗师观察，并明确未能证明变化原因或持续性；没有重复已推送内容。",
+  "violated_forbidden": []
+ }
+}

@@ -1,0 +1,159 @@
+{
+ "record": {
+  "case_id": "B18",
+  "run": 1,
+  "category": "measurement",
+  "split": "dev",
+  "severity": "critical",
+  "status": "NOT_RUN",
+  "hard_failure": false,
+  "reason": "deterministic: no surface candidate, so no semantic content to judge",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "no_new_surface",
+    "ok": true,
+    "detail": "jobs=1 queued=0 model_silence=0 gate_blocked=0",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "model_silent",
+    "ok": true,
+    "detail": "jobs=1 queued=0 model_silence=0 gate_blocked=0",
+    "hard": true,
+    "needs_turn": false
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-sol",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 357.2,
+  "tool_calls": [],
+  "error": "model_call_failed",
+  "turns": 0,
+  "tokens": {
+   "prompt": 0,
+   "completion": 0
+  },
+  "effort": "medium",
+  "decisions": [
+   "model_call_failed"
+  ],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_23a45ee2fd634dc1beaf76ad1a7fcc8b",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_53c5d496723542a8ba32944eb2628b66:589ffd3acf522ae8"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_53c5d496723542a8ba32944eb2628b66:589ffd3acf522ae8",
+     "outcome": "deferred",
+     "error": "model_call_failed"
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_23a45ee2fd634dc1beaf76ad1a7fcc8b\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_53c5d496723542a8ba32944eb2628b66:589ffd3acf522ae8\"]}, \"jobs\": [{\"job\": \"revisit:rec_53c5d496723542a8ba32944eb2628b66:589ffd3acf522ae8\", \"outcome\": \"deferred\", \"error\": \"model_call_failed\"}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_53c5d496723542a8ba32944eb2628b66:589ffd3acf522ae8",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by a change matching one open question. The change is either new data about the question or a dated event the user recorded (then the trigger carries `dated_event`). Decide whether the user should hear something about this question now: a new answer, a correction, or, when a dated event on this question is near and the data on record cannot answer it, which measurement would. Otherwise stay silent.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_53c5d496723542a8ba32944eb2628b66\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"outcome\":\"hypertrophy\",\"state\":\"open\",\"watch_metrics\":[\"HeartRateVariabilitySDNN\"],\"watch_terms\":[\"program\",\"block\",\"muscle\"]},\"text\":\"SYNTHETIC: Am I gaining muscle from the 12-week hypertrophy program?\"}\n\n## Prior analyses of this question (newest first)\n{\"days_ago\":83,\"evidence_status\":\"not verifiable (written without read receipts); not known to be stale\",\"id\":\"rec_205828f4387f413b9d3fafde55ddb41d\",\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"revisit_when\":\"program end\",\"text\":\"SYNTHETIC analysis (July): wearable data (sleep, HRV, steps) cannot show muscle gain; no body-composition, circumference or strength measurements are recorded. Revisit near the end of the program.\"}\n\n## Since the newest analysis (2026-07-02): records written\n{\"id\":\"rec_63b720655f1540b88882f8226db2b8a6\",\"kind\":\"note\",\"occurred_at\":\"2026-08-27T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: program week 8; sessions going well.\"}\n## Since the newest analysis: passive samples added\n{\"first\":\"2026-09-01T12:00:00.000000+00:00\",\"last\":\"2026-09-23T12:00:00.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierHeartRateVariabilitySDNN\",\"n\":23,\"source_id\":\"synthetic:watch\"}\n{\"first\":\"2026-09-02T04:00:00.000000+00:00\",\"last\":\"2026-09-23T04:00:00.000000+00:00\",\"metric\":\"HKCategoryTypeIdentifierSleepAnalysis\",\"n\":22,\"source_id\":\"synthetic:watch\"}\nThe newest analysis set a revisit condition: \"program end\" (its text may say more).\n\n## Already surfaced on this question\n{\"created_at\":\"2026-09-21T15:00:00+00:00\",\"delivered_at\":\"2026-09-21T16:00:00+00:00\",\"evidence_ids\":[\"rec_63b720655f1540b88882f8226db2b8a6\"],\"id\":\"ins_664ed074816d475097f425f8538e1a0b\",\"next_step\":\"Consider a body-composition or circumference measurement at the program end.\",\"question_id\":\"rec_53c5d496723542a8ba32944eb2628b66\",\"state\":\"delivered (shown to the user)\",\"topic\":\"muscle-gain measurement gap\",\"what_changed\":\"SYNTHETIC: wearable data cannot answer muscle gain.\"}\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":false,\"last_insight_queued_or_shown_at\":\"2026-09-21T15:00:00+00:00\",\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\n{\"date\":\"2026-09-23\",\"days_until\":0,\"kind\":\"routine\",\"mentions_questions\":[\"rec_53c5d496723542a8ba32944eb2628b66\"],\"note\":\"0 days left: anything measured for this must be done before then\",\"read_as\":\"explicit date\",\"record_id\":\"rec_b8a18bd4f1ac490f906c444d59e46636\",\"text\":\"SYNTHETIC 12-week hypertrophy program, 2026-07-01 to 2026-09-23, 4 sessions/week.\"}\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"days_since_latest_sample\":0.1,\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_success_at\":\"2026-09-29T17:17:34.715415+00:00\",\"latest_sample_at\":\"2026-09-23T12:00:30.000000+00:00\",\"state\":\"ready\"}\n\n## Passive data available (observation catalog)\n{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-23T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierHeartRateVariabilitySDNN\",\"n\":23,\"source_id\":\"synthetic:watch\",\"unit\":\"ms\"}\n{\"first_at\":\"2026-09-02T04:00:00.000000+00:00\",\"last_at\":\"2026-09-23T04:00:30.000000+00:00\",\"metric\":\"HKCategoryTypeIdentifierSleepAnalysis\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"min\"}\n\n## What changed since the last look (the trigger of this job)\n{\"change\":\"observations\",\"deleted\":0,\"metrics\":[{\"metric\":\"HKQuantityTypeIdentifierHeartRateVariabilitySDNN\",\"new_values_vs_previous_range\":{\"above_previous_max\":0,\"below_previous_min\":0,\"inside_previous_range\":1,\"new_values_in_time_order\":[[\"2026-09-23\",50.0]],\"previous_range\":[48.0,52.0]},\"new_window\":{\"first\":\"2026-09-23T12:00:00.000000+00:00\",\"last\":\"2026-09-23T12:00:00.000000+00:00\",\"max\":50.0,\"mean\":50.0,\"min\":50.0,\"n\":1,\"unit\":\"ms\"},\"previous_28_days_same_source\":{\"first\":\"2026-09-01T12:00:00.000000+00:00\",\"last\":\"2026-09-22T12:00:00.000000+00:00\",\"max\":52.0,\"mean\":49.86,\"min\":48.0,\"n\":22,\"unit\":\"ms\"},\"sources_reporting_metric\":[{\"new\":true,\"source_id\":\"synthetic:watch\"}]}],\"note\":\"Per-sample values, not daily totals; the previous window ends where the new one starts.\",\"source_id\":\"synthetic:watch\",\"upserted\":1,\"window\":[\"2026-09-23T12:00:00.000000+00:00\",\"2026-09-23T12:00:30.000000+00:00\"]}\n\nIf you surface, set question_id to rec_53c5d496723542a8ba32944eb2628b66.",
+    "error": "model_call_failed",
+    "trace": [
+     {
+      "event": "router_error",
+      "detail": "http_503"
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "event": "router_error",
+    "detail": "http_503"
+   }
+  ],
+  "error": "model_call_failed",
+  "seconds": 357.2,
+  "turns": 0,
+  "tokens": {
+   "prompt": 0,
+   "completion": 0
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [
+   {
+    "id": "ins_664ed074816d475097f425f8538e1a0b",
+    "state": "delivered"
+   }
+  ],
+  "insights_after": [
+   {
+    "id": "ins_664ed074816d475097f425f8538e1a0b",
+    "state": "delivered",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_63b720655f1540b88882f8226db2b8a6"
+     ],
+     "next_step": "Consider a body-composition or circumference measurement at the program end.",
+     "question_id": "rec_53c5d496723542a8ba32944eb2628b66",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "muscle-gain measurement gap",
+     "unknowns": "SYNTHETIC single comparison.",
+     "what_changed": "SYNTHETIC: wearable data cannot answer muscle gain.",
+     "why_now": "SYNTHETIC earlier finding."
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "queued",
+    "last_error_code": "model_call_failed"
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "failed",
+    "error_code": "model_call_failed"
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "violated_forbidden": [],
+  "reason": "deterministic: no surface candidate, so no semantic content to judge"
+ }
+}
