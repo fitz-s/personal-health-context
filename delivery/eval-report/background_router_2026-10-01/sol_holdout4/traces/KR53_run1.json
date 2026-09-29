@@ -1,0 +1,251 @@
+{
+ "record": {
+  "case_id": "KR53",
+  "run": 1,
+  "category": "revisit",
+  "split": "holdout4",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "同一实验室、同一指标和单位的两次结果支持数值从38升至71 nmol/L。候选内容明确未将上升归因于补充剂，也未重复已呈现的消息；复查建议说明了持续改善这一尚待回答的问题及结果将如何影响评估。",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_e27f87a1e40c49999007491355c6d45a\", \"request_id\": \"worker:job_9f14a142782343a2bc21d8638900c862:0:w_6ee10674dbfe49bea191bf8d0a32ea2b\", \"status\": \"committed\", \"request_hash\": \"67029abcfc0da854e020be347b614e92da2319d1a5eab2a53e92163f18f7163f\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_6fa26b91988649dea4b269c9ea80c519",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-sol",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 24.4,
+  "tool_calls": [
+   "context_read"
+  ],
+  "error": null,
+  "turns": 2,
+  "tokens": {
+   "prompt": 7785,
+   "completion": 675
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "guards": [],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_fd9c09408eec4c6993a3dab1a1ace5d4",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_6fa26b91988649dea4b269c9ea80c519:1ae3592f8248c3f8"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_6fa26b91988649dea4b269c9ea80c519:1ae3592f8248c3f8",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_e27f87a1e40c49999007491355c6d45a",
+      "request_id": "worker:job_9f14a142782343a2bc21d8638900c862:0:w_6ee10674dbfe49bea191bf8d0a32ea2b",
+      "status": "committed",
+      "request_hash": "67029abcfc0da854e020be347b614e92da2319d1a5eab2a53e92163f18f7163f"
+     },
+     "tool_calls": 3
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_fd9c09408eec4c6993a3dab1a1ace5d4\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_6fa26b91988649dea4b269c9ea80c519:1ae3592f8248c3f8\"]}, \"jobs\": [{\"job\": \"revisit:rec_6fa26b91988649dea4b269c9ea80c519:1ae3592f8248c3f8\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_e27f87a1e40c49999007491355c6d45a\", \"request_id\": \"worker:job_9f14a142782343a2bc21d8638900c862:0:w_6ee10674dbfe49bea191bf8d0a32ea2b\", \"status\": \"committed\", \"request_hash\": \"67029abcfc0da854e020be347b614e92da2319d1a5eab2a53e92163f18f7163f\"}, \"tool_calls\": 3}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_6fa26b91988649dea4b269c9ea80c519:1ae3592f8248c3f8",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by a change matching one open question. The change is either new data about the question or a dated event the user recorded (then the trigger carries `dated_event`). Decide whether the user should hear something about this question now: a new answer, a correction, or, when a dated event on this question is near and the data on record cannot answer it, which measurement would. Otherwise stay silent.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_6fa26b91988649dea4b269c9ea80c519\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"state\":\"open\",\"watch_terms\":[\"vitamin D\"]},\"text\":\"SYNTHETIC: Is my vitamin D recovering on supplements?\"}\n\n## Prior analyses of this question (newest first)\n{\"days_ago\":52,\"evidence_status\":\"not verifiable (written without read receipts); not known to be stale\",\"id\":\"rec_7920c4a0f93344acad0e00014305c28d\",\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis: baseline 38 nmol/L; retest at the same lab after 3 months.\"}\n\n## Since the newest analysis (2026-08-02): records written\n{\"id\":\"rec_083ebee96c6f4c9d9ac85835392211b1\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC lab (Lab A, same lab): 25-OH vitamin D 71 nmol/L.\"}\n## Since the newest analysis: passive samples added\nNone.\nThe newest analysis set no revisit condition field; read its text for one before assuming there is none.\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\nNone: no record names a date in the next 21 days.\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n\n## Passive data available (observation catalog)\nNo observations stored.\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"comparability\":{\"differences\":[\"lab\"],\"earlier_records_with_values\":[{\"id\":\"rec_702d79273e1e4d8bb51a1f7213d0b841\",\"occurred_at\":\"2026-06-20\",\"stated_conditions\":[\"lab a\",\"nmol/l\"],\"text\":\"SYNTHETIC lab (Lab A): 25-OH vitamin D 38 nmol/L.\"}],\"new_record_conditions\":[\"lab\",\"lab a\",\"nmol/l\"],\"note\":\"Conditions as each record states them. A value measured under different stated conditions (lab, unit, device, venue, protocol, equipment) is not like for like with the others.\"},\"record\":{\"id\":\"rec_083ebee96c6f4c9d9ac85835392211b1\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC lab (Lab A, same lab): 25-OH vitamin D 71 nmol/L.\"}}\n\nIf you surface, set question_id to rec_6fa26b91988649dea4b269c9ea80c519.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_6fa26b91988649dea4b269c9ea80c519",
+     "topic": "维生素D复查值上升",
+     "why_now": "同一实验室的复查结果，让“补充期间数值是否上升”有了可比较的答案。",
+     "what_changed": "记录显示，Lab A 的25-OH维生素D从6月20日的38 nmol/L升至9月22日记录的71 nmol/L。",
+     "unknowns": "这说明两次检测之间数值上升；仅凭这两次结果，不能确定上升由补充剂造成，也不能判断能否持续。",
+     "next_step": "下次复查仍用Lab A的25-OH维生素D结果作比较：若维持在较高水平，可支持数值持续改善；若回落，则需要重新评估当前做法是否达到预期。这仍不能单独证明原因。",
+     "evidence_ids": [
+      "rec_6fa26b91988649dea4b269c9ea80c519",
+      "rec_702d79273e1e4d8bb51a1f7213d0b841",
+      "rec_083ebee96c6f4c9d9ac85835392211b1"
+     ],
+     "evidence_versions": {
+      "rec_6fa26b91988649dea4b269c9ea80c519": "active",
+      "rec_702d79273e1e4d8bb51a1f7213d0b841": "active",
+      "rec_083ebee96c6f4c9d9ac85835392211b1": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3374,
+      "completion_tokens": 124,
+      "tool_calls": 1,
+      "seconds": 5.9
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_6fa26b91988649dea4b269c9ea80c519",
+        "rec_7920c4a0f93344acad0e00014305c28d",
+        "rec_083ebee96c6f4c9d9ac85835392211b1",
+        "rec_702d79273e1e4d8bb51a1f7213d0b841"
+       ],
+       "include_history": false
+      },
+      "is_error": false,
+      "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_9bee3447f44e4cde866450e849dc5089\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:42:26.868020+00:00\",\"id\":\"rec_083ebee96c6f4c9d9ac85835392211b1\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab A, same lab): 25-OH vitamin D 71 nmol/L.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:42:26.862458+00:00\",\"id\":\"rec_6fa26b91988649dea4b269c9ea80c519\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"vitamin D\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my vitamin D recovering on supplements?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:42:26.865026+00:00\",\"id\":\"rec_702d79273e1e4d8bb51a1f7213d0b841\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-06-20T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-20T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab A): 25-OH vitamin D 38 nmol/L.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:42:26.866511+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_6fa26b91988649dea4b269c9ea80c519\",\"rec_702d79273e1e4d8bb51a1f7213d0b841\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_7920c4a0f93344acad0e00014305c28d\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_6fa26b91988649dea4b269c9ea80c519\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: baseline 38 nmol/L; retest at the same lab after 3 months.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_083ebee96c6f4c9d9ac85835392211b1\":\"active\",\"rec_6fa26b91988649dea4b269c9ea80c519\":\"active\",\"rec_702d79273e1e4d8bb51a1f7213d0b841\":\"active\",\"rec_7920c4a0f93344acad0e00014305c28d\":\"active\"}}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4411,
+      "completion_tokens": 551,
+      "tool_calls": 0,
+      "seconds": 18.4
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3374,
+    "completion_tokens": 124,
+    "tool_calls": 1,
+    "seconds": 5.9
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_6fa26b91988649dea4b269c9ea80c519",
+      "rec_7920c4a0f93344acad0e00014305c28d",
+      "rec_083ebee96c6f4c9d9ac85835392211b1",
+      "rec_702d79273e1e4d8bb51a1f7213d0b841"
+     ],
+     "include_history": false
+    },
+    "is_error": false,
+    "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_9bee3447f44e4cde866450e849dc5089\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:42:26.868020+00:00\",\"id\":\"rec_083ebee96c6f4c9d9ac85835392211b1\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab A, same lab): 25-OH vitamin D 71 nmol/L.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:42:26.862458+00:00\",\"id\":\"rec_6fa26b91988649dea4b269c9ea80c519\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"vitamin D\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my vitamin D recovering on supplements?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:42:26.865026+00:00\",\"id\":\"rec_702d79273e1e4d8bb51a1f7213d0b841\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-06-20T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-20T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab A): 25-OH vitamin D 38 nmol/L.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:42:26.866511+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_6fa26b91988649dea4b269c9ea80c519\",\"rec_702d79273e1e4d8bb51a1f7213d0b841\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_7920c4a0f93344acad0e00014305c28d\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_6fa26b91988649dea4b269c9ea80c519\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: baseline 38 nmol/L; retest at the same lab after 3 months.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_083ebee96c6f4c9d9ac85835392211b1\":\"active\",\"rec_6fa26b91988649dea4b269c9ea80c519\":\"active\",\"rec_702d79273e1e4d8bb51a1f7213d0b841\":\"active\",\"rec_7920c4a0f93344acad0e00014305c28d\":\"active\"}}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4411,
+    "completion_tokens": 551,
+    "tool_calls": 0,
+    "seconds": 18.4
+   }
+  ],
+  "error": null,
+  "seconds": 24.4,
+  "turns": 2,
+  "tokens": {
+   "prompt": 7785,
+   "completion": 675
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_e27f87a1e40c49999007491355c6d45a",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_6fa26b91988649dea4b269c9ea80c519",
+      "rec_702d79273e1e4d8bb51a1f7213d0b841",
+      "rec_083ebee96c6f4c9d9ac85835392211b1"
+     ],
+     "evidence_versions": {
+      "rec_083ebee96c6f4c9d9ac85835392211b1": "active",
+      "rec_6fa26b91988649dea4b269c9ea80c519": "active",
+      "rec_702d79273e1e4d8bb51a1f7213d0b841": "active"
+     },
+     "next_step": "下次复查仍用Lab A的25-OH维生素D结果作比较：若维持在较高水平，可支持数值持续改善；若回落，则需要重新评估当前做法是否达到预期。这仍不能单独证明原因。",
+     "question_id": "rec_6fa26b91988649dea4b269c9ea80c519",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "维生素D复查值上升",
+     "unknowns": "这说明两次检测之间数值上升；仅凭这两次结果，不能确定上升由补充剂造成，也不能判断能否持续。",
+     "what_changed": "记录显示，Lab A 的25-OH维生素D从6月20日的38 nmol/L升至9月22日记录的71 nmol/L。",
+     "why_now": "同一实验室的复查结果，让“补充期间数值是否上升”有了可比较的答案。"
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "同一实验室、同一指标和单位的两次结果支持数值从38升至71 nmol/L。候选内容明确未将上升归因于补充剂，也未重复已呈现的消息；复查建议说明了持续改善这一尚待回答的问题及结果将如何影响评估。",
+  "violated_forbidden": []
+ }
+}

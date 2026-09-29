@@ -1,0 +1,255 @@
+{
+ "record": {
+  "case_id": "KR57",
+  "run": 3,
+  "category": "revisit",
+  "split": "holdout4",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "新复测记录直接回答用户的问题，适合在 quiet 模式下提示。助手核对了两次原始记录：同一治疗师、同用量角器，髋屈曲角度由 95° 升至 118°（增加 23°）；同时明确未将变化归因于物理治疗，也未断言会持续改善。此前未就此问题推送过消息。",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_a111ab2e459c4cdeaf90697972e04a06\", \"request_id\": \"worker:job_123e9fdca8f745e3882121f5c7074f54:0:w_1d6cf36586a74b7f965d5d2a5ea0c256\", \"status\": \"committed\", \"request_hash\": \"d10a87f78334a0573b6137c059e1cfe68ca3478e85de20bce8687f59b1482d4b\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_35110cdb22654256a6967a342cbf3c94",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-sol",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 25.4,
+  "tool_calls": [
+   "context_read"
+  ],
+  "error": null,
+  "turns": 2,
+  "tokens": {
+   "prompt": 7922,
+   "completion": 697
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "guards": [],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_29c6b05e66214584b3a0fda3fab3b159",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_35110cdb22654256a6967a342cbf3c94:fe94b827f0455bee"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_35110cdb22654256a6967a342cbf3c94:fe94b827f0455bee",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_a111ab2e459c4cdeaf90697972e04a06",
+      "request_id": "worker:job_123e9fdca8f745e3882121f5c7074f54:0:w_1d6cf36586a74b7f965d5d2a5ea0c256",
+      "status": "committed",
+      "request_hash": "d10a87f78334a0573b6137c059e1cfe68ca3478e85de20bce8687f59b1482d4b"
+     },
+     "tool_calls": 3
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_29c6b05e66214584b3a0fda3fab3b159\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_35110cdb22654256a6967a342cbf3c94:fe94b827f0455bee\"]}, \"jobs\": [{\"job\": \"revisit:rec_35110cdb22654256a6967a342cbf3c94:fe94b827f0455bee\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_a111ab2e459c4cdeaf90697972e04a06\", \"request_id\": \"worker:job_123e9fdca8f745e3882121f5c7074f54:0:w_1d6cf36586a74b7f965d5d2a5ea0c256\", \"status\": \"committed\", \"request_hash\": \"d10a87f78334a0573b6137c059e1cfe68ca3478e85de20bce8687f59b1482d4b\"}, \"tool_calls\": 3}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_35110cdb22654256a6967a342cbf3c94:fe94b827f0455bee",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by a change matching one open question. The change is either new data about the question or a dated event the user recorded (then the trigger carries `dated_event`). Decide whether the user should hear something about this question now: a new answer, a correction, or, when a dated event on this question is near and the data on record cannot answer it, which measurement would. Otherwise stay silent.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_35110cdb22654256a6967a342cbf3c94\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"state\":\"open\",\"watch_terms\":[\"hip\"]},\"text\":\"SYNTHETIC: Is my hip flexion range improving with physio?\"}\n\n## Prior analyses of this question (newest first)\n{\"days_ago\":52,\"evidence_status\":\"not verifiable (written without read receipts); not known to be stale\",\"id\":\"rec_f5127ee71d8e4a998dd842fc26250e8e\",\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis: baseline 95 deg; reassess with the same method.\"}\n\n## Since the newest analysis (2026-08-02): records written\n{\"id\":\"rec_0be74c0acf0b46c48eaae4c1a22f39cb\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC physio: hip flexion 118 deg (goniometer, same therapist).\"}\n## Since the newest analysis: passive samples added\nNone.\nThe newest analysis set no revisit condition field; read its text for one before assuming there is none.\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 168 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user asked to be interrupted less: surface only a direct answer to their own question that the new evidence itself provides, a correction of something they were shown, or a measurement gap tied to an entry in \\\"Upcoming dated events\\\" with days_until <= 14 that bears on the same outcome; with no such entry a measurement gap is silence\",\"measurement_gap_under_quiet\":\"not allowed: no dated event within 14 days in the user's records\",\"proactivity\":\"quiet\"}\n\n## Upcoming dated events in the user's records (next 21 days)\nNone: no record names a date in the next 21 days.\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n\n## Passive data available (observation catalog)\nNo observations stored.\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"comparability\":{\"differences\":[],\"earlier_records_with_values\":[{\"id\":\"rec_16c26839d157479e8cdfb67f63ca9a3a\",\"occurred_at\":\"2026-07-18\",\"stated_conditions\":[\"goniometer\",\"therapist\"],\"text\":\"SYNTHETIC physio: hip flexion 95 deg (goniometer, same therapist).\"}],\"new_record_conditions\":[\"goniometer\",\"therapist\"],\"note\":\"Conditions as each record states them. A value measured under different stated conditions (lab, unit, device, venue, protocol, equipment) is not like for like with the others.\"},\"record\":{\"id\":\"rec_0be74c0acf0b46c48eaae4c1a22f39cb\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC physio: hip flexion 118 deg (goniometer, same therapist).\"}}\n\nIf you surface, set question_id to rec_35110cdb22654256a6967a342cbf3c94.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_35110cdb22654256a6967a342cbf3c94",
+     "topic": "髋关节屈曲活动范围复测增加",
+     "why_now": "同一治疗师用量角器记录了新的髋关节屈曲角度，可以直接回答此前是否有变化。",
+     "what_changed": "记录显示，7月18日髋关节屈曲为95°；9月21日（当地时间）复测为118°，比前次高23°。",
+     "unknowns": "这支持两次测量之间活动范围有所增加，但仅有两次记录，不能确定是否持续改善，也不能单凭它们判断增加是否由物理治疗造成。",
+     "next_step": "下次用相同方法再记录一次屈曲角度，以判断增加是否保持；这可帮助你与治疗师讨论当前方案是否达到活动范围目标，但仍不能单独证明原因。",
+     "evidence_ids": [
+      "rec_35110cdb22654256a6967a342cbf3c94",
+      "rec_16c26839d157479e8cdfb67f63ca9a3a",
+      "rec_0be74c0acf0b46c48eaae4c1a22f39cb"
+     ],
+     "evidence_versions": {
+      "rec_35110cdb22654256a6967a342cbf3c94": "active",
+      "rec_16c26839d157479e8cdfb67f63ca9a3a": "active",
+      "rec_0be74c0acf0b46c48eaae4c1a22f39cb": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3447,
+      "completion_tokens": 129,
+      "tool_calls": 1,
+      "seconds": 11.8
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_35110cdb22654256a6967a342cbf3c94",
+        "rec_f5127ee71d8e4a998dd842fc26250e8e",
+        "rec_0be74c0acf0b46c48eaae4c1a22f39cb",
+        "rec_16c26839d157479e8cdfb67f63ca9a3a"
+       ],
+       "include_history": false
+      },
+      "is_error": false,
+      "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_0342be5184ac4267a64ccc6f604675fd\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:43:30.382799+00:00\",\"id\":\"rec_0be74c0acf0b46c48eaae4c1a22f39cb\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio: hip flexion 118 deg (goniometer, same therapist).\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:43:30.380730+00:00\",\"id\":\"rec_16c26839d157479e8cdfb67f63ca9a3a\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-07-18T15:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-18T10:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio: hip flexion 95 deg (goniometer, same therapist).\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:43:30.379550+00:00\",\"id\":\"rec_35110cdb22654256a6967a342cbf3c94\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"hip\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my hip flexion range improving with physio?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:43:30.381766+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_16c26839d157479e8cdfb67f63ca9a3a\",\"rec_35110cdb22654256a6967a342cbf3c94\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_f5127ee71d8e4a998dd842fc26250e8e\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_35110cdb22654256a6967a342cbf3c94\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: baseline 95 deg; reassess with the same method.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_0be74c0acf0b46c48eaae4c1a22f39cb\":\"active\",\"rec_16c26839d157479e8cdfb67f63ca9a3a\":\"active\",\"rec_35110cdb22654256a6967a342cbf3c94\":\"active\",\"rec_f5127ee71d8e4a998dd842fc26250e8e\":\"active\"}}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4475,
+      "completion_tokens": 568,
+      "tool_calls": 0,
+      "seconds": 13.5
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3447,
+    "completion_tokens": 129,
+    "tool_calls": 1,
+    "seconds": 11.8
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_35110cdb22654256a6967a342cbf3c94",
+      "rec_f5127ee71d8e4a998dd842fc26250e8e",
+      "rec_0be74c0acf0b46c48eaae4c1a22f39cb",
+      "rec_16c26839d157479e8cdfb67f63ca9a3a"
+     ],
+     "include_history": false
+    },
+    "is_error": false,
+    "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_0342be5184ac4267a64ccc6f604675fd\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:43:30.382799+00:00\",\"id\":\"rec_0be74c0acf0b46c48eaae4c1a22f39cb\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio: hip flexion 118 deg (goniometer, same therapist).\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:43:30.380730+00:00\",\"id\":\"rec_16c26839d157479e8cdfb67f63ca9a3a\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-07-18T15:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-18T10:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio: hip flexion 95 deg (goniometer, same therapist).\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:43:30.379550+00:00\",\"id\":\"rec_35110cdb22654256a6967a342cbf3c94\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"hip\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my hip flexion range improving with physio?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:43:30.381766+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_16c26839d157479e8cdfb67f63ca9a3a\",\"rec_35110cdb22654256a6967a342cbf3c94\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_f5127ee71d8e4a998dd842fc26250e8e\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_35110cdb22654256a6967a342cbf3c94\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: baseline 95 deg; reassess with the same method.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_0be74c0acf0b46c48eaae4c1a22f39cb\":\"active\",\"rec_16c26839d157479e8cdfb67f63ca9a3a\":\"active\",\"rec_35110cdb22654256a6967a342cbf3c94\":\"active\",\"rec_f5127ee71d8e4a998dd842fc26250e8e\":\"active\"}}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4475,
+    "completion_tokens": 568,
+    "tool_calls": 0,
+    "seconds": 13.5
+   }
+  ],
+  "error": null,
+  "seconds": 25.4,
+  "turns": 2,
+  "tokens": {
+   "prompt": 7922,
+   "completion": 697
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_a111ab2e459c4cdeaf90697972e04a06",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_35110cdb22654256a6967a342cbf3c94",
+      "rec_16c26839d157479e8cdfb67f63ca9a3a",
+      "rec_0be74c0acf0b46c48eaae4c1a22f39cb"
+     ],
+     "evidence_versions": {
+      "rec_0be74c0acf0b46c48eaae4c1a22f39cb": "active",
+      "rec_16c26839d157479e8cdfb67f63ca9a3a": "active",
+      "rec_35110cdb22654256a6967a342cbf3c94": "active"
+     },
+     "next_step": "下次用相同方法再记录一次屈曲角度，以判断增加是否保持；这可帮助你与治疗师讨论当前方案是否达到活动范围目标，但仍不能单独证明原因。",
+     "question_id": "rec_35110cdb22654256a6967a342cbf3c94",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "髋关节屈曲活动范围复测增加",
+     "unknowns": "这支持两次测量之间活动范围有所增加，但仅有两次记录，不能确定是否持续改善，也不能单凭它们判断增加是否由物理治疗造成。",
+     "what_changed": "记录显示，7月18日髋关节屈曲为95°；9月21日（当地时间）复测为118°，比前次高23°。",
+     "why_now": "同一治疗师用量角器记录了新的髋关节屈曲角度，可以直接回答此前是否有变化。"
+    }
+   }
+  ],
+  "preferences_before": {
+   "proactivity": "quiet"
+  },
+  "preferences_after": {
+   "proactivity": "quiet"
+  },
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "新复测记录直接回答用户的问题，适合在 quiet 模式下提示。助手核对了两次原始记录：同一治疗师、同用量角器，髋屈曲角度由 95° 升至 118°（增加 23°）；同时明确未将变化归因于物理治疗，也未断言会持续改善。此前未就此问题推送过消息。",
+  "violated_forbidden": []
+ }
+}

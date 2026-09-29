@@ -1,0 +1,218 @@
+{
+ "record": {
+  "case_id": "KC61",
+  "run": 1,
+  "category": "measurement",
+  "split": "holdout4",
+  "severity": "critical",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "deterministic: no surface candidate, so no semantic content to judge",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "no_new_surface",
+    "ok": true,
+    "detail": "jobs=1 queued=0 model_silence=1 gate_blocked=0",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "model_silent",
+    "ok": true,
+    "detail": "jobs=1 queued=0 model_silence=1 gate_blocked=0",
+    "hard": true,
+    "needs_turn": false
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-sol",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 38.1,
+  "tool_calls": [
+   "context_read"
+  ],
+  "error": null,
+  "turns": 2,
+  "tokens": {
+   "prompt": 8559,
+   "completion": 199
+  },
+  "effort": "medium",
+  "decisions": [
+   "silence"
+  ],
+  "guards": [],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_ff22d1a05d9a430887002ea1aeb7f054",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_db6cc127c7194238927cb4592e43cb8e:fe94b827f0455bee"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_db6cc127c7194238927cb4592e43cb8e:fe94b827f0455bee",
+     "outcome": "silence",
+     "gate": {
+      "queued": false,
+      "reason": "silence"
+     },
+     "tool_calls": 3
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_ff22d1a05d9a430887002ea1aeb7f054\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_db6cc127c7194238927cb4592e43cb8e:fe94b827f0455bee\"]}, \"jobs\": [{\"job\": \"revisit:rec_db6cc127c7194238927cb4592e43cb8e:fe94b827f0455bee\", \"outcome\": \"silence\", \"gate\": {\"queued\": false, \"reason\": \"silence\"}, \"tool_calls\": 3}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_db6cc127c7194238927cb4592e43cb8e:fe94b827f0455bee",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by a change matching one open question. The change is either new data about the question or a dated event the user recorded (then the trigger carries `dated_event`). Decide whether the user should hear something about this question now: a new answer, a correction, or, when a dated event on this question is near and the data on record cannot answer it, which measurement would. Otherwise stay silent.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_db6cc127c7194238927cb4592e43cb8e\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"outcome\":\"strength\",\"state\":\"open\",\"watch_metrics\":[\"pull-up\",\"tryouts\"],\"watch_terms\":[\"pull-up\",\"tryouts\"]},\"text\":\"SYNTHETIC: Is my pull-up strength improving?\"}\n\n## Prior analyses of this question (newest first)\n{\"days_ago\":83,\"evidence_status\":\"not verifiable (written without read receipts); not known to be stale\",\"id\":\"rec_ab04d790ab344eb6889022ff441c0466\",\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis (July): baseline 6 pull-ups.\"}\n\n## Since the newest analysis (2026-07-02): records written\n{\"id\":\"rec_b53e99018ca54170854a4af57cd835ec\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: tryouts on 2026-10-02 still on.\"}\n## Since the newest analysis: passive samples added\n{\"first\":\"2026-09-01T12:00:00.000000+00:00\",\"last\":\"2026-09-22T12:00:00.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierHeartRateVariabilitySDNN\",\"n\":22,\"source_id\":\"synthetic:watch\"}\nThe newest analysis set no revisit condition field; read its text for one before assuming there is none.\n\n## Already surfaced on this question\n{\"created_at\":\"2026-09-21T15:00:00+00:00\",\"delivered_at\":\"2026-09-21T15:00:00+00:00\",\"evidence_ids\":[\"rec_b48ea8545f4d4f32a49a0ca95912a704\"],\"id\":\"ins_08e6fce690b74c1b999fed8fdd3ee5bf\",\"next_step\":\"Test max strict pull-ups before the tryouts.\",\"question_id\":\"rec_db6cc127c7194238927cb4592e43cb8e\",\"state\":\"delivered (shown to the user)\",\"topic\":\"pull-up test before tryouts\",\"what_changed\":\"SYNTHETIC: no retest since July; tryouts 2026-10-02.\"}\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":false,\"last_insight_queued_or_shown_at\":\"2026-09-21T15:00:00+00:00\",\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\n{\"date\":\"2026-10-02\",\"days_until\":9,\"kind\":\"note\",\"mentions_questions\":[\"rec_db6cc127c7194238927cb4592e43cb8e\"],\"note\":\"9 days left: anything measured for this must be done before then\",\"read_as\":\"explicit date\",\"record_id\":\"rec_b53e99018ca54170854a4af57cd835ec\",\"text\":\"SYNTHETIC: tryouts on 2026-10-02 still on.\"}\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"days_since_latest_sample\":1.1,\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_success_at\":\"2026-09-29T20:38:46.345090+00:00\",\"latest_sample_at\":\"2026-09-22T12:00:30.000000+00:00\",\"state\":\"ready\"}\n\n## Passive data available (observation catalog)\n{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierHeartRateVariabilitySDNN\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"ms\"}\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"already_delivered_on_this_question\":[\"already delivered 2026-09-21: SYNTHETIC: no retest since July; tryouts 2026-10-02. — evidence rec_b48ea8545f4d4f32a49a0ca95912a704\"],\"change\":\"record\",\"dated_event\":{\"date\":\"2026-10-02\",\"days_until\":9,\"meaning\":\"this record is a dated event the user recorded, not a measurement\"},\"record\":{\"id\":\"rec_b53e99018ca54170854a4af57cd835ec\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: tryouts on 2026-10-02 still on.\"}}\n\nIf you surface, set question_id to rec_db6cc127c7194238927cb4592e43cb8e.",
+    "candidate": {
+     "decision": "silence",
+     "question_id": "rec_db6cc127c7194238927cb4592e43cb8e",
+     "topic": "试训前测引体向上的建议已告知用户；新记录仅确认试训仍按原日期举行"
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3796,
+      "completion_tokens": 121,
+      "tool_calls": 1,
+      "seconds": 3.7
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_db6cc127c7194238927cb4592e43cb8e",
+        "rec_ab04d790ab344eb6889022ff441c0466",
+        "rec_b53e99018ca54170854a4af57cd835ec",
+        "rec_b48ea8545f4d4f32a49a0ca95912a704"
+       ],
+       "include_history": false
+      },
+      "is_error": false,
+      "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_bc260e1107b944eba9af72c357fc3a8f\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:38:46.342990+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_db6cc127c7194238927cb4592e43cb8e\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_ab04d790ab344eb6889022ff441c0466\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_db6cc127c7194238927cb4592e43cb8e\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): baseline 6 pull-ups.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:38:46.341911+00:00\",\"id\":\"rec_b48ea8545f4d4f32a49a0ca95912a704\",\"kind\":\"routine\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC pull-ups, open-ended.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:38:46.349124+00:00\",\"id\":\"rec_b53e99018ca54170854a4af57cd835ec\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: tryouts on 2026-10-02 still on.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:38:46.341001+00:00\",\"id\":\"rec_db6cc127c7194238927cb4592e43cb8e\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"strength\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"pull-up\",\"tryouts\"],\"watch_terms\":[\"pull-up\",\"tryouts\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my pull-up strength improving?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_ab04d790ab344eb6889022ff441c0466\":\"active\",\"rec_b48ea8545f4d4f32a49a0ca95912a704\":\"active\",\"rec_b53e99018ca54170854a4af57cd835ec\":\"active\",\"rec_db6cc127c7194238927cb4592e43cb8e\":\"active\"}}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4763,
+      "completion_tokens": 78,
+      "tool_calls": 0,
+      "seconds": 34.3
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3796,
+    "completion_tokens": 121,
+    "tool_calls": 1,
+    "seconds": 3.7
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_db6cc127c7194238927cb4592e43cb8e",
+      "rec_ab04d790ab344eb6889022ff441c0466",
+      "rec_b53e99018ca54170854a4af57cd835ec",
+      "rec_b48ea8545f4d4f32a49a0ca95912a704"
+     ],
+     "include_history": false
+    },
+    "is_error": false,
+    "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_bc260e1107b944eba9af72c357fc3a8f\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:38:46.342990+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_db6cc127c7194238927cb4592e43cb8e\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_ab04d790ab344eb6889022ff441c0466\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_db6cc127c7194238927cb4592e43cb8e\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): baseline 6 pull-ups.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:38:46.341911+00:00\",\"id\":\"rec_b48ea8545f4d4f32a49a0ca95912a704\",\"kind\":\"routine\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC pull-ups, open-ended.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:38:46.349124+00:00\",\"id\":\"rec_b53e99018ca54170854a4af57cd835ec\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: tryouts on 2026-10-02 still on.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:38:46.341001+00:00\",\"id\":\"rec_db6cc127c7194238927cb4592e43cb8e\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"strength\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"pull-up\",\"tryouts\"],\"watch_terms\":[\"pull-up\",\"tryouts\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my pull-up strength improving?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_ab04d790ab344eb6889022ff441c0466\":\"active\",\"rec_b48ea8545f4d4f32a49a0ca95912a704\":\"active\",\"rec_b53e99018ca54170854a4af57cd835ec\":\"active\",\"rec_db6cc127c7194238927cb4592e43cb8e\":\"active\"}}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4763,
+    "completion_tokens": 78,
+    "tool_calls": 0,
+    "seconds": 34.3
+   }
+  ],
+  "error": null,
+  "seconds": 38.1,
+  "turns": 2,
+  "tokens": {
+   "prompt": 8559,
+   "completion": 199
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [
+   {
+    "id": "ins_08e6fce690b74c1b999fed8fdd3ee5bf",
+    "state": "delivered"
+   }
+  ],
+  "insights_after": [
+   {
+    "id": "ins_08e6fce690b74c1b999fed8fdd3ee5bf",
+    "state": "delivered",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_b48ea8545f4d4f32a49a0ca95912a704"
+     ],
+     "next_step": "Test max strict pull-ups before the tryouts.",
+     "question_id": "rec_db6cc127c7194238927cb4592e43cb8e",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "pull-up test before tryouts",
+     "unknowns": "SYNTHETIC.",
+     "what_changed": "SYNTHETIC: no retest since July; tryouts 2026-10-02.",
+     "why_now": "SYNTHETIC earlier finding."
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "violated_forbidden": [],
+  "reason": "deterministic: no surface candidate, so no semantic content to judge"
+ }
+}

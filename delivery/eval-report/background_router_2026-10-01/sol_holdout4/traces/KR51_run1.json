@@ -1,0 +1,251 @@
+{
+ "record": {
+  "case_id": "KR51",
+  "run": 1,
+  "category": "revisit",
+  "split": "holdout4",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "新复测值得提示：两次记录均注明同一机器、阻力档位 5；3:49 比 3:58 快 9 秒。候选内容区分了单次变快与持续改善，并提出同条件再测以判断结果能否重复。未将伴随情况断言为原因，也未重复已提示内容。",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_0ac384a1381047bba1eb53164ad06f26\", \"request_id\": \"worker:job_50022addb7a94fc992c00b56b61cdd5f:0:w_a649378043984622942aac9ec95c86e4\", \"status\": \"committed\", \"request_hash\": \"6f4425340754a4c200362ef58e7a13540cad4254084fed0783619eed2dff85bb\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_4f6b227a9d304f36b8638871dde70daf",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-sol",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 44.4,
+  "tool_calls": [
+   "context_read"
+  ],
+  "error": null,
+  "turns": 2,
+  "tokens": {
+   "prompt": 7728,
+   "completion": 786
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "guards": [],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_9da36aaadf9546dd8b2b2b51e5a0ff91",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_4f6b227a9d304f36b8638871dde70daf:1ae3592f8248c3f8"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_4f6b227a9d304f36b8638871dde70daf:1ae3592f8248c3f8",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_0ac384a1381047bba1eb53164ad06f26",
+      "request_id": "worker:job_50022addb7a94fc992c00b56b61cdd5f:0:w_a649378043984622942aac9ec95c86e4",
+      "status": "committed",
+      "request_hash": "6f4425340754a4c200362ef58e7a13540cad4254084fed0783619eed2dff85bb"
+     },
+     "tool_calls": 3
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_9da36aaadf9546dd8b2b2b51e5a0ff91\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_4f6b227a9d304f36b8638871dde70daf:1ae3592f8248c3f8\"]}, \"jobs\": [{\"job\": \"revisit:rec_4f6b227a9d304f36b8638871dde70daf:1ae3592f8248c3f8\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_0ac384a1381047bba1eb53164ad06f26\", \"request_id\": \"worker:job_50022addb7a94fc992c00b56b61cdd5f:0:w_a649378043984622942aac9ec95c86e4\", \"status\": \"committed\", \"request_hash\": \"6f4425340754a4c200362ef58e7a13540cad4254084fed0783619eed2dff85bb\"}, \"tool_calls\": 3}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_4f6b227a9d304f36b8638871dde70daf:1ae3592f8248c3f8",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by a change matching one open question. The change is either new data about the question or a dated event the user recorded (then the trigger carries `dated_event`). Decide whether the user should hear something about this question now: a new answer, a correction, or, when a dated event on this question is near and the data on record cannot answer it, which measurement would. Otherwise stay silent.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_4f6b227a9d304f36b8638871dde70daf\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"state\":\"open\",\"watch_terms\":[\"1 km\"]},\"text\":\"SYNTHETIC: Is my 1 km row time improving?\"}\n\n## Prior analyses of this question (newest first)\n{\"days_ago\":52,\"evidence_status\":\"not verifiable (written without read receipts); not known to be stale\",\"id\":\"rec_09d620daa71c404a9fb61848a7cd49d1\",\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis: baseline only; repeat on the same machine and damper.\"}\n\n## Since the newest analysis (2026-08-02): records written\n{\"id\":\"rec_63e36f27b784410b99ac137380a20622\",\"kind\":\"event\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC 1 km erg, same machine and damper 5: 3:49.\"}\n## Since the newest analysis: passive samples added\nNone.\nThe newest analysis set no revisit condition field; read its text for one before assuming there is none.\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\nNone: no record names a date in the next 21 days.\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n\n## Passive data available (observation catalog)\nNo observations stored.\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"comparability\":{\"differences\":[],\"earlier_records_with_values\":[{\"id\":\"rec_2566a925264c44ad9b4dd0b86309e95b\",\"occurred_at\":\"2026-07-14\",\"stated_conditions\":[\"damper 5\",\"machine\"],\"text\":\"SYNTHETIC 1 km erg, same machine and damper 5: 3:58.\"}],\"new_record_conditions\":[\"damper 5\",\"machine\"],\"note\":\"Conditions as each record states them. A value measured under different stated conditions (lab, unit, device, venue, protocol, equipment) is not like for like with the others.\"},\"record\":{\"id\":\"rec_63e36f27b784410b99ac137380a20622\",\"kind\":\"event\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC 1 km erg, same machine and damper 5: 3:49.\"}}\n\nIf you surface, set question_id to rec_4f6b227a9d304f36b8638871dde70daf.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_4f6b227a9d304f36b8638871dde70daf",
+     "topic": "1 公里划船用时的一次复测",
+     "why_now": "此前只有一次基线记录，无法比较；现在已有一次按记录所述在同一机器、同一阻力档位完成的复测。",
+     "what_changed": "7 月 14 日的 1 公里用时为 3:58；9 月 21 日为 3:49，快了 9 秒。两条记录都写明同一机器、阻力档位 5。",
+     "unknowns": "这说明本次比基线快，但只有一次复测，还不能确定用时正在持续改善；当天状态或正常波动也可能影响结果。",
+     "next_step": "再按同一机器、阻力档位 5 划一次 1 公里，与这两次用时比较。若再次接近 3:49，比仅凭一次更有理由把进步视为可重复；若回到 3:58 附近，则暂不据此判断持续改善。即使再次变快，也不能单凭用时确定原因。",
+     "evidence_ids": [
+      "rec_2566a925264c44ad9b4dd0b86309e95b",
+      "rec_63e36f27b784410b99ac137380a20622",
+      "rec_09d620daa71c404a9fb61848a7cd49d1"
+     ],
+     "evidence_versions": {
+      "rec_2566a925264c44ad9b4dd0b86309e95b": "active",
+      "rec_63e36f27b784410b99ac137380a20622": "active",
+      "rec_09d620daa71c404a9fb61848a7cd49d1": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3355,
+      "completion_tokens": 121,
+      "tool_calls": 1,
+      "seconds": 4.0
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_4f6b227a9d304f36b8638871dde70daf",
+        "rec_09d620daa71c404a9fb61848a7cd49d1",
+        "rec_2566a925264c44ad9b4dd0b86309e95b",
+        "rec_63e36f27b784410b99ac137380a20622"
+       ],
+       "include_history": false
+      },
+      "is_error": false,
+      "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_b58ea2a59f0949aaa2e7b12cef702afb\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:41:42.372735+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_2566a925264c44ad9b4dd0b86309e95b\",\"rec_4f6b227a9d304f36b8638871dde70daf\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_09d620daa71c404a9fb61848a7cd49d1\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_4f6b227a9d304f36b8638871dde70daf\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: baseline only; repeat on the same machine and damper.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:41:42.366632+00:00\",\"id\":\"rec_2566a925264c44ad9b4dd0b86309e95b\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-07-14T12:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-14T07:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 1 km erg, same machine and damper 5: 3:58.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:41:42.359827+00:00\",\"id\":\"rec_4f6b227a9d304f36b8638871dde70daf\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"1 km\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my 1 km row time improving?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:41:42.379343+00:00\",\"id\":\"rec_63e36f27b784410b99ac137380a20622\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 1 km erg, same machine and damper 5: 3:49.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_09d620daa71c404a9fb61848a7cd49d1\":\"active\",\"rec_2566a925264c44ad9b4dd0b86309e95b\":\"active\",\"rec_4f6b227a9d304f36b8638871dde70daf\":\"active\",\"rec_63e36f27b784410b99ac137380a20622\":\"active\"}}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4373,
+      "completion_tokens": 665,
+      "tool_calls": 0,
+      "seconds": 40.4
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3355,
+    "completion_tokens": 121,
+    "tool_calls": 1,
+    "seconds": 4.0
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_4f6b227a9d304f36b8638871dde70daf",
+      "rec_09d620daa71c404a9fb61848a7cd49d1",
+      "rec_2566a925264c44ad9b4dd0b86309e95b",
+      "rec_63e36f27b784410b99ac137380a20622"
+     ],
+     "include_history": false
+    },
+    "is_error": false,
+    "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_b58ea2a59f0949aaa2e7b12cef702afb\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:41:42.372735+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_2566a925264c44ad9b4dd0b86309e95b\",\"rec_4f6b227a9d304f36b8638871dde70daf\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_09d620daa71c404a9fb61848a7cd49d1\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_4f6b227a9d304f36b8638871dde70daf\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: baseline only; repeat on the same machine and damper.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:41:42.366632+00:00\",\"id\":\"rec_2566a925264c44ad9b4dd0b86309e95b\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-07-14T12:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-14T07:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 1 km erg, same machine and damper 5: 3:58.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:41:42.359827+00:00\",\"id\":\"rec_4f6b227a9d304f36b8638871dde70daf\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"1 km\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my 1 km row time improving?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:41:42.379343+00:00\",\"id\":\"rec_63e36f27b784410b99ac137380a20622\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 1 km erg, same machine and damper 5: 3:49.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_09d620daa71c404a9fb61848a7cd49d1\":\"active\",\"rec_2566a925264c44ad9b4dd0b86309e95b\":\"active\",\"rec_4f6b227a9d304f36b8638871dde70daf\":\"active\",\"rec_63e36f27b784410b99ac137380a20622\":\"active\"}}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4373,
+    "completion_tokens": 665,
+    "tool_calls": 0,
+    "seconds": 40.4
+   }
+  ],
+  "error": null,
+  "seconds": 44.4,
+  "turns": 2,
+  "tokens": {
+   "prompt": 7728,
+   "completion": 786
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_0ac384a1381047bba1eb53164ad06f26",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_2566a925264c44ad9b4dd0b86309e95b",
+      "rec_63e36f27b784410b99ac137380a20622",
+      "rec_09d620daa71c404a9fb61848a7cd49d1"
+     ],
+     "evidence_versions": {
+      "rec_09d620daa71c404a9fb61848a7cd49d1": "active",
+      "rec_2566a925264c44ad9b4dd0b86309e95b": "active",
+      "rec_63e36f27b784410b99ac137380a20622": "active"
+     },
+     "next_step": "再按同一机器、阻力档位 5 划一次 1 公里，与这两次用时比较。若再次接近 3:49，比仅凭一次更有理由把进步视为可重复；若回到 3:58 附近，则暂不据此判断持续改善。即使再次变快，也不能单凭用时确定原因。",
+     "question_id": "rec_4f6b227a9d304f36b8638871dde70daf",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "1 公里划船用时的一次复测",
+     "unknowns": "这说明本次比基线快，但只有一次复测，还不能确定用时正在持续改善；当天状态或正常波动也可能影响结果。",
+     "what_changed": "7 月 14 日的 1 公里用时为 3:58；9 月 21 日为 3:49，快了 9 秒。两条记录都写明同一机器、阻力档位 5。",
+     "why_now": "此前只有一次基线记录，无法比较；现在已有一次按记录所述在同一机器、同一阻力档位完成的复测。"
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "新复测值得提示：两次记录均注明同一机器、阻力档位 5；3:49 比 3:58 快 9 秒。候选内容区分了单次变快与持续改善，并提出同条件再测以判断结果能否重复。未将伴随情况断言为原因，也未重复已提示内容。",
+  "violated_forbidden": []
+ }
+}

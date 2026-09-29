@@ -1,0 +1,391 @@
+{
+ "record": {
+  "case_id": "KC57",
+  "run": 3,
+  "category": "measurement",
+  "split": "holdout4",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "Surfacing is appropriate with crew selection eight days away. The candidate explains that resting-heart-rate data cannot answer whether rowing performance improved, proposes a 2 km erg retest before selection, and states how a comparable result would inform that assessment. It attributes the 8:05 baseline to the July analysis and cautions that test conditions are unknown, rather than claiming a verified like-for-like comparison.",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_3d323edcafdc42f0bf6d79563844a293\", \"request_id\": \"worker:job_5d4f3ecb23844abab415f562e982ad0d:0:w_8809289770e34e8db6fee271d15aabd0\", \"status\": \"committed\", \"request_hash\": \"dde5a17458089d5f7a537d6f91f7a371a0dea9abd72c90d6bd9d8e951f6b77e3\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_a275fef091ec4c9289e8e80f2522f533",
+    "hard": true
+   },
+   {
+    "check": "next_step_names_a_method",
+    "ok": true,
+    "detail": "2 km,erg test",
+    "hard": true
+   },
+   {
+    "check": "gap_names_outcome_and_decision",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-sol",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 83.0,
+  "tool_calls": [
+   "context_read",
+   "context_search",
+   "context_query",
+   "context_search",
+   "context_read"
+  ],
+  "error": null,
+  "turns": 4,
+  "tokens": {
+   "prompt": 18767,
+   "completion": 1311
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "guards": [],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_d85927c6d7284d2cbd8d5bbe56c5127f",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_a275fef091ec4c9289e8e80f2522f533:fe94b827f0455bee"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_a275fef091ec4c9289e8e80f2522f533:fe94b827f0455bee",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_3d323edcafdc42f0bf6d79563844a293",
+      "request_id": "worker:job_5d4f3ecb23844abab415f562e982ad0d:0:w_8809289770e34e8db6fee271d15aabd0",
+      "status": "committed",
+      "request_hash": "dde5a17458089d5f7a537d6f91f7a371a0dea9abd72c90d6bd9d8e951f6b77e3"
+     },
+     "tool_calls": 9
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_d85927c6d7284d2cbd8d5bbe56c5127f\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_a275fef091ec4c9289e8e80f2522f533:fe94b827f0455bee\"]}, \"jobs\": [{\"job\": \"revisit:rec_a275fef091ec4c9289e8e80f2522f533:fe94b827f0455bee\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_3d323edcafdc42f0bf6d79563844a293\", \"request_id\": \"worker:job_5d4f3ecb23844abab415f562e982ad0d:0:w_8809289770e34e8db6fee271d15aabd0\", \"status\": \"committed\", \"request_hash\": \"dde5a17458089d5f7a537d6f91f7a371a0dea9abd72c90d6bd9d8e951f6b77e3\"}, \"tool_calls\": 9}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_a275fef091ec4c9289e8e80f2522f533:fe94b827f0455bee",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by a change matching one open question. The change is either new data about the question or a dated event the user recorded (then the trigger carries `dated_event`). Decide whether the user should hear something about this question now: a new answer, a correction, or, when a dated event on this question is near and the data on record cannot answer it, which measurement would. Otherwise stay silent.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_a275fef091ec4c9289e8e80f2522f533\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"outcome\":\"vo2\",\"state\":\"open\",\"watch_metrics\":[\"rowing\",\"crew\"],\"watch_terms\":[\"rowing\",\"crew\"]},\"text\":\"SYNTHETIC: Is my rowing fitness improving?\"}\n\n## Prior analyses of this question (newest first)\n{\"days_ago\":83,\"evidence_status\":\"not verifiable (written without read receipts); not known to be stale\",\"id\":\"rec_b1fc2b22c08d46e6a37fc58e174dd00c\",\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis (July): baseline 2 km erg 8:05; no retest.\"}\n\n## Since the newest analysis (2026-07-02): records written\n{\"id\":\"rec_6c9070a748fc48e2869c2a6ea4950806\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: crew selection on 2026-10-01 decides which boat I row in; no 2 km test since July.\"}\n## Since the newest analysis: passive samples added\n{\"first\":\"2026-09-01T12:00:00.000000+00:00\",\"last\":\"2026-09-22T12:00:00.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierRestingHeartRate\",\"n\":22,\"source_id\":\"synthetic:watch\"}\nThe newest analysis set no revisit condition field; read its text for one before assuming there is none.\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\n{\"date\":\"2026-10-01\",\"days_until\":8,\"kind\":\"note\",\"mentions_questions\":[\"rec_a275fef091ec4c9289e8e80f2522f533\"],\"note\":\"8 days left: anything measured for this must be done before then\",\"read_as\":\"explicit date\",\"record_id\":\"rec_6c9070a748fc48e2869c2a6ea4950806\",\"text\":\"SYNTHETIC: crew selection on 2026-10-01 decides which boat I row in; no 2 km test since July.\"}\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"days_since_latest_sample\":1.1,\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_success_at\":\"2026-09-29T20:38:25.776431+00:00\",\"latest_sample_at\":\"2026-09-22T12:00:30.000000+00:00\",\"state\":\"ready\"}\n\n## Passive data available (observation catalog)\n{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierRestingHeartRate\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count/min\"}\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"dated_event\":{\"date\":\"2026-10-01\",\"days_until\":8,\"meaning\":\"this record is a dated event the user recorded, not a measurement\"},\"record\":{\"id\":\"rec_6c9070a748fc48e2869c2a6ea4950806\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: crew selection on 2026-10-01 decides which boat I row in; no 2 km test since July.\"}}\n\nIf you surface, set question_id to rec_a275fef091ec4c9289e8e80f2522f533.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_a275fef091ec4c9289e8e80f2522f533",
+     "topic": "Rowing fitness before crew selection",
+     "why_now": "Crew selection is on October 1. A comparable retest before then could help you judge whether your rowing performance has improved; the resting-heart-rate data cannot answer that question.",
+     "what_changed": "Your September 22 note says there has been no 2 km retest since July. The July analysis records an 8:05 baseline, but there is still no comparable follow-up time.",
+     "unknowns": "The July test conditions are not recorded here, so a new time may not be directly comparable. A 2 km time also would not, by itself, establish a change in VO₂ or determine which boat is right for you.",
+     "next_step": "If practical before October 1, do one 2 km erg test, matching the July machine, settings and test conditions as closely as you can, and record the time and conditions. A comparable faster or slower time would inform how you assess your rowing performance for selection; if conditions differ substantially, avoid treating the time difference as improvement or decline.",
+     "evidence_ids": [
+      "rec_a275fef091ec4c9289e8e80f2522f533",
+      "rec_b1fc2b22c08d46e6a37fc58e174dd00c",
+      "rec_6c9070a748fc48e2869c2a6ea4950806"
+     ],
+     "evidence_versions": {
+      "rec_a275fef091ec4c9289e8e80f2522f533": "active",
+      "rec_b1fc2b22c08d46e6a37fc58e174dd00c": "active",
+      "rec_6c9070a748fc48e2869c2a6ea4950806": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3612,
+      "completion_tokens": 108,
+      "tool_calls": 1,
+      "seconds": 5.1
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_a275fef091ec4c9289e8e80f2522f533",
+        "rec_b1fc2b22c08d46e6a37fc58e174dd00c",
+        "rec_6c9070a748fc48e2869c2a6ea4950806"
+       ],
+       "include_history": false
+      },
+      "is_error": false,
+      "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_c434567f2ac64041876bcaa46deb5368\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:38:25.778253+00:00\",\"id\":\"rec_6c9070a748fc48e2869c2a6ea4950806\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: crew selection on 2026-10-01 decides which boat I row in; no 2 km test since July.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:38:25.772122+00:00\",\"id\":\"rec_a275fef091ec4c9289e8e80f2522f533\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"vo2\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"rowing\",\"crew\"],\"watch_terms\":[\"rowing\",\"crew\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my rowing fitness improving?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:38:25.774382+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_a275fef091ec4c9289e8e80f2522f533\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_b1fc2b22c08d46e6a37fc58e174dd00c\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_a275fef091ec4c9289e8e80f2522f533\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): baseline 2 km erg 8:05; no retest.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_6c9070a748fc48e2869c2a6ea4950806\":\"active\",\"rec_a275fef091ec4c9289e8e80f2522f533\":\"active\",\"rec_b1fc2b22c08d46e6a37fc58e174dd00c\":\"active\"}}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4431,
+      "completion_tokens": 397,
+      "tool_calls": 3,
+      "seconds": 15.0
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "2 km",
+       "kind": "event",
+       "start_at": "2026-07-01T00:00:00Z",
+       "end_at": "2026-09-24T00:00:00Z",
+       "limit": 100,
+       "cursor": "",
+       "include_superseded": false
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_9c8bf270e546404d837ba4065859d403\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"2\",\"km\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_3ff3ccb74430400da176be273edb8442\",\"kind\":\"routine\",\"text\":\"SYNTHETIC rowing machine 3x/week.\"},{\"id\":\"rec_a275fef091ec4c9289e8e80f2522f533\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my rowing fitness improving?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+     },
+     {
+      "tool": "context_query",
+      "arguments": {
+       "sql": "SELECT metric, unit, n, first_at, last_at FROM observation_catalog ORDER BY metric",
+       "parameters": [],
+       "limit": 100
+      },
+      "is_error": false,
+      "result_text": "{\"columns\":[\"metric\",\"unit\",\"n\",\"first_at\",\"last_at\"],\"max_rows\":100,\"query_sha256\":\"0b769916913708df5256a1b4fd52a40ad07771613d7c8adad5bd8c4fb521317c\",\"read_receipt\":\"rr_cc52017f94904fcc997e5a05527ba359\",\"reads_observations\":true,\"rows\":[[\"HKQuantityTypeIdentifierRestingHeartRate\",\"count/min\",22,\"2026-09-01T12:00:00.000000+00:00\",\"2026-09-22T12:00:30.000000+00:00\"]],\"tables_read\":[\"observation_catalog\"],\"truncated\":false}"
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "erg",
+       "kind": "note",
+       "start_at": "2026-07-01T00:00:00Z",
+       "end_at": "2026-09-24T00:00:00Z",
+       "limit": 100,
+       "cursor": "",
+       "include_superseded": false
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_b96f7517a2b941a9a6488b7c1a908474\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"erg\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_3ff3ccb74430400da176be273edb8442\",\"kind\":\"routine\",\"text\":\"SYNTHETIC rowing machine 3x/week.\"},{\"id\":\"rec_a275fef091ec4c9289e8e80f2522f533\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my rowing fitness improving?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 5232,
+      "completion_tokens": 151,
+      "tool_calls": 1,
+      "seconds": 38.1
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_3ff3ccb74430400da176be273edb8442"
+       ],
+       "include_history": false
+      },
+      "is_error": false,
+      "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_6d6274c726ed4061acea3393e9d3d496\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:38:25.773042+00:00\",\"id\":\"rec_3ff3ccb74430400da176be273edb8442\",\"kind\":\"routine\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC rowing machine 3x/week.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_3ff3ccb74430400da176be273edb8442\":\"active\"}}"
+     },
+     {
+      "turn": 3,
+      "prompt_tokens": 5492,
+      "completion_tokens": 655,
+      "tool_calls": 0,
+      "seconds": 24.7
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3612,
+    "completion_tokens": 108,
+    "tool_calls": 1,
+    "seconds": 5.1
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_a275fef091ec4c9289e8e80f2522f533",
+      "rec_b1fc2b22c08d46e6a37fc58e174dd00c",
+      "rec_6c9070a748fc48e2869c2a6ea4950806"
+     ],
+     "include_history": false
+    },
+    "is_error": false,
+    "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_c434567f2ac64041876bcaa46deb5368\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:38:25.778253+00:00\",\"id\":\"rec_6c9070a748fc48e2869c2a6ea4950806\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: crew selection on 2026-10-01 decides which boat I row in; no 2 km test since July.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:38:25.772122+00:00\",\"id\":\"rec_a275fef091ec4c9289e8e80f2522f533\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"vo2\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"rowing\",\"crew\"],\"watch_terms\":[\"rowing\",\"crew\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my rowing fitness improving?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:38:25.774382+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_a275fef091ec4c9289e8e80f2522f533\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_b1fc2b22c08d46e6a37fc58e174dd00c\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_a275fef091ec4c9289e8e80f2522f533\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): baseline 2 km erg 8:05; no retest.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_6c9070a748fc48e2869c2a6ea4950806\":\"active\",\"rec_a275fef091ec4c9289e8e80f2522f533\":\"active\",\"rec_b1fc2b22c08d46e6a37fc58e174dd00c\":\"active\"}}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4431,
+    "completion_tokens": 397,
+    "tool_calls": 3,
+    "seconds": 15.0
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "2 km",
+     "kind": "event",
+     "start_at": "2026-07-01T00:00:00Z",
+     "end_at": "2026-09-24T00:00:00Z",
+     "limit": 100,
+     "cursor": "",
+     "include_superseded": false
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_9c8bf270e546404d837ba4065859d403\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"2\",\"km\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_3ff3ccb74430400da176be273edb8442\",\"kind\":\"routine\",\"text\":\"SYNTHETIC rowing machine 3x/week.\"},{\"id\":\"rec_a275fef091ec4c9289e8e80f2522f533\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my rowing fitness improving?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+   },
+   {
+    "tool": "context_query",
+    "arguments": {
+     "sql": "SELECT metric, unit, n, first_at, last_at FROM observation_catalog ORDER BY metric",
+     "parameters": [],
+     "limit": 100
+    },
+    "is_error": false,
+    "result_text": "{\"columns\":[\"metric\",\"unit\",\"n\",\"first_at\",\"last_at\"],\"max_rows\":100,\"query_sha256\":\"0b769916913708df5256a1b4fd52a40ad07771613d7c8adad5bd8c4fb521317c\",\"read_receipt\":\"rr_cc52017f94904fcc997e5a05527ba359\",\"reads_observations\":true,\"rows\":[[\"HKQuantityTypeIdentifierRestingHeartRate\",\"count/min\",22,\"2026-09-01T12:00:00.000000+00:00\",\"2026-09-22T12:00:30.000000+00:00\"]],\"tables_read\":[\"observation_catalog\"],\"truncated\":false}"
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "erg",
+     "kind": "note",
+     "start_at": "2026-07-01T00:00:00Z",
+     "end_at": "2026-09-24T00:00:00Z",
+     "limit": 100,
+     "cursor": "",
+     "include_superseded": false
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_b96f7517a2b941a9a6488b7c1a908474\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"erg\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_3ff3ccb74430400da176be273edb8442\",\"kind\":\"routine\",\"text\":\"SYNTHETIC rowing machine 3x/week.\"},{\"id\":\"rec_a275fef091ec4c9289e8e80f2522f533\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my rowing fitness improving?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 5232,
+    "completion_tokens": 151,
+    "tool_calls": 1,
+    "seconds": 38.1
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_3ff3ccb74430400da176be273edb8442"
+     ],
+     "include_history": false
+    },
+    "is_error": false,
+    "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_6d6274c726ed4061acea3393e9d3d496\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:38:25.773042+00:00\",\"id\":\"rec_3ff3ccb74430400da176be273edb8442\",\"kind\":\"routine\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC rowing machine 3x/week.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_3ff3ccb74430400da176be273edb8442\":\"active\"}}"
+   },
+   {
+    "turn": 3,
+    "prompt_tokens": 5492,
+    "completion_tokens": 655,
+    "tool_calls": 0,
+    "seconds": 24.7
+   }
+  ],
+  "error": null,
+  "seconds": 83.0,
+  "turns": 4,
+  "tokens": {
+   "prompt": 18767,
+   "completion": 1311
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_3d323edcafdc42f0bf6d79563844a293",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_a275fef091ec4c9289e8e80f2522f533",
+      "rec_b1fc2b22c08d46e6a37fc58e174dd00c",
+      "rec_6c9070a748fc48e2869c2a6ea4950806"
+     ],
+     "evidence_versions": {
+      "rec_6c9070a748fc48e2869c2a6ea4950806": "active",
+      "rec_a275fef091ec4c9289e8e80f2522f533": "active",
+      "rec_b1fc2b22c08d46e6a37fc58e174dd00c": "active"
+     },
+     "next_step": "If practical before October 1, do one 2 km erg test, matching the July machine, settings and test conditions as closely as you can, and record the time and conditions. A comparable faster or slower time would inform how you assess your rowing performance for selection; if conditions differ substantially, avoid treating the time difference as improvement or decline.",
+     "question_id": "rec_a275fef091ec4c9289e8e80f2522f533",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "Rowing fitness before crew selection",
+     "unknowns": "The July test conditions are not recorded here, so a new time may not be directly comparable. A 2 km time also would not, by itself, establish a change in VO₂ or determine which boat is right for you.",
+     "what_changed": "Your September 22 note says there has been no 2 km retest since July. The July analysis records an 8:05 baseline, but there is still no comparable follow-up time.",
+     "why_now": "Crew selection is on October 1. A comparable retest before then could help you judge whether your rowing performance has improved; the resting-heart-rate data cannot answer that question."
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "Surfacing is appropriate with crew selection eight days away. The candidate explains that resting-heart-rate data cannot answer whether rowing performance improved, proposes a 2 km erg retest before selection, and states how a comparable result would inform that assessment. It attributes the 8:05 baseline to the July analysis and cautions that test conditions are unknown, rather than claiming a verified like-for-like comparison.",
+  "violated_forbidden": []
+ }
+}

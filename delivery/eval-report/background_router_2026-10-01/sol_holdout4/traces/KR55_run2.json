@@ -1,0 +1,294 @@
+{
+ "record": {
+  "case_id": "KR55",
+  "run": 2,
+  "category": "revisit",
+  "split": "holdout4",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "正确指出同一箱子的坐位体前屈读数从＋8厘米降至＋3厘米，与此前“可能继续提高”的判断相矛盾；同时说明单次较低读数不足以确定趋势，并提出重复测量以区分波动与未能持续进步。未发现禁忌行为。",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_416fb03df3ed4e7184a02361aa516f0a\", \"request_id\": \"worker:job_dbf076a1e0c94214864dcd63c2956a2f:0:w_76f42afbee6b4568a159640c01ba0954\", \"status\": \"committed\", \"request_hash\": \"115629c5bcf7ea5e112c23623005981aa2edd44cf5f30636be7d04c63cd9dcb6\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_b7e74a6f6b6141f1ac7a13e6e6d82bb6",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-sol",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 50.1,
+  "tool_calls": [
+   "context_read",
+   "context_search"
+  ],
+  "error": null,
+  "turns": 3,
+  "tokens": {
+   "prompt": 12860,
+   "completion": 949
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "guards": [],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_30f94f8f94f1412dbdfc2b53924dabba",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_b7e74a6f6b6141f1ac7a13e6e6d82bb6:1ae3592f8248c3f8"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_b7e74a6f6b6141f1ac7a13e6e6d82bb6:1ae3592f8248c3f8",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_416fb03df3ed4e7184a02361aa516f0a",
+      "request_id": "worker:job_dbf076a1e0c94214864dcd63c2956a2f:0:w_76f42afbee6b4568a159640c01ba0954",
+      "status": "committed",
+      "request_hash": "115629c5bcf7ea5e112c23623005981aa2edd44cf5f30636be7d04c63cd9dcb6"
+     },
+     "tool_calls": 5
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_30f94f8f94f1412dbdfc2b53924dabba\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_b7e74a6f6b6141f1ac7a13e6e6d82bb6:1ae3592f8248c3f8\"]}, \"jobs\": [{\"job\": \"revisit:rec_b7e74a6f6b6141f1ac7a13e6e6d82bb6:1ae3592f8248c3f8\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_416fb03df3ed4e7184a02361aa516f0a\", \"request_id\": \"worker:job_dbf076a1e0c94214864dcd63c2956a2f:0:w_76f42afbee6b4568a159640c01ba0954\", \"status\": \"committed\", \"request_hash\": \"115629c5bcf7ea5e112c23623005981aa2edd44cf5f30636be7d04c63cd9dcb6\"}, \"tool_calls\": 5}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_b7e74a6f6b6141f1ac7a13e6e6d82bb6:1ae3592f8248c3f8",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by a change matching one open question. The change is either new data about the question or a dated event the user recorded (then the trigger carries `dated_event`). Decide whether the user should hear something about this question now: a new answer, a correction, or, when a dated event on this question is near and the data on record cannot answer it, which measurement would. Otherwise stay silent.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_b7e74a6f6b6141f1ac7a13e6e6d82bb6\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"state\":\"open\",\"watch_terms\":[\"sit-and-reach\"]},\"text\":\"SYNTHETIC: Is my sit-and-reach flexibility still improving?\"}\n\n## Prior analyses of this question (newest first)\n{\"days_ago\":52,\"evidence_status\":\"not verifiable (written without read receipts); not known to be stale\",\"id\":\"rec_007bea3b9887469bae206f6f52153cae\",\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis (Aug): sit-and-reach +2 → +8 cm; improving, likely to continue.\"}\n\n## Since the newest analysis (2026-08-02): records written\n{\"id\":\"rec_b3ff75c43b204447a0d042338e95bece\",\"kind\":\"event\",\"occurred_at\":\"2026-08-10T23:00:00.000000+00:00\",\"text\":\"SYNTHETIC sit-and-reach +8 cm, same box.\"}\n{\"id\":\"rec_9f7658dfa8d94431a149daedd93fb21b\",\"kind\":\"event\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC sit-and-reach +3 cm, same box, warmed up the same way.\"}\n## Since the newest analysis: passive samples added\nNone.\nThe newest analysis set no revisit condition field; read its text for one before assuming there is none.\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\nNone: no record names a date in the next 21 days.\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n\n## Passive data available (observation catalog)\nNo observations stored.\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"comparability\":{\"differences\":[],\"earlier_records_with_values\":[{\"id\":\"rec_b3ff75c43b204447a0d042338e95bece\",\"occurred_at\":\"2026-08-10\",\"stated_conditions\":[\"box\"],\"text\":\"SYNTHETIC sit-and-reach +8 cm, same box.\"}],\"new_record_conditions\":[\"box\"],\"note\":\"Conditions as each record states them. A value measured under different stated conditions (lab, unit, device, venue, protocol, equipment) is not like for like with the others.\"},\"record\":{\"id\":\"rec_9f7658dfa8d94431a149daedd93fb21b\",\"kind\":\"event\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC sit-and-reach +3 cm, same box, warmed up the same way.\"}}\n\nIf you surface, set question_id to rec_b7e74a6f6b6141f1ac7a13e6e6d82bb6.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_b7e74a6f6b6141f1ac7a13e6e6d82bb6",
+     "topic": "坐位体前屈的最新读数低于此前记录",
+     "why_now": "先前分析认为成绩在提高、可能继续提高；最新读数与这个预期相反，值得修正，但单次读数不能确定趋势。",
+     "what_changed": "8月10日记录为坐位体前屈＋8厘米；9月21日为＋3厘米。两条记录都注明使用同一个箱子，最新记录还注明热身方式相同。",
+     "unknowns": "这一次较低可能是日常波动，也可能表示进步没有持续；现有记录不足以区分，不能据此断定正在持续退步。",
+     "next_step": "接下来两三周每周用同一个箱子、以相同方式热身后记录一次坐位体前屈。如果读数持续低于＋8厘米，可据此重新判断目前做法是否仍带来进步；若回到此前水平，则这次较低读数可能只是波动。重复读数仍不能单独说明变化的原因。",
+     "evidence_ids": [
+      "rec_007bea3b9887469bae206f6f52153cae",
+      "rec_b3ff75c43b204447a0d042338e95bece",
+      "rec_9f7658dfa8d94431a149daedd93fb21b"
+     ],
+     "evidence_versions": {
+      "rec_007bea3b9887469bae206f6f52153cae": "active",
+      "rec_b3ff75c43b204447a0d042338e95bece": "active",
+      "rec_9f7658dfa8d94431a149daedd93fb21b": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3426,
+      "completion_tokens": 142,
+      "tool_calls": 1,
+      "seconds": 3.9
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_b7e74a6f6b6141f1ac7a13e6e6d82bb6",
+        "rec_007bea3b9887469bae206f6f52153cae",
+        "rec_b3ff75c43b204447a0d042338e95bece",
+        "rec_9f7658dfa8d94431a149daedd93fb21b"
+       ],
+       "include_history": false
+      },
+      "is_error": false,
+      "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_584eb04d60424a38a3841ad1408c8734\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:42:40.370120+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_b3ff75c43b204447a0d042338e95bece\",\"rec_b7e74a6f6b6141f1ac7a13e6e6d82bb6\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_007bea3b9887469bae206f6f52153cae\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_b7e74a6f6b6141f1ac7a13e6e6d82bb6\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (Aug): sit-and-reach +2 → +8 cm; improving, likely to continue.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:42:40.371107+00:00\",\"id\":\"rec_9f7658dfa8d94431a149daedd93fb21b\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC sit-and-reach +3 cm, same box, warmed up the same way.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:42:40.369007+00:00\",\"id\":\"rec_b3ff75c43b204447a0d042338e95bece\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-08-10T23:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-10T18:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC sit-and-reach +8 cm, same box.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:42:40.367886+00:00\",\"id\":\"rec_b7e74a6f6b6141f1ac7a13e6e6d82bb6\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"sit-and-reach\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my sit-and-reach flexibility still improving?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_007bea3b9887469bae206f6f52153cae\":\"active\",\"rec_9f7658dfa8d94431a149daedd93fb21b\":\"active\",\"rec_b3ff75c43b204447a0d042338e95bece\":\"active\",\"rec_b7e74a6f6b6141f1ac7a13e6e6d82bb6\":\"active\"}}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4465,
+      "completion_tokens": 210,
+      "tool_calls": 1,
+      "seconds": 7.6
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "sit-and-reach",
+       "kind": "event",
+       "start_at": "2026-01-01T00:00:00Z",
+       "end_at": "2026-09-24T00:00:00Z",
+       "limit": 100,
+       "cursor": "",
+       "include_superseded": false
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_9ca5f3309dfb4cb98270fda16dcecdc0\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:42:40.371107+00:00\",\"id\":\"rec_9f7658dfa8d94431a149daedd93fb21b\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC sit-and-reach +3 cm, same box, warmed up the same way.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:42:40.369007+00:00\",\"id\":\"rec_b3ff75c43b204447a0d042338e95bece\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-08-10T23:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-10T18:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC sit-and-reach +8 cm, same box.\",\"timezone\":\"America/Chicago\"}],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"sit-and-reach\"],\"total_matches\":2,\"zero_hit_hint\":null}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 4969,
+      "completion_tokens": 597,
+      "tool_calls": 0,
+      "seconds": 38.6
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3426,
+    "completion_tokens": 142,
+    "tool_calls": 1,
+    "seconds": 3.9
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_b7e74a6f6b6141f1ac7a13e6e6d82bb6",
+      "rec_007bea3b9887469bae206f6f52153cae",
+      "rec_b3ff75c43b204447a0d042338e95bece",
+      "rec_9f7658dfa8d94431a149daedd93fb21b"
+     ],
+     "include_history": false
+    },
+    "is_error": false,
+    "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_584eb04d60424a38a3841ad1408c8734\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:42:40.370120+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_b3ff75c43b204447a0d042338e95bece\",\"rec_b7e74a6f6b6141f1ac7a13e6e6d82bb6\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_007bea3b9887469bae206f6f52153cae\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_b7e74a6f6b6141f1ac7a13e6e6d82bb6\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (Aug): sit-and-reach +2 → +8 cm; improving, likely to continue.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:42:40.371107+00:00\",\"id\":\"rec_9f7658dfa8d94431a149daedd93fb21b\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC sit-and-reach +3 cm, same box, warmed up the same way.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:42:40.369007+00:00\",\"id\":\"rec_b3ff75c43b204447a0d042338e95bece\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-08-10T23:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-10T18:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC sit-and-reach +8 cm, same box.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:42:40.367886+00:00\",\"id\":\"rec_b7e74a6f6b6141f1ac7a13e6e6d82bb6\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"sit-and-reach\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my sit-and-reach flexibility still improving?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_007bea3b9887469bae206f6f52153cae\":\"active\",\"rec_9f7658dfa8d94431a149daedd93fb21b\":\"active\",\"rec_b3ff75c43b204447a0d042338e95bece\":\"active\",\"rec_b7e74a6f6b6141f1ac7a13e6e6d82bb6\":\"active\"}}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4465,
+    "completion_tokens": 210,
+    "tool_calls": 1,
+    "seconds": 7.6
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "sit-and-reach",
+     "kind": "event",
+     "start_at": "2026-01-01T00:00:00Z",
+     "end_at": "2026-09-24T00:00:00Z",
+     "limit": 100,
+     "cursor": "",
+     "include_superseded": false
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_9ca5f3309dfb4cb98270fda16dcecdc0\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:42:40.371107+00:00\",\"id\":\"rec_9f7658dfa8d94431a149daedd93fb21b\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC sit-and-reach +3 cm, same box, warmed up the same way.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:42:40.369007+00:00\",\"id\":\"rec_b3ff75c43b204447a0d042338e95bece\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-08-10T23:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-10T18:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC sit-and-reach +8 cm, same box.\",\"timezone\":\"America/Chicago\"}],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"sit-and-reach\"],\"total_matches\":2,\"zero_hit_hint\":null}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 4969,
+    "completion_tokens": 597,
+    "tool_calls": 0,
+    "seconds": 38.6
+   }
+  ],
+  "error": null,
+  "seconds": 50.1,
+  "turns": 3,
+  "tokens": {
+   "prompt": 12860,
+   "completion": 949
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_416fb03df3ed4e7184a02361aa516f0a",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_007bea3b9887469bae206f6f52153cae",
+      "rec_b3ff75c43b204447a0d042338e95bece",
+      "rec_9f7658dfa8d94431a149daedd93fb21b"
+     ],
+     "evidence_versions": {
+      "rec_007bea3b9887469bae206f6f52153cae": "active",
+      "rec_9f7658dfa8d94431a149daedd93fb21b": "active",
+      "rec_b3ff75c43b204447a0d042338e95bece": "active"
+     },
+     "next_step": "接下来两三周每周用同一个箱子、以相同方式热身后记录一次坐位体前屈。如果读数持续低于＋8厘米，可据此重新判断目前做法是否仍带来进步；若回到此前水平，则这次较低读数可能只是波动。重复读数仍不能单独说明变化的原因。",
+     "question_id": "rec_b7e74a6f6b6141f1ac7a13e6e6d82bb6",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "坐位体前屈的最新读数低于此前记录",
+     "unknowns": "这一次较低可能是日常波动，也可能表示进步没有持续；现有记录不足以区分，不能据此断定正在持续退步。",
+     "what_changed": "8月10日记录为坐位体前屈＋8厘米；9月21日为＋3厘米。两条记录都注明使用同一个箱子，最新记录还注明热身方式相同。",
+     "why_now": "先前分析认为成绩在提高、可能继续提高；最新读数与这个预期相反，值得修正，但单次读数不能确定趋势。"
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "正确指出同一箱子的坐位体前屈读数从＋8厘米降至＋3厘米，与此前“可能继续提高”的判断相矛盾；同时说明单次较低读数不足以确定趋势，并提出重复测量以区分波动与未能持续进步。未发现禁忌行为。",
+  "violated_forbidden": []
+ }
+}

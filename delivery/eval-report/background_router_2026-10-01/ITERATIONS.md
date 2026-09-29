@@ -40,3 +40,52 @@ Backtests on stored candidates (synthetic fixtures rebuilt):
 ## Runs
 The first launch hit the router's Luna quota (`429 usage limit, reset after ~20 min`) and was discarded (only 3 runs
 finished, all no-model). Runs restart after the reset.
+
+The runs restarted after the reset (14:12). The background runner was killed twice, so all later campaigns ran in
+foreground chunks under 600 s each, merged by `merge_chunks.py` (chunk metadata kept in `run_meta.json`). Every
+campaign below has 0 NOT_RUN.
+
+## Results on the frozen guarded loop 174516a (Luna medium, Sol judge, 3 runs per case; rescored with rescore.py)
+| split | silence | revisit | measurement | expected surface | expected silence | trust | s | prompt tok |
+|---|---|---|---|---|---|---|---|---|
+| dev (24 cases) | 36/36 | 20/21 | 15/15 | 21/21 | 42/42 | 0 | 32.5 | 16.8k |
+| dev2 (26) | 18/18 | 24/24 | 34/36 | 31/33 | 45/45 | 0 | 28.2 | — |
+| **holdout4 (33, fresh, run once)** | **30/30** | **30/30** | **38/39** | 41/42 | 57/57 | **0** | 47.7 | 15.6k |
+
+**holdout4 meets the milestone: silence 1.00, revisit 1.00, measurement 0.97, 0 critical trust failures.** It is
+the first held-out split that meets the milestone with no eval correction: as run equals rescored, and the per-case
+vocabulary was written before any result. The only failure was KC53 r3: "abdominal imaging or a validated
+visceral-fat measurement" named no concrete method.
+
+Remaining dev/dev2 failures, all long-standing borderline cases:
+- B14 r2 (dev): copied the five dated values with an extra value. The numeric check did not catch it, because each
+  listed number is a real value from the packet. Only the count and order were wrong, which a set-of-numbers check
+  cannot see.
+- GC07 r1 (dev2): "a standardised run/walk field test" named no protocol.
+- GC11 r2 (dev2): proposed a 7-night diary with 5 days left, although the packet says "5 days left".
+
+### What each guard caught (safety nets, reported separately as asked)
+Counted over every investigation in the four campaigns (342):
+- **Duplicate guard:** 0 drops. No run tried to re-surface delivered content once the `already delivered` line sat
+  beside the trigger. On stored round-2/3 candidates the same guard catches 3/3 real re-surfaces; the context fix
+  removed the behaviour it was built for.
+- **Numeric fidelity:** 0 repair turns. No candidate stated a number that the tool results or packet do not support.
+  Its known blind spot is B14-type errors (right numbers in the wrong count or order).
+- (For comparison, the existing evidence-id check triggered 6 repair turns, all resolved.)
+
+So the question "do the guards alone bring Luna to the milestone on holdout4?" gets a negative answer: **the guards
+fired zero times on holdout4, so Luna's holdout4 result comes from the loop and context (dated events beside the
+trigger, comparability, already-delivered, since-analysis), not from the guards.** The guards remain as safety nets
+that are not exercised by current behaviour. Comparability flags: holdout2's noncomparable cases (GR10, GR12, GR18)
+were not rerun in this round, and holdout4's noncomparable cases (KR52 different erg and damper, KR54 other lab and
+unit, KR58 phone app vs box) all passed 3/3.
+
+## Secondary: Sol as candidate on holdout4 (same frozen loop, Sol judge)
+| split | model | silence | revisit | measurement | trust | s | prompt tok | completion tok | turns |
+|---|---|---|---|---|---|---|---|---|---|
+| holdout4 | Luna | 30/30 | 30/30 | 38/39 | 0 | 47.7 | 15.6k | 390 | 3.2 |
+| holdout4 | Sol | 30/30 | 30/30 | 36/39 | 0 | 33.3 | 10.3k | 579 | 2.4 |
+
+Sol's 3 failures were all KC51. It proposed a photo comparison for shoulder size, which fails the method check, and
+the judge agreed that photos do not measure size. Luna passed KC51 3/3. On this fresh split the two models are level;
+the round-2 gap (Luna 16 vs Sol 2 failed runs) does not reappear on the current loop.

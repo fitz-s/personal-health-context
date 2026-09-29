@@ -1,0 +1,218 @@
+{
+ "record": {
+  "case_id": "KR56",
+  "run": 3,
+  "category": "revisit",
+  "split": "holdout4",
+  "severity": "critical",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "deterministic: no surface candidate, so no semantic content to judge",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "no_new_surface",
+    "ok": true,
+    "detail": "jobs=1 queued=0 model_silence=1 gate_blocked=0",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "model_silent",
+    "ok": true,
+    "detail": "jobs=1 queued=0 model_silence=1 gate_blocked=0",
+    "hard": true,
+    "needs_turn": false
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-sol",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 48.7,
+  "tool_calls": [
+   "context_read"
+  ],
+  "error": null,
+  "turns": 2,
+  "tokens": {
+   "prompt": 7699,
+   "completion": 196
+  },
+  "effort": "medium",
+  "decisions": [
+   "silence"
+  ],
+  "guards": [],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_26695bb3aec249c1b8c72d5396039fac",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_0c1798b0f6a84698aa1ec513e2bff4aa:1ae3592f8248c3f8"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_0c1798b0f6a84698aa1ec513e2bff4aa:1ae3592f8248c3f8",
+     "outcome": "silence",
+     "gate": {
+      "queued": false,
+      "reason": "silence"
+     },
+     "tool_calls": 3
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_26695bb3aec249c1b8c72d5396039fac\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_0c1798b0f6a84698aa1ec513e2bff4aa:1ae3592f8248c3f8\"]}, \"jobs\": [{\"job\": \"revisit:rec_0c1798b0f6a84698aa1ec513e2bff4aa:1ae3592f8248c3f8\", \"outcome\": \"silence\", \"gate\": {\"queued\": false, \"reason\": \"silence\"}, \"tool_calls\": 3}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_0c1798b0f6a84698aa1ec513e2bff4aa:1ae3592f8248c3f8",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by a change matching one open question. The change is either new data about the question or a dated event the user recorded (then the trigger carries `dated_event`). Decide whether the user should hear something about this question now: a new answer, a correction, or, when a dated event on this question is near and the data on record cannot answer it, which measurement would. Otherwise stay silent.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_0c1798b0f6a84698aa1ec513e2bff4aa\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"state\":\"open\",\"watch_terms\":[\"1 km\",\"row\"]},\"text\":\"SYNTHETIC: Is my 1 km row time improving?\"}\n\n## Prior analyses of this question (newest first)\nNone: this question was never analysed.\n\n## Already surfaced on this question\n{\"created_at\":\"2026-09-13T15:00:00+00:00\",\"delivered_at\":\"2026-09-13T15:00:00+00:00\",\"evidence_ids\":[\"rec_66a971581d35471d8c55cad04e07445e\"],\"id\":\"ins_031f51b5813045a2ba6097382bf5c91a\",\"next_step\":\"Retest in 6 weeks.\",\"question_id\":\"rec_0c1798b0f6a84698aa1ec513e2bff4aa\",\"state\":\"delivered (shown to the user)\",\"topic\":\"1 km erg retest\",\"what_changed\":\"SYNTHETIC same-machine 3:58 → 3:49.\"}\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":\"2026-09-13T15:00:00+00:00\",\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\nNone: no record names a date in the next 21 days.\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n\n## Passive data available (observation catalog)\nNo observations stored.\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"already_delivered_on_this_question\":[\"already delivered 2026-09-13: SYNTHETIC same-machine 3:58 → 3:49. — evidence rec_66a971581d35471d8c55cad04e07445e\"],\"change\":\"record\",\"comparability\":{\"differences\":[\"machine\"],\"earlier_records_with_values\":[{\"id\":\"rec_66a971581d35471d8c55cad04e07445e\",\"occurred_at\":\"2026-09-12\",\"stated_conditions\":[\"machine\"],\"text\":\"SYNTHETIC 1 km erg, same machine: 3:49.\"},{\"id\":\"rec_903137c72d394876bdfe220ded16ca89\",\"occurred_at\":\"2026-07-14\",\"stated_conditions\":[\"machine\"],\"text\":\"SYNTHETIC 1 km erg, same machine: 3:58.\"}],\"new_record_conditions\":[],\"note\":\"Conditions as each record states them. A value measured under different stated conditions (lab, unit, device, venue, protocol, equipment) is not like for like with the others.\"},\"record\":{\"id\":\"rec_eeb59036834c460a92f79114dca448bb\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: proud of that 3:49 row.\"}}\n\nIf you surface, set question_id to rec_0c1798b0f6a84698aa1ec513e2bff4aa.",
+    "candidate": {
+     "decision": "silence",
+     "question_id": "rec_0c1798b0f6a84698aa1ec513e2bff4aa",
+     "topic": "新记录只是对已告知的3:49成绩表示高兴，没有新的划船计时结果"
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3408,
+      "completion_tokens": 113,
+      "tool_calls": 1,
+      "seconds": 36.4
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_0c1798b0f6a84698aa1ec513e2bff4aa",
+        "rec_eeb59036834c460a92f79114dca448bb",
+        "rec_66a971581d35471d8c55cad04e07445e",
+        "rec_903137c72d394876bdfe220ded16ca89"
+       ],
+       "include_history": false
+      },
+      "is_error": false,
+      "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_f86f541a20dd40c8bf6dbf7de26afa19\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:42:53.461905+00:00\",\"id\":\"rec_0c1798b0f6a84698aa1ec513e2bff4aa\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"1 km\",\"row\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my 1 km row time improving?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:42:53.466480+00:00\",\"id\":\"rec_66a971581d35471d8c55cad04e07445e\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-09-12T12:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-12T07:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 1 km erg, same machine: 3:49.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:42:53.464183+00:00\",\"id\":\"rec_903137c72d394876bdfe220ded16ca89\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-07-14T12:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-14T07:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 1 km erg, same machine: 3:58.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:42:53.471546+00:00\",\"id\":\"rec_eeb59036834c460a92f79114dca448bb\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: proud of that 3:49 row.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_0c1798b0f6a84698aa1ec513e2bff4aa\":\"active\",\"rec_66a971581d35471d8c55cad04e07445e\":\"active\",\"rec_903137c72d394876bdfe220ded16ca89\":\"active\",\"rec_eeb59036834c460a92f79114dca448bb\":\"active\"}}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4291,
+      "completion_tokens": 83,
+      "tool_calls": 0,
+      "seconds": 12.2
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3408,
+    "completion_tokens": 113,
+    "tool_calls": 1,
+    "seconds": 36.4
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_0c1798b0f6a84698aa1ec513e2bff4aa",
+      "rec_eeb59036834c460a92f79114dca448bb",
+      "rec_66a971581d35471d8c55cad04e07445e",
+      "rec_903137c72d394876bdfe220ded16ca89"
+     ],
+     "include_history": false
+    },
+    "is_error": false,
+    "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_f86f541a20dd40c8bf6dbf7de26afa19\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:42:53.461905+00:00\",\"id\":\"rec_0c1798b0f6a84698aa1ec513e2bff4aa\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"1 km\",\"row\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my 1 km row time improving?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:42:53.466480+00:00\",\"id\":\"rec_66a971581d35471d8c55cad04e07445e\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-09-12T12:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-12T07:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 1 km erg, same machine: 3:49.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:42:53.464183+00:00\",\"id\":\"rec_903137c72d394876bdfe220ded16ca89\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-07-14T12:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-14T07:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 1 km erg, same machine: 3:58.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:42:53.471546+00:00\",\"id\":\"rec_eeb59036834c460a92f79114dca448bb\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: proud of that 3:49 row.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_0c1798b0f6a84698aa1ec513e2bff4aa\":\"active\",\"rec_66a971581d35471d8c55cad04e07445e\":\"active\",\"rec_903137c72d394876bdfe220ded16ca89\":\"active\",\"rec_eeb59036834c460a92f79114dca448bb\":\"active\"}}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4291,
+    "completion_tokens": 83,
+    "tool_calls": 0,
+    "seconds": 12.2
+   }
+  ],
+  "error": null,
+  "seconds": 48.7,
+  "turns": 2,
+  "tokens": {
+   "prompt": 7699,
+   "completion": 196
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [
+   {
+    "id": "ins_031f51b5813045a2ba6097382bf5c91a",
+    "state": "delivered"
+   }
+  ],
+  "insights_after": [
+   {
+    "id": "ins_031f51b5813045a2ba6097382bf5c91a",
+    "state": "delivered",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_66a971581d35471d8c55cad04e07445e"
+     ],
+     "next_step": "Retest in 6 weeks.",
+     "question_id": "rec_0c1798b0f6a84698aa1ec513e2bff4aa",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "1 km erg retest",
+     "unknowns": "SYNTHETIC.",
+     "what_changed": "SYNTHETIC same-machine 3:58 → 3:49.",
+     "why_now": "SYNTHETIC earlier finding."
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "violated_forbidden": [],
+  "reason": "deterministic: no surface candidate, so no semantic content to judge"
+ }
+}

@@ -1,0 +1,405 @@
+{
+ "record": {
+  "case_id": "KC56",
+  "run": 2,
+  "category": "measurement",
+  "split": "holdout4",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "Surfacing is appropriate before the recorded brace-review decision. The candidate explains that step counts cannot show whether alignment changed, proposes a comparable P3 standing-back photo to inform the discussion, and clearly limits what photos can establish about spinal curvature or causation. It repeats no previously surfaced insight and recommends no indiscriminate testing.",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_ff787d17d0c246329a16aae3d385769a\", \"request_id\": \"worker:job_e418355cf68c4c9588c3d6e471314f57:0:w_02b7c7e276f24d8ba0ed1a6e0671ed75\", \"status\": \"committed\", \"request_hash\": \"a6e27b0654900298c8d26bdbb063f3aa2fcbcc75039944dd27fbf003a0544ef2\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_280366aabc7f46449aac3bc54bc45e73",
+    "hard": true
+   },
+   {
+    "check": "next_step_names_a_method",
+    "ok": true,
+    "detail": "photo,p3,back photo",
+    "hard": true
+   },
+   {
+    "check": "gap_names_outcome_and_decision",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-sol",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 44.7,
+  "tool_calls": [
+   "context_read",
+   "context_search",
+   "context_search",
+   "context_search",
+   "context_search"
+  ],
+  "error": null,
+  "turns": 4,
+  "tokens": {
+   "prompt": 18376,
+   "completion": 1088
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "guards": [],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_688bc20bb8bc4e1da85c853333f68968",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_280366aabc7f46449aac3bc54bc45e73:fe94b827f0455bee"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_280366aabc7f46449aac3bc54bc45e73:fe94b827f0455bee",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_ff787d17d0c246329a16aae3d385769a",
+      "request_id": "worker:job_e418355cf68c4c9588c3d6e471314f57:0:w_02b7c7e276f24d8ba0ed1a6e0671ed75",
+      "status": "committed",
+      "request_hash": "a6e27b0654900298c8d26bdbb063f3aa2fcbcc75039944dd27fbf003a0544ef2"
+     },
+     "tool_calls": 9
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_688bc20bb8bc4e1da85c853333f68968\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_280366aabc7f46449aac3bc54bc45e73:fe94b827f0455bee\"]}, \"jobs\": [{\"job\": \"revisit:rec_280366aabc7f46449aac3bc54bc45e73:fe94b827f0455bee\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_ff787d17d0c246329a16aae3d385769a\", \"request_id\": \"worker:job_e418355cf68c4c9588c3d6e471314f57:0:w_02b7c7e276f24d8ba0ed1a6e0671ed75\", \"status\": \"committed\", \"request_hash\": \"a6e27b0654900298c8d26bdbb063f3aa2fcbcc75039944dd27fbf003a0544ef2\"}, \"tool_calls\": 9}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_280366aabc7f46449aac3bc54bc45e73:fe94b827f0455bee",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by a change matching one open question. The change is either new data about the question or a dated event the user recorded (then the trigger carries `dated_event`). Decide whether the user should hear something about this question now: a new answer, a correction, or, when a dated event on this question is near and the data on record cannot answer it, which measurement would. Otherwise stay silent.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_280366aabc7f46449aac3bc54bc45e73\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"outcome\":\"posture\",\"state\":\"open\",\"watch_metrics\":[\"brace\",\"specialist\"],\"watch_terms\":[\"brace\",\"specialist\"]},\"text\":\"SYNTHETIC: Is my scoliosis brace routine improving my spine alignment?\"}\n\n## Prior analyses of this question (newest first)\n{\"days_ago\":83,\"evidence_status\":\"not verifiable (written without read receipts); not known to be stale\",\"id\":\"rec_224bd8892bf546f98d30fd4ba51ed4e0\",\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis (June): baseline standing back photo (protocol P3) only.\"}\n\n## Since the newest analysis (2026-07-02): records written\n{\"id\":\"rec_d9b54adcb14e499db61f6ad9090c8134\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: specialist review on 2026-09-30 to decide whether to continue the brace; no standing photos since June.\"}\n## Since the newest analysis: passive samples added\n{\"first\":\"2026-09-02T02:00:00.000000+00:00\",\"last\":\"2026-09-23T02:00:00.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\"}\nThe newest analysis set no revisit condition field; read its text for one before assuming there is none.\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\n{\"date\":\"2026-09-30\",\"days_until\":7,\"kind\":\"note\",\"mentions_questions\":[\"rec_280366aabc7f46449aac3bc54bc45e73\"],\"note\":\"7 days left: anything measured for this must be done before then\",\"read_as\":\"explicit date\",\"record_id\":\"rec_d9b54adcb14e499db61f6ad9090c8134\",\"text\":\"SYNTHETIC: specialist review on 2026-09-30 to decide whether to continue the brace; no standing photos since June.\"}\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"days_since_latest_sample\":0.5,\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_success_at\":\"2026-09-29T20:37:54.654802+00:00\",\"latest_sample_at\":\"2026-09-23T02:00:30.000000+00:00\",\"state\":\"ready\"}\n\n## Passive data available (observation catalog)\n{\"first_at\":\"2026-09-02T02:00:00.000000+00:00\",\"last_at\":\"2026-09-23T02:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count\"}\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"dated_event\":{\"date\":\"2026-09-30\",\"days_until\":7,\"meaning\":\"this record is a dated event the user recorded, not a measurement\"},\"record\":{\"id\":\"rec_d9b54adcb14e499db61f6ad9090c8134\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: specialist review on 2026-09-30 to decide whether to continue the brace; no standing photos since June.\"}}\n\nIf you surface, set question_id to rec_280366aabc7f46449aac3bc54bc45e73.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_280366aabc7f46449aac3bc54bc45e73",
+     "topic": "Brace review: missing comparison",
+     "why_now": "The recorded specialist review on September 30 is a decision point about continuing the brace. A comparison made now could be available for that discussion.",
+     "what_changed": "The earlier analysis records only a June standing-back photo using protocol P3. The September 22 note says there have been no standing photos since June. Step counts added since then do not show whether spine alignment changed.",
+     "unknowns": "There is no comparable follow-up photo to assess visible posture. Even a photo comparison would not establish whether spinal curvature changed or whether the brace caused any change.",
+     "next_step": "Take one standing-back photo now using the same P3 setup as in June, and bring both to the review. A visible difference could inform the discussion about whether to continue the current approach; no visible difference would also be useful to discuss. Neither result would, by itself, answer whether spinal alignment improved.",
+     "evidence_ids": [
+      "rec_280366aabc7f46449aac3bc54bc45e73",
+      "rec_224bd8892bf546f98d30fd4ba51ed4e0",
+      "rec_d9b54adcb14e499db61f6ad9090c8134"
+     ],
+     "evidence_versions": {
+      "rec_280366aabc7f46449aac3bc54bc45e73": "active",
+      "rec_224bd8892bf546f98d30fd4ba51ed4e0": "active",
+      "rec_d9b54adcb14e499db61f6ad9090c8134": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3597,
+      "completion_tokens": 102,
+      "tool_calls": 1,
+      "seconds": 5.9
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_280366aabc7f46449aac3bc54bc45e73",
+        "rec_224bd8892bf546f98d30fd4ba51ed4e0",
+        "rec_d9b54adcb14e499db61f6ad9090c8134"
+       ],
+       "include_history": false
+      },
+      "is_error": false,
+      "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_1adb501d677843638f789980d364c2af\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:37:54.652891+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_280366aabc7f46449aac3bc54bc45e73\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_224bd8892bf546f98d30fd4ba51ed4e0\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_280366aabc7f46449aac3bc54bc45e73\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): baseline standing back photo (protocol P3) only.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:37:54.650448+00:00\",\"id\":\"rec_280366aabc7f46449aac3bc54bc45e73\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"posture\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"brace\",\"specialist\"],\"watch_terms\":[\"brace\",\"specialist\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my scoliosis brace routine improving my spine alignment?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:37:54.656148+00:00\",\"id\":\"rec_d9b54adcb14e499db61f6ad9090c8134\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: specialist review on 2026-09-30 to decide whether to continue the brace; no standing photos since June.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_224bd8892bf546f98d30fd4ba51ed4e0\":\"active\",\"rec_280366aabc7f46449aac3bc54bc45e73\":\"active\",\"rec_d9b54adcb14e499db61f6ad9090c8134\":\"active\"}}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4401,
+      "completion_tokens": 84,
+      "tool_calls": 1,
+      "seconds": 3.9
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "P3",
+       "kind": "attachment",
+       "start_at": "2026-01-01T00:00:00Z",
+       "end_at": "2026-09-24T00:00:00Z",
+       "limit": 50,
+       "cursor": "",
+       "include_superseded": false
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_2fca49c2e2514d33a8708e1c0e24f90c\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"P3\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_35720c49cfaf48818c8380d0ca9b738c\",\"kind\":\"routine\",\"text\":\"SYNTHETIC brace and exercises daily.\"},{\"id\":\"rec_280366aabc7f46449aac3bc54bc45e73\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my scoliosis brace routine improving my spine alignment?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 4702,
+      "completion_tokens": 231,
+      "tool_calls": 3,
+      "seconds": 21.1
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "photo",
+       "kind": "event",
+       "start_at": "2026-01-01T00:00:00Z",
+       "end_at": "2026-09-24T00:00:00Z",
+       "limit": 50,
+       "cursor": "",
+       "include_superseded": false
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_e0997b1540144d3fbd1c576f1ae20471\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"photo\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_35720c49cfaf48818c8380d0ca9b738c\",\"kind\":\"routine\",\"text\":\"SYNTHETIC brace and exercises daily.\"},{\"id\":\"rec_280366aabc7f46449aac3bc54bc45e73\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my scoliosis brace routine improving my spine alignment?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "brace",
+       "kind": "routine",
+       "start_at": "2026-01-01T00:00:00Z",
+       "end_at": "2026-09-24T00:00:00Z",
+       "limit": 50,
+       "cursor": "",
+       "include_superseded": false
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_254ccd9ef9fc42a6bf96ccfd523f1043\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:37:54.651688+00:00\",\"id\":\"rec_35720c49cfaf48818c8380d0ca9b738c\",\"kind\":\"routine\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC brace and exercises daily.\",\"timezone\":\"America/Chicago\"}],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"brace\"],\"total_matches\":1,\"zero_hit_hint\":null}"
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "standing",
+       "kind": "note",
+       "start_at": "2026-01-01T00:00:00Z",
+       "end_at": "2026-09-24T00:00:00Z",
+       "limit": 50,
+       "cursor": "",
+       "include_superseded": false
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_6315d1ec09a84515a2774e9b8d601add\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:37:54.656148+00:00\",\"id\":\"rec_d9b54adcb14e499db61f6ad9090c8134\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: specialist review on 2026-09-30 to decide whether to continue the brace; no standing photos since June.\",\"timezone\":\"America/Chicago\"}],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"standing\"],\"total_matches\":1,\"zero_hit_hint\":null}"
+     },
+     {
+      "turn": 3,
+      "prompt_tokens": 5676,
+      "completion_tokens": 671,
+      "tool_calls": 0,
+      "seconds": 13.7
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3597,
+    "completion_tokens": 102,
+    "tool_calls": 1,
+    "seconds": 5.9
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_280366aabc7f46449aac3bc54bc45e73",
+      "rec_224bd8892bf546f98d30fd4ba51ed4e0",
+      "rec_d9b54adcb14e499db61f6ad9090c8134"
+     ],
+     "include_history": false
+    },
+    "is_error": false,
+    "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_1adb501d677843638f789980d364c2af\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:37:54.652891+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_280366aabc7f46449aac3bc54bc45e73\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_224bd8892bf546f98d30fd4ba51ed4e0\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_280366aabc7f46449aac3bc54bc45e73\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): baseline standing back photo (protocol P3) only.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:37:54.650448+00:00\",\"id\":\"rec_280366aabc7f46449aac3bc54bc45e73\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"posture\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"brace\",\"specialist\"],\"watch_terms\":[\"brace\",\"specialist\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my scoliosis brace routine improving my spine alignment?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:37:54.656148+00:00\",\"id\":\"rec_d9b54adcb14e499db61f6ad9090c8134\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: specialist review on 2026-09-30 to decide whether to continue the brace; no standing photos since June.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_224bd8892bf546f98d30fd4ba51ed4e0\":\"active\",\"rec_280366aabc7f46449aac3bc54bc45e73\":\"active\",\"rec_d9b54adcb14e499db61f6ad9090c8134\":\"active\"}}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4401,
+    "completion_tokens": 84,
+    "tool_calls": 1,
+    "seconds": 3.9
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "P3",
+     "kind": "attachment",
+     "start_at": "2026-01-01T00:00:00Z",
+     "end_at": "2026-09-24T00:00:00Z",
+     "limit": 50,
+     "cursor": "",
+     "include_superseded": false
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_2fca49c2e2514d33a8708e1c0e24f90c\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"P3\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_35720c49cfaf48818c8380d0ca9b738c\",\"kind\":\"routine\",\"text\":\"SYNTHETIC brace and exercises daily.\"},{\"id\":\"rec_280366aabc7f46449aac3bc54bc45e73\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my scoliosis brace routine improving my spine alignment?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 4702,
+    "completion_tokens": 231,
+    "tool_calls": 3,
+    "seconds": 21.1
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "photo",
+     "kind": "event",
+     "start_at": "2026-01-01T00:00:00Z",
+     "end_at": "2026-09-24T00:00:00Z",
+     "limit": 50,
+     "cursor": "",
+     "include_superseded": false
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_e0997b1540144d3fbd1c576f1ae20471\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"photo\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_35720c49cfaf48818c8380d0ca9b738c\",\"kind\":\"routine\",\"text\":\"SYNTHETIC brace and exercises daily.\"},{\"id\":\"rec_280366aabc7f46449aac3bc54bc45e73\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my scoliosis brace routine improving my spine alignment?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "brace",
+     "kind": "routine",
+     "start_at": "2026-01-01T00:00:00Z",
+     "end_at": "2026-09-24T00:00:00Z",
+     "limit": 50,
+     "cursor": "",
+     "include_superseded": false
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_254ccd9ef9fc42a6bf96ccfd523f1043\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:37:54.651688+00:00\",\"id\":\"rec_35720c49cfaf48818c8380d0ca9b738c\",\"kind\":\"routine\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC brace and exercises daily.\",\"timezone\":\"America/Chicago\"}],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"brace\"],\"total_matches\":1,\"zero_hit_hint\":null}"
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "standing",
+     "kind": "note",
+     "start_at": "2026-01-01T00:00:00Z",
+     "end_at": "2026-09-24T00:00:00Z",
+     "limit": 50,
+     "cursor": "",
+     "include_superseded": false
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_6315d1ec09a84515a2774e9b8d601add\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:37:54.656148+00:00\",\"id\":\"rec_d9b54adcb14e499db61f6ad9090c8134\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: specialist review on 2026-09-30 to decide whether to continue the brace; no standing photos since June.\",\"timezone\":\"America/Chicago\"}],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"standing\"],\"total_matches\":1,\"zero_hit_hint\":null}"
+   },
+   {
+    "turn": 3,
+    "prompt_tokens": 5676,
+    "completion_tokens": 671,
+    "tool_calls": 0,
+    "seconds": 13.7
+   }
+  ],
+  "error": null,
+  "seconds": 44.7,
+  "turns": 4,
+  "tokens": {
+   "prompt": 18376,
+   "completion": 1088
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_ff787d17d0c246329a16aae3d385769a",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_280366aabc7f46449aac3bc54bc45e73",
+      "rec_224bd8892bf546f98d30fd4ba51ed4e0",
+      "rec_d9b54adcb14e499db61f6ad9090c8134"
+     ],
+     "evidence_versions": {
+      "rec_224bd8892bf546f98d30fd4ba51ed4e0": "active",
+      "rec_280366aabc7f46449aac3bc54bc45e73": "active",
+      "rec_d9b54adcb14e499db61f6ad9090c8134": "active"
+     },
+     "next_step": "Take one standing-back photo now using the same P3 setup as in June, and bring both to the review. A visible difference could inform the discussion about whether to continue the current approach; no visible difference would also be useful to discuss. Neither result would, by itself, answer whether spinal alignment improved.",
+     "question_id": "rec_280366aabc7f46449aac3bc54bc45e73",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "Brace review: missing comparison",
+     "unknowns": "There is no comparable follow-up photo to assess visible posture. Even a photo comparison would not establish whether spinal curvature changed or whether the brace caused any change.",
+     "what_changed": "The earlier analysis records only a June standing-back photo using protocol P3. The September 22 note says there have been no standing photos since June. Step counts added since then do not show whether spine alignment changed.",
+     "why_now": "The recorded specialist review on September 30 is a decision point about continuing the brace. A comparison made now could be available for that discussion."
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "Surfacing is appropriate before the recorded brace-review decision. The candidate explains that step counts cannot show whether alignment changed, proposes a comparable P3 standing-back photo to inform the discussion, and clearly limits what photos can establish about spinal curvature or causation. It repeats no previously surfaced insight and recommends no indiscriminate testing.",
+  "violated_forbidden": []
+ }
+}
