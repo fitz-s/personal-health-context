@@ -172,8 +172,10 @@ class Packet(unittest.TestCase):
         put('analysis', 'SYNTHETIC analysis: revisit on 2026-09-30.', AT)
         put('note', 'SYNTHETIC visit on 2026-12-24.', AT)  # beyond the window
         put('note', 'SYNTHETIC appointment on 2026-02-31.', AT)  # not a date
+        qs = [{'id': 'q1', 'payload': {'watch_terms': ['doctor']}}, {'id': 'q2', 'payload': {'watch_terms': ['piano']}}]
         with self.store.connect() as c:
-            got = worker.upcoming(c, datetime.fromisoformat('2026-09-23T09:00:00-05:00'))
+            got = worker.upcoming(c, datetime.fromisoformat('2026-09-23T09:00:00-05:00'), qs)
+        self.assertEqual([e['mentions_questions'] for e in got], [[], [], ['q1']])
         self.assertEqual([(e['date'], e['days_until'], e['read_as']) for e in got],
                          [('2026-09-23', 0, 'weeks from the stated start'), ('2026-09-29', 6, 'relative to the record date'),
                           ('2026-10-02', 9, 'explicit date')])

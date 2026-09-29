@@ -162,8 +162,11 @@ def calls_today(store: Store) -> int:
                          (start,)).fetchone()[0]
 
 
-JOBS = {'revisit': 'This job was triggered by new data matching one open question. Decide whether it changes what '
-                   'the user should know about that question.',
+JOBS = {'revisit': 'This job was triggered by a change matching one open question. The change is either new data about '
+                   'the question or a dated event the user recorded (then the trigger carries `dated_event`). Decide '
+                   'whether the user should hear something about this question now: a new answer, a correction, or, '
+                   'when a dated event on this question is near and the data on record cannot answer it, which '
+                   'measurement would. Otherwise stay silent.',
         'review': 'This is the periodic review; no question triggered it. Look across the recorded goals, routines and '
                   'open questions for a measurement gap or an unasked question with decision value now (see Measurement '
                   'gaps), and otherwise stay silent.'}
@@ -195,9 +198,10 @@ DATED = [
 UPCOMING_DAYS = 21
 
 
-def upcoming(c, now: datetime) -> list[dict]:
+def upcoming(c, now: datetime, questions: list[dict] = ()) -> list[dict]:
     """Dated events in the user's own records that fall within the next UPCOMING_DAYS days (today included), soonest
-    first. Deterministic: what the records say, not whether the event matters."""
+    first, each with the open questions whose watch terms its record mentions. Deterministic: what the records say,
+    not whether the event matters."""
     out, seen = [], set()
     for r in c.execute("SELECT id, kind, text, occurred_at, timezone FROM active_records WHERE kind != 'analysis'"):
         tz = ZoneInfo(r['timezone'])
@@ -216,8 +220,12 @@ def upcoming(c, now: datetime) -> list[dict]:
                 if 0 <= days <= UPCOMING_DAYS and (r['id'], d) not in seen:
                     seen.add((r['id'], d))
                     lo = max(0, m.start() - 90)
+                    text = r['text'].lower()
                     out.append({'date': d.isoformat(), 'days_until': days, 'record_id': r['id'], 'kind': r['kind'],
-                                'read_as': how, 'text': ('…' if lo else '') + r['text'][lo:m.end() + 90]})
+                                'read_as': how, 'text': ('…' if lo else '') + r['text'][lo:m.end() + 90],
+                                'mentions_questions': [q['id'] for q in questions if any(
+                                    t.lower() in text for t in q['payload'].get('watch_terms', []))],
+                                'note': f'{days} days left: anything measured for this must be done before then'})
     return sorted(out, key=lambda e: (e['days_until'], e['record_id']))
 
 
@@ -252,6 +260,13 @@ def _record(c, rid: str) -> dict | None:
         out['revises'] = {'id': row['supersedes'], 'text': _cut(old['text'], 600) if old else None,
                           'insights_citing_it': _citing(c, row['supersedes'])}
     return out
+
+
+def _evidence_status(record: dict) -> str:
+    e = record.get('evidence') or {}
+    if e.get('stale_ids'):
+        return 'stale: evidence it relied on changed since (' + ', '.join(e['stale_ids'][:5]) + ')'
+    return 'current' if e.get('current') else 'not verifiable (written without read receipts); not known to be stale'
 
 
 def _citing(c, ref: str) -> list[dict]:
@@ -386,8 +401,8 @@ def packet(store: Store, job: dict, now: datetime | None = None) -> str:
                 (qid, qid))]
             parts.append(_section('Prior analyses of this question (newest first)', [
                 {'id': a['id'], 'occurred_at': a['occurred_at'], 'text': _cut(a['text'], 2000),
-                 'revisit_when': a['payload'].get('revisit_when'),
-                 'evidence': a.get('evidence')} for a in analyses], 12_000, 'None: this question was never analysed.'))
+                 'revisit_when': a['payload'].get('revisit_when'), 'evidence_status': _evidence_status(a)}
+                for a in analyses], 12_000, 'None: this question was never analysed.'))
             told = [_insight(r) for r in c.execute('SELECT * FROM insights WHERE question_id=? ORDER BY created_at DESC',
                                                    (qid,))]
             told += [_insight(r, True) for r in c.execute(
@@ -422,7 +437,8 @@ def packet(store: Store, job: dict, now: datetime | None = None) -> str:
                                                  "('record','observations','extraction') ORDER BY seq DESC LIMIT 50",
                                                  (p['since_seq'], p['through_seq']))]}
         parts.append('## User preferences and attention\n' + dump(attention))
-        parts.append(_section(f'Upcoming dated events in the user\'s records (next {UPCOMING_DAYS} days)', upcoming(c, now),
+        dated = upcoming(c, now, open_questions(store))
+        parts.append(_section(f'Upcoming dated events in the user\'s records (next {UPCOMING_DAYS} days)', dated,
                               4_000, f'None: no record names a date in the next {UPCOMING_DAYS} days.'))
         parts.append(_section('Source status (sync health, not health data)', _sources(c, now), 5_000,
                               'No device or vendor sources are connected.'))
@@ -430,9 +446,14 @@ def packet(store: Store, job: dict, now: datetime | None = None) -> str:
             'SELECT source_id, metric, unit, n, first_at, last_at FROM observation_catalog ORDER BY n DESC')],
             4_000, 'No observations stored.'))
         used = sum(map(len, parts))
-        parts.append(_section('What changed since the last look (the trigger of this job)',
-                              [_trigger(c, ev) for ev in p['evidence']], max(4_000, PACKET_CHARS - used),
-                              'No change descriptors.'))
+        events = {e['record_id']: e for e in dated}
+        triggers = [_trigger(c, ev) for ev in p['evidence']]
+        for t in triggers:
+            if t['change'] == 'record' and t['record'] and (e := events.get(t['record']['id'])):
+                t['dated_event'] = {'date': e['date'], 'days_until': e['days_until'],
+                                    'meaning': 'this record is a dated event the user recorded, not a measurement'}
+        parts.append(_section('What changed since the last look (the trigger of this job)', triggers,
+                              max(4_000, PACKET_CHARS - used), 'No change descriptors.'))
     if job['type'] == 'revisit':
         parts.append(f'If you surface, set question_id to {p["question_id"]}.')
     return '\n\n'.join(parts)
