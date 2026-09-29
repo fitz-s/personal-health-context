@@ -591,8 +591,11 @@ class HarnessTests(Tmp):
     def test_causal_marker_flags_assertions_not_questions_or_hedges(self):
         self.assertEqual(self.h._causal('深蹲下降是因为睡眠不足。'), ['深蹲下降是因为睡眠不足'])
         self.assertEqual(self.h._causal('The drop was due to the new job.'), ['The drop was due to the new job'])
+        self.assertEqual(self.h._causal('The rise is a result of the supplement.'), ['The rise is a result of the supplement'])
         for ok in ('可据此判断矫正是否仍在奏效', '不能说明是新工作导致的', 'this may be due to travel',
-                   'but would not establish what caused any change'):
+                   'but would not establish what caused any change', 'compare a further LDL result from Lab B',
+                   'Neither would establish what caused the change', 'A return below 4.1 would support it',
+                   'it still would not, by itself, establish what caused the change'):
             self.assertEqual(self.h._causal(ok), [], ok)
 
     def test_model_failure_uses_per_case_backend_not_global_patch(self):

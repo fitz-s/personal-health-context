@@ -1,0 +1,215 @@
+{
+ "record": {
+  "case_id": "GC20",
+  "run": 3,
+  "category": "measurement",
+  "split": "holdout2",
+  "severity": "critical",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "deterministic: no surface candidate, so no semantic content to judge",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "no_new_surface",
+    "ok": true,
+    "detail": "jobs=1 queued=0 model_silence=1 gate_blocked=0",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "model_silent",
+    "ok": true,
+    "detail": "jobs=1 queued=0 model_silence=1 gate_blocked=0",
+    "hard": true,
+    "needs_turn": false
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-sol",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 9.3,
+  "tool_calls": [
+   "context_read"
+  ],
+  "error": null,
+  "turns": 2,
+  "tokens": {
+   "prompt": 7800,
+   "completion": 214
+  },
+  "effort": "medium",
+  "decisions": [
+   "silence"
+  ],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_1bd08d6440e442b8b389a6b95602d898",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_8b250f120b854668b0e9ecda6745eb0c:1ae3592f8248c3f8"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_8b250f120b854668b0e9ecda6745eb0c:1ae3592f8248c3f8",
+     "outcome": "silence",
+     "gate": {
+      "queued": false,
+      "reason": "silence"
+     },
+     "tool_calls": 3
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_1bd08d6440e442b8b389a6b95602d898\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_8b250f120b854668b0e9ecda6745eb0c:1ae3592f8248c3f8\"]}, \"jobs\": [{\"job\": \"revisit:rec_8b250f120b854668b0e9ecda6745eb0c:1ae3592f8248c3f8\", \"outcome\": \"silence\", \"gate\": {\"queued\": false, \"reason\": \"silence\"}, \"tool_calls\": 3}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_8b250f120b854668b0e9ecda6745eb0c:1ae3592f8248c3f8",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by new data matching one open question. Decide whether it changes what the user should know about that question.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_8b250f120b854668b0e9ecda6745eb0c\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"outcome\":\"bp\",\"state\":\"open\",\"watch_metrics\":[\"blood pressure\",\"appointment\"],\"watch_terms\":[\"blood pressure\",\"appointment\"]},\"text\":\"SYNTHETIC: Has my blood pressure come down?\"}\n\n## Prior analyses of this question (newest first)\n{\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_8b250f120b854668b0e9ecda6745eb0c\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_74cd508cc18c4ffe9e555d126d509b4b\",\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis (July): one clinic reading; the watch does not measure blood pressure.\"}\n\n## Already surfaced on this question\n{\"created_at\":\"2026-09-20T15:00:00+00:00\",\"delivered_at\":\"2026-09-20T15:00:00+00:00\",\"evidence_ids\":[\"rec_74cd508cc18c4ffe9e555d126d509b4b\"],\"id\":\"ins_57e0c2454c4d401d892cb370c2470e14\",\"next_step\":\"Keep a home blood pressure log for a week before the visit.\",\"question_id\":\"rec_8b250f120b854668b0e9ecda6745eb0c\",\"state\":\"delivered (shown to the user)\",\"topic\":\"home blood pressure before GP visit\",\"what_changed\":\"SYNTHETIC: no readings since July; GP visit 2026-10-05.\"}\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":false,\"last_insight_queued_or_shown_at\":\"2026-09-20T15:00:00+00:00\",\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\n{\"date\":\"2026-10-05\",\"days_until\":12,\"kind\":\"note\",\"read_as\":\"explicit date\",\"record_id\":\"rec_9759f07531aa4e7e90a01a7a3e62ab3f\",\"text\":\"SYNTHETIC: reminder to self, GP appointment on 2026-10-05.\"}\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"days_since_latest_sample\":1.1,\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_success_at\":\"2026-09-29T15:28:53.410120+00:00\",\"latest_sample_at\":\"2026-09-22T12:00:30.000000+00:00\",\"state\":\"ready\"}\n\n## Passive data available (observation catalog)\n{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierRestingHeartRate\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count/min\"}\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"record\":{\"id\":\"rec_9759f07531aa4e7e90a01a7a3e62ab3f\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: reminder to self, GP appointment on 2026-10-05.\"}}\n\nIf you surface, set question_id to rec_8b250f120b854668b0e9ecda6745eb0c.",
+    "candidate": {
+     "decision": "silence",
+     "question_id": "rec_8b250f120b854668b0e9ecda6745eb0c",
+     "topic": "就诊前记录家庭血压的建议已告知用户；此次提醒没有带来新的血压证据"
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3490,
+      "completion_tokens": 129,
+      "tool_calls": 1,
+      "seconds": 5.7
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_8b250f120b854668b0e9ecda6745eb0c",
+        "rec_74cd508cc18c4ffe9e555d126d509b4b",
+        "rec_9759f07531aa4e7e90a01a7a3e62ab3f"
+       ],
+       "include_history": false
+      },
+      "is_error": false,
+      "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_dc08a00bc0f04248b4464a0c69983203\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:28:53.407836+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_8b250f120b854668b0e9ecda6745eb0c\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_74cd508cc18c4ffe9e555d126d509b4b\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_8b250f120b854668b0e9ecda6745eb0c\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): one clinic reading; the watch does not measure blood pressure.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:28:53.406625+00:00\",\"id\":\"rec_8b250f120b854668b0e9ecda6745eb0c\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"bp\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"blood pressure\",\"appointment\"],\"watch_terms\":[\"blood pressure\",\"appointment\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Has my blood pressure come down?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:28:53.414343+00:00\",\"id\":\"rec_9759f07531aa4e7e90a01a7a3e62ab3f\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: reminder to self, GP appointment on 2026-10-05.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_74cd508cc18c4ffe9e555d126d509b4b\":\"active\",\"rec_8b250f120b854668b0e9ecda6745eb0c\":\"active\",\"rec_9759f07531aa4e7e90a01a7a3e62ab3f\":\"active\"}}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4310,
+      "completion_tokens": 85,
+      "tool_calls": 0,
+      "seconds": 3.5
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3490,
+    "completion_tokens": 129,
+    "tool_calls": 1,
+    "seconds": 5.7
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_8b250f120b854668b0e9ecda6745eb0c",
+      "rec_74cd508cc18c4ffe9e555d126d509b4b",
+      "rec_9759f07531aa4e7e90a01a7a3e62ab3f"
+     ],
+     "include_history": false
+    },
+    "is_error": false,
+    "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_dc08a00bc0f04248b4464a0c69983203\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:28:53.407836+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_8b250f120b854668b0e9ecda6745eb0c\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_74cd508cc18c4ffe9e555d126d509b4b\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_8b250f120b854668b0e9ecda6745eb0c\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): one clinic reading; the watch does not measure blood pressure.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:28:53.406625+00:00\",\"id\":\"rec_8b250f120b854668b0e9ecda6745eb0c\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"bp\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"blood pressure\",\"appointment\"],\"watch_terms\":[\"blood pressure\",\"appointment\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Has my blood pressure come down?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:28:53.414343+00:00\",\"id\":\"rec_9759f07531aa4e7e90a01a7a3e62ab3f\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: reminder to self, GP appointment on 2026-10-05.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_74cd508cc18c4ffe9e555d126d509b4b\":\"active\",\"rec_8b250f120b854668b0e9ecda6745eb0c\":\"active\",\"rec_9759f07531aa4e7e90a01a7a3e62ab3f\":\"active\"}}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4310,
+    "completion_tokens": 85,
+    "tool_calls": 0,
+    "seconds": 3.5
+   }
+  ],
+  "error": null,
+  "seconds": 9.3,
+  "turns": 2,
+  "tokens": {
+   "prompt": 7800,
+   "completion": 214
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [
+   {
+    "id": "ins_57e0c2454c4d401d892cb370c2470e14",
+    "state": "delivered"
+   }
+  ],
+  "insights_after": [
+   {
+    "id": "ins_57e0c2454c4d401d892cb370c2470e14",
+    "state": "delivered",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_74cd508cc18c4ffe9e555d126d509b4b"
+     ],
+     "next_step": "Keep a home blood pressure log for a week before the visit.",
+     "question_id": "rec_8b250f120b854668b0e9ecda6745eb0c",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "home blood pressure before GP visit",
+     "unknowns": "SYNTHETIC.",
+     "what_changed": "SYNTHETIC: no readings since July; GP visit 2026-10-05.",
+     "why_now": "SYNTHETIC earlier finding."
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "violated_forbidden": [],
+  "reason": "deterministic: no surface candidate, so no semantic content to judge"
+ }
+}

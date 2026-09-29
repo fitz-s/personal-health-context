@@ -1,0 +1,263 @@
+{
+ "record": {
+  "case_id": "GC20",
+  "run": 2,
+  "category": "measurement",
+  "split": "holdout2",
+  "severity": "critical",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "deterministic: no surface candidate, so no semantic content to judge",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "no_new_surface",
+    "ok": true,
+    "detail": "jobs=1 queued=0 model_silence=1 gate_blocked=0",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "model_silent",
+    "ok": true,
+    "detail": "jobs=1 queued=0 model_silence=1 gate_blocked=0",
+    "hard": true,
+    "needs_turn": false
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-luna",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 11.4,
+  "tool_calls": [
+   "context_bootstrap",
+   "context_read",
+   "context_query"
+  ],
+  "error": null,
+  "turns": 3,
+  "tokens": {
+   "prompt": 14360,
+   "completion": 244
+  },
+  "effort": "medium",
+  "decisions": [
+   "silence"
+  ],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_926c41cccfce41db9b35592c94563df7",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_59b1c814b47a4ca186c83b7ccbdbe59b:1ae3592f8248c3f8"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_59b1c814b47a4ca186c83b7ccbdbe59b:1ae3592f8248c3f8",
+     "outcome": "silence",
+     "gate": {
+      "queued": false,
+      "reason": "silence"
+     },
+     "tool_calls": 6
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_926c41cccfce41db9b35592c94563df7\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_59b1c814b47a4ca186c83b7ccbdbe59b:1ae3592f8248c3f8\"]}, \"jobs\": [{\"job\": \"revisit:rec_59b1c814b47a4ca186c83b7ccbdbe59b:1ae3592f8248c3f8\", \"outcome\": \"silence\", \"gate\": {\"queued\": false, \"reason\": \"silence\"}, \"tool_calls\": 6}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_59b1c814b47a4ca186c83b7ccbdbe59b:1ae3592f8248c3f8",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by new data matching one open question. Decide whether it changes what the user should know about that question.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_59b1c814b47a4ca186c83b7ccbdbe59b\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"outcome\":\"bp\",\"state\":\"open\",\"watch_metrics\":[\"blood pressure\",\"appointment\"],\"watch_terms\":[\"blood pressure\",\"appointment\"]},\"text\":\"SYNTHETIC: Has my blood pressure come down?\"}\n\n## Prior analyses of this question (newest first)\n{\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_59b1c814b47a4ca186c83b7ccbdbe59b\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_7b2297d739ea4928890887071d991cb1\",\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis (July): one clinic reading; the watch does not measure blood pressure.\"}\n\n## Already surfaced on this question\n{\"created_at\":\"2026-09-20T15:00:00+00:00\",\"delivered_at\":\"2026-09-20T15:00:00+00:00\",\"evidence_ids\":[\"rec_7b2297d739ea4928890887071d991cb1\"],\"id\":\"ins_c524c29780eb4bd08b19e5b6e921adef\",\"next_step\":\"Keep a home blood pressure log for a week before the visit.\",\"question_id\":\"rec_59b1c814b47a4ca186c83b7ccbdbe59b\",\"state\":\"delivered (shown to the user)\",\"topic\":\"home blood pressure before GP visit\",\"what_changed\":\"SYNTHETIC: no readings since July; GP visit 2026-10-05.\"}\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":false,\"last_insight_queued_or_shown_at\":\"2026-09-20T15:00:00+00:00\",\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\n{\"date\":\"2026-10-05\",\"days_until\":12,\"kind\":\"note\",\"read_as\":\"explicit date\",\"record_id\":\"rec_4f9b09109db1434bb2ae11c573293a29\",\"text\":\"SYNTHETIC: reminder to self, GP appointment on 2026-10-05.\"}\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"days_since_latest_sample\":1.1,\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_success_at\":\"2026-09-29T15:18:02.637298+00:00\",\"latest_sample_at\":\"2026-09-22T12:00:30.000000+00:00\",\"state\":\"ready\"}\n\n## Passive data available (observation catalog)\n{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierRestingHeartRate\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count/min\"}\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"record\":{\"id\":\"rec_4f9b09109db1434bb2ae11c573293a29\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: reminder to self, GP appointment on 2026-10-05.\"}}\n\nIf you surface, set question_id to rec_59b1c814b47a4ca186c83b7ccbdbe59b.",
+    "candidate": {
+     "decision": "silence",
+     "question_id": "rec_59b1c814b47a4ca186c83b7ccbdbe59b",
+     "topic": "预约和测量空缺已提醒；本次没有新的血压数据，且提醒预算暂不可用"
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3481,
+      "completion_tokens": 15,
+      "tool_calls": 1,
+      "seconds": 1.6
+     },
+     {
+      "tool": "context_bootstrap",
+      "arguments": {},
+      "is_error": false,
+      "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T15:18:02.645696+00:00\",\"last_worker_run_at\":\"2026-09-29T15:18:02.645696+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":5,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T15:18:02.641530+00:00\",\"id\":\"rec_4f9b09109db1434bb2ae11c573293a29\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: reminder to self, GP appointment on 2026-10-05.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:18:02.634035+00:00\",\"id\":\"rec_59b1c814b47a4ca186c83b7ccbdbe59b\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"bp\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"blood pressure\",\"appointment\"],\"watch_terms\":[\"blood pressure\",\"appointment\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Has my blood pressure come down?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierRestingHeartRate\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count/min\"}],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_0320a404e1db4f5e8ee81ad52e3fef72\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T15:18:02.635094+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_59b1c814b47a4ca186c83b7ccbdbe59b\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_7b2297d739ea4928890887071d991cb1\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_59b1c814b47a4ca186c83b7ccbdbe59b\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): one clinic reading; the watch does not measure blood pressure.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":1,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T15:18:04.220551+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":22,\"coverage\":{},\"cursor\":\"fixture-194\",\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_attempt_at\":\"2026-09-29T15:18:02.637298+00:00\",\"last_success_at\":\"2026-09-29T15:18:02.637298+00:00\",\"latest_sample_at\":\"2026-09-22T12:00:30.000000+00:00\",\"policy\":\"durable\",\"state\":\"ready\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4861,
+      "completion_tokens": 167,
+      "tool_calls": 2,
+      "seconds": 6.7
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_59b1c814b47a4ca186c83b7ccbdbe59b",
+        "rec_7b2297d739ea4928890887071d991cb1",
+        "rec_4f9b09109db1434bb2ae11c573293a29"
+       ],
+       "include_history": true
+      },
+      "is_error": false,
+      "result_text": "{\"history\":{\"rec_4f9b09109db1434bb2ae11c573293a29\":[\"rec_4f9b09109db1434bb2ae11c573293a29\"],\"rec_59b1c814b47a4ca186c83b7ccbdbe59b\":[\"rec_59b1c814b47a4ca186c83b7ccbdbe59b\"],\"rec_7b2297d739ea4928890887071d991cb1\":[\"rec_7b2297d739ea4928890887071d991cb1\"]},\"missing_ids\":[],\"read_receipt\":\"rr_ed795fd02e8a49cda4e7409a7c217a50\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:18:02.641530+00:00\",\"id\":\"rec_4f9b09109db1434bb2ae11c573293a29\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: reminder to self, GP appointment on 2026-10-05.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:18:02.634035+00:00\",\"id\":\"rec_59b1c814b47a4ca186c83b7ccbdbe59b\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"bp\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"blood pressure\",\"appointment\"],\"watch_terms\":[\"blood pressure\",\"appointment\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Has my blood pressure come down?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:18:02.635094+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_59b1c814b47a4ca186c83b7ccbdbe59b\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_7b2297d739ea4928890887071d991cb1\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_59b1c814b47a4ca186c83b7ccbdbe59b\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): one clinic reading; the watch does not measure blood pressure.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_4f9b09109db1434bb2ae11c573293a29\":\"active\",\"rec_59b1c814b47a4ca186c83b7ccbdbe59b\":\"active\",\"rec_7b2297d739ea4928890887071d991cb1\":\"active\"}}"
+     },
+     {
+      "tool": "context_query",
+      "arguments": {
+       "sql": "SELECT source_id, metric, unit, start_at, end_at, value_num, value_text, source_name FROM canonical_observations WHERE metric LIKE '%BloodPressure%' OR metric LIKE '%blood pressure%' ORDER BY start_at",
+       "parameters": [],
+       "limit": 100
+      },
+      "is_error": false,
+      "result_text": "{\"columns\":[\"source_id\",\"metric\",\"unit\",\"start_at\",\"end_at\",\"value_num\",\"value_text\",\"source_name\"],\"max_rows\":100,\"query_sha256\":\"468bfa116b18c24dc7a652ebb9450d4570401011226c59c55d5dec61169323aa\",\"read_receipt\":\"rr_a30a34dcdcf74ffcaf79308ae4730688\",\"reads_observations\":true,\"rows\":[],\"tables_read\":[\"canonical_observations\",\"canonical_observations_raw\",\"observations\",\"supersessions\"],\"truncated\":false}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 6018,
+      "completion_tokens": 62,
+      "tool_calls": 0,
+      "seconds": 3.1
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3481,
+    "completion_tokens": 15,
+    "tool_calls": 1,
+    "seconds": 1.6
+   },
+   {
+    "tool": "context_bootstrap",
+    "arguments": {},
+    "is_error": false,
+    "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T15:18:02.645696+00:00\",\"last_worker_run_at\":\"2026-09-29T15:18:02.645696+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":5,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T15:18:02.641530+00:00\",\"id\":\"rec_4f9b09109db1434bb2ae11c573293a29\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: reminder to self, GP appointment on 2026-10-05.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:18:02.634035+00:00\",\"id\":\"rec_59b1c814b47a4ca186c83b7ccbdbe59b\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"bp\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"blood pressure\",\"appointment\"],\"watch_terms\":[\"blood pressure\",\"appointment\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Has my blood pressure come down?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierRestingHeartRate\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count/min\"}],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_0320a404e1db4f5e8ee81ad52e3fef72\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T15:18:02.635094+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_59b1c814b47a4ca186c83b7ccbdbe59b\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_7b2297d739ea4928890887071d991cb1\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_59b1c814b47a4ca186c83b7ccbdbe59b\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): one clinic reading; the watch does not measure blood pressure.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":1,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T15:18:04.220551+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":22,\"coverage\":{},\"cursor\":\"fixture-194\",\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_attempt_at\":\"2026-09-29T15:18:02.637298+00:00\",\"last_success_at\":\"2026-09-29T15:18:02.637298+00:00\",\"latest_sample_at\":\"2026-09-22T12:00:30.000000+00:00\",\"policy\":\"durable\",\"state\":\"ready\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4861,
+    "completion_tokens": 167,
+    "tool_calls": 2,
+    "seconds": 6.7
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_59b1c814b47a4ca186c83b7ccbdbe59b",
+      "rec_7b2297d739ea4928890887071d991cb1",
+      "rec_4f9b09109db1434bb2ae11c573293a29"
+     ],
+     "include_history": true
+    },
+    "is_error": false,
+    "result_text": "{\"history\":{\"rec_4f9b09109db1434bb2ae11c573293a29\":[\"rec_4f9b09109db1434bb2ae11c573293a29\"],\"rec_59b1c814b47a4ca186c83b7ccbdbe59b\":[\"rec_59b1c814b47a4ca186c83b7ccbdbe59b\"],\"rec_7b2297d739ea4928890887071d991cb1\":[\"rec_7b2297d739ea4928890887071d991cb1\"]},\"missing_ids\":[],\"read_receipt\":\"rr_ed795fd02e8a49cda4e7409a7c217a50\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:18:02.641530+00:00\",\"id\":\"rec_4f9b09109db1434bb2ae11c573293a29\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: reminder to self, GP appointment on 2026-10-05.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:18:02.634035+00:00\",\"id\":\"rec_59b1c814b47a4ca186c83b7ccbdbe59b\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"bp\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"blood pressure\",\"appointment\"],\"watch_terms\":[\"blood pressure\",\"appointment\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Has my blood pressure come down?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:18:02.635094+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_59b1c814b47a4ca186c83b7ccbdbe59b\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_7b2297d739ea4928890887071d991cb1\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_59b1c814b47a4ca186c83b7ccbdbe59b\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): one clinic reading; the watch does not measure blood pressure.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_4f9b09109db1434bb2ae11c573293a29\":\"active\",\"rec_59b1c814b47a4ca186c83b7ccbdbe59b\":\"active\",\"rec_7b2297d739ea4928890887071d991cb1\":\"active\"}}"
+   },
+   {
+    "tool": "context_query",
+    "arguments": {
+     "sql": "SELECT source_id, metric, unit, start_at, end_at, value_num, value_text, source_name FROM canonical_observations WHERE metric LIKE '%BloodPressure%' OR metric LIKE '%blood pressure%' ORDER BY start_at",
+     "parameters": [],
+     "limit": 100
+    },
+    "is_error": false,
+    "result_text": "{\"columns\":[\"source_id\",\"metric\",\"unit\",\"start_at\",\"end_at\",\"value_num\",\"value_text\",\"source_name\"],\"max_rows\":100,\"query_sha256\":\"468bfa116b18c24dc7a652ebb9450d4570401011226c59c55d5dec61169323aa\",\"read_receipt\":\"rr_a30a34dcdcf74ffcaf79308ae4730688\",\"reads_observations\":true,\"rows\":[],\"tables_read\":[\"canonical_observations\",\"canonical_observations_raw\",\"observations\",\"supersessions\"],\"truncated\":false}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 6018,
+    "completion_tokens": 62,
+    "tool_calls": 0,
+    "seconds": 3.1
+   }
+  ],
+  "error": null,
+  "seconds": 11.4,
+  "turns": 3,
+  "tokens": {
+   "prompt": 14360,
+   "completion": 244
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [
+   {
+    "id": "ins_c524c29780eb4bd08b19e5b6e921adef",
+    "state": "delivered"
+   }
+  ],
+  "insights_after": [
+   {
+    "id": "ins_c524c29780eb4bd08b19e5b6e921adef",
+    "state": "delivered",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_7b2297d739ea4928890887071d991cb1"
+     ],
+     "next_step": "Keep a home blood pressure log for a week before the visit.",
+     "question_id": "rec_59b1c814b47a4ca186c83b7ccbdbe59b",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "home blood pressure before GP visit",
+     "unknowns": "SYNTHETIC.",
+     "what_changed": "SYNTHETIC: no readings since July; GP visit 2026-10-05.",
+     "why_now": "SYNTHETIC earlier finding."
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "violated_forbidden": [],
+  "reason": "deterministic: no surface candidate, so no semantic content to judge"
+ }
+}

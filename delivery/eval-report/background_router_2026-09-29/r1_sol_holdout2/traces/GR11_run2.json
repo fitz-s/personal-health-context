@@ -1,0 +1,369 @@
+{
+ "record": {
+  "case_id": "GR11",
+  "run": 2,
+  "category": "revisit",
+  "split": "holdout2",
+  "severity": "normal",
+  "status": "FAIL",
+  "hard_failure": true,
+  "reason": "The assistant surfaced the new, same-lab LDL result (4.4 versus 4.1 mmol/L) and explicitly corrected the earlier suggestion of improvement. It did not attribute the difference to diet, identified the missing pre-diet baseline, and proposed a comparable follow-up measurement tied to a decision. The automatic causal-assertion flag misreads an explicit statement that causation is not established.",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_199b5d1b33fd4cdfa654cfe15c5d7fd2\", \"request_id\": \"worker:job_2efb197f934a40a4ad4ebae602776e42:0:w_5fa99d0893d34260b6a8c5ab29315501\", \"status\": \"committed\", \"request_hash\": \"7251151f97c23b467613df180755f77b20bf255d6e4e44c3b6841f05b2544629\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": false,
+    "detail": "compare a further LDL result from Lab B | Neither would establish what caused the change",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_dd1111e0dc4d4dffa36493cf52cd45c6",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-sol",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 43.4,
+  "tool_calls": [
+   "context_read",
+   "context_search",
+   "context_search",
+   "context_search"
+  ],
+  "error": null,
+  "turns": 4,
+  "tokens": {
+   "prompt": 17733,
+   "completion": 1134
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_a2010a141f5e45d2974910d691623cac",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_dd1111e0dc4d4dffa36493cf52cd45c6:1ae3592f8248c3f8"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_dd1111e0dc4d4dffa36493cf52cd45c6:1ae3592f8248c3f8",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_199b5d1b33fd4cdfa654cfe15c5d7fd2",
+      "request_id": "worker:job_2efb197f934a40a4ad4ebae602776e42:0:w_5fa99d0893d34260b6a8c5ab29315501",
+      "status": "committed",
+      "request_hash": "7251151f97c23b467613df180755f77b20bf255d6e4e44c3b6841f05b2544629"
+     },
+     "tool_calls": 8
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_a2010a141f5e45d2974910d691623cac\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_dd1111e0dc4d4dffa36493cf52cd45c6:1ae3592f8248c3f8\"]}, \"jobs\": [{\"job\": \"revisit:rec_dd1111e0dc4d4dffa36493cf52cd45c6:1ae3592f8248c3f8\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_199b5d1b33fd4cdfa654cfe15c5d7fd2\", \"request_id\": \"worker:job_2efb197f934a40a4ad4ebae602776e42:0:w_5fa99d0893d34260b6a8c5ab29315501\", \"status\": \"committed\", \"request_hash\": \"7251151f97c23b467613df180755f77b20bf255d6e4e44c3b6841f05b2544629\"}, \"tool_calls\": 8}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_dd1111e0dc4d4dffa36493cf52cd45c6:1ae3592f8248c3f8",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by new data matching one open question. Decide whether it changes what the user should know about that question.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_dd1111e0dc4d4dffa36493cf52cd45c6\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"state\":\"open\",\"watch_terms\":[\"LDL\"]},\"text\":\"SYNTHETIC: Is my LDL lower since the diet change?\"}\n\n## Prior analyses of this question (newest first)\n{\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_5b27e4c46183493e9503955112c0920d\",\"rec_dd1111e0dc4d4dffa36493cf52cd45c6\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_f462d966de0c472c8e9b98d781e42592\",\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis (June): LDL 4.1 mmol/L (Lab B); probably improving with diet.\"}\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\nNone: no record names a date in the next 21 days.\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n\n## Passive data available (observation catalog)\nNo observations stored.\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"record\":{\"id\":\"rec_2df848fde9234766a563041ff2b39438\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC lab (Lab B, same lab): LDL 4.4 mmol/L.\"}}\n\nIf you surface, set question_id to rec_dd1111e0dc4d4dffa36493cf52cd45c6.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_dd1111e0dc4d4dffa36493cf52cd45c6",
+     "topic": "LDL is not lower on the latest result",
+     "why_now": "The new same-lab LDL result goes against the earlier analysis that LDL was probably improving with the diet change.",
+     "what_changed": "The recorded LDL was 4.1 mmol/L on June 10 and 4.4 mmol/L on September 21; both notes name Lab B. The latest value is higher, not lower.",
+     "unknowns": "One later result does not establish a rising trend or show whether the diet caused the difference. The records do not establish a pre-diet LDL baseline.",
+     "next_step": "If the decision is whether to continue this diet approach for lowering LDL, compare a further LDL result from Lab B, in mmol/L, after a consistent period on the diet. A return below 4.1 would support a lower subsequent value; another higher result would strengthen the case that LDL has not fallen. Neither would establish what caused the change.",
+     "evidence_ids": [
+      "rec_2df848fde9234766a563041ff2b39438",
+      "rec_5b27e4c46183493e9503955112c0920d",
+      "rec_f462d966de0c472c8e9b98d781e42592",
+      "rec_dd1111e0dc4d4dffa36493cf52cd45c6"
+     ],
+     "evidence_versions": {
+      "rec_2df848fde9234766a563041ff2b39438": "active",
+      "rec_5b27e4c46183493e9503955112c0920d": "active",
+      "rec_f462d966de0c472c8e9b98d781e42592": "active",
+      "rec_dd1111e0dc4d4dffa36493cf52cd45c6": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3098,
+      "completion_tokens": 124,
+      "tool_calls": 1,
+      "seconds": 7.0
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_2df848fde9234766a563041ff2b39438",
+        "rec_5b27e4c46183493e9503955112c0920d",
+        "rec_dd1111e0dc4d4dffa36493cf52cd45c6",
+        "rec_f462d966de0c472c8e9b98d781e42592"
+       ],
+       "include_history": true
+      },
+      "is_error": false,
+      "result_text": "{\"history\":{\"rec_2df848fde9234766a563041ff2b39438\":[\"rec_2df848fde9234766a563041ff2b39438\"],\"rec_5b27e4c46183493e9503955112c0920d\":[\"rec_5b27e4c46183493e9503955112c0920d\"],\"rec_dd1111e0dc4d4dffa36493cf52cd45c6\":[\"rec_dd1111e0dc4d4dffa36493cf52cd45c6\"],\"rec_f462d966de0c472c8e9b98d781e42592\":[\"rec_f462d966de0c472c8e9b98d781e42592\"]},\"missing_ids\":[],\"read_receipt\":\"rr_7da68d24c5674e93875cf86164a97005\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:30:23.805188+00:00\",\"id\":\"rec_2df848fde9234766a563041ff2b39438\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab B, same lab): LDL 4.4 mmol/L.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:30:23.803307+00:00\",\"id\":\"rec_5b27e4c46183493e9503955112c0920d\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab B): LDL 4.1 mmol/L.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:30:23.802320+00:00\",\"id\":\"rec_dd1111e0dc4d4dffa36493cf52cd45c6\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"LDL\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my LDL lower since the diet change?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:30:23.804262+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_5b27e4c46183493e9503955112c0920d\",\"rec_dd1111e0dc4d4dffa36493cf52cd45c6\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_f462d966de0c472c8e9b98d781e42592\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_dd1111e0dc4d4dffa36493cf52cd45c6\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): LDL 4.1 mmol/L (Lab B); probably improving with diet.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_2df848fde9234766a563041ff2b39438\":\"active\",\"rec_5b27e4c46183493e9503955112c0920d\":\"active\",\"rec_dd1111e0dc4d4dffa36493cf52cd45c6\":\"active\",\"rec_f462d966de0c472c8e9b98d781e42592\":\"active\"}}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4276,
+      "completion_tokens": 236,
+      "tool_calls": 2,
+      "seconds": 6.8
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "LDL",
+       "kind": "note",
+       "start_at": "2025-01-01T00:00:00Z",
+       "end_at": "2026-09-24T00:00:00Z",
+       "limit": 100,
+       "cursor": "",
+       "include_superseded": false
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_5f75eda403ae4849ac5b08c7a7cbc62f\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:30:23.805188+00:00\",\"id\":\"rec_2df848fde9234766a563041ff2b39438\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab B, same lab): LDL 4.4 mmol/L.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:30:23.803307+00:00\",\"id\":\"rec_5b27e4c46183493e9503955112c0920d\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab B): LDL 4.1 mmol/L.\",\"timezone\":\"America/Chicago\"}],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"LDL\"],\"total_matches\":2,\"zero_hit_hint\":null}"
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "diet",
+       "kind": "routine",
+       "start_at": "2025-01-01T00:00:00Z",
+       "end_at": "2026-09-24T00:00:00Z",
+       "limit": 100,
+       "cursor": "",
+       "include_superseded": false
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_9ea76c8f15a14a73a527ac376aad9a28\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"diet\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_dd1111e0dc4d4dffa36493cf52cd45c6\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my LDL lower since the diet change?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 5041,
+      "completion_tokens": 186,
+      "tool_calls": 1,
+      "seconds": 14.9
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "饮食 LDL 胆固醇 Lab B",
+       "kind": "event",
+       "start_at": "2025-01-01T00:00:00Z",
+       "end_at": "2026-09-24T00:00:00Z",
+       "limit": 100,
+       "cursor": "",
+       "include_superseded": false
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_1fcd6ce296dc43f280c14e6c0656c232\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"饮食\",\"LDL\",\"胆固醇\",\"Lab\",\"B\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_dd1111e0dc4d4dffa36493cf52cd45c6\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my LDL lower since the diet change?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+     },
+     {
+      "turn": 3,
+      "prompt_tokens": 5318,
+      "completion_tokens": 588,
+      "tool_calls": 0,
+      "seconds": 14.7
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3098,
+    "completion_tokens": 124,
+    "tool_calls": 1,
+    "seconds": 7.0
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_2df848fde9234766a563041ff2b39438",
+      "rec_5b27e4c46183493e9503955112c0920d",
+      "rec_dd1111e0dc4d4dffa36493cf52cd45c6",
+      "rec_f462d966de0c472c8e9b98d781e42592"
+     ],
+     "include_history": true
+    },
+    "is_error": false,
+    "result_text": "{\"history\":{\"rec_2df848fde9234766a563041ff2b39438\":[\"rec_2df848fde9234766a563041ff2b39438\"],\"rec_5b27e4c46183493e9503955112c0920d\":[\"rec_5b27e4c46183493e9503955112c0920d\"],\"rec_dd1111e0dc4d4dffa36493cf52cd45c6\":[\"rec_dd1111e0dc4d4dffa36493cf52cd45c6\"],\"rec_f462d966de0c472c8e9b98d781e42592\":[\"rec_f462d966de0c472c8e9b98d781e42592\"]},\"missing_ids\":[],\"read_receipt\":\"rr_7da68d24c5674e93875cf86164a97005\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:30:23.805188+00:00\",\"id\":\"rec_2df848fde9234766a563041ff2b39438\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab B, same lab): LDL 4.4 mmol/L.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:30:23.803307+00:00\",\"id\":\"rec_5b27e4c46183493e9503955112c0920d\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab B): LDL 4.1 mmol/L.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:30:23.802320+00:00\",\"id\":\"rec_dd1111e0dc4d4dffa36493cf52cd45c6\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"LDL\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my LDL lower since the diet change?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:30:23.804262+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_5b27e4c46183493e9503955112c0920d\",\"rec_dd1111e0dc4d4dffa36493cf52cd45c6\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_f462d966de0c472c8e9b98d781e42592\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_dd1111e0dc4d4dffa36493cf52cd45c6\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): LDL 4.1 mmol/L (Lab B); probably improving with diet.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_2df848fde9234766a563041ff2b39438\":\"active\",\"rec_5b27e4c46183493e9503955112c0920d\":\"active\",\"rec_dd1111e0dc4d4dffa36493cf52cd45c6\":\"active\",\"rec_f462d966de0c472c8e9b98d781e42592\":\"active\"}}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4276,
+    "completion_tokens": 236,
+    "tool_calls": 2,
+    "seconds": 6.8
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "LDL",
+     "kind": "note",
+     "start_at": "2025-01-01T00:00:00Z",
+     "end_at": "2026-09-24T00:00:00Z",
+     "limit": 100,
+     "cursor": "",
+     "include_superseded": false
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_5f75eda403ae4849ac5b08c7a7cbc62f\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:30:23.805188+00:00\",\"id\":\"rec_2df848fde9234766a563041ff2b39438\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab B, same lab): LDL 4.4 mmol/L.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:30:23.803307+00:00\",\"id\":\"rec_5b27e4c46183493e9503955112c0920d\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab B): LDL 4.1 mmol/L.\",\"timezone\":\"America/Chicago\"}],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"LDL\"],\"total_matches\":2,\"zero_hit_hint\":null}"
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "diet",
+     "kind": "routine",
+     "start_at": "2025-01-01T00:00:00Z",
+     "end_at": "2026-09-24T00:00:00Z",
+     "limit": 100,
+     "cursor": "",
+     "include_superseded": false
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_9ea76c8f15a14a73a527ac376aad9a28\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"diet\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_dd1111e0dc4d4dffa36493cf52cd45c6\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my LDL lower since the diet change?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 5041,
+    "completion_tokens": 186,
+    "tool_calls": 1,
+    "seconds": 14.9
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "饮食 LDL 胆固醇 Lab B",
+     "kind": "event",
+     "start_at": "2025-01-01T00:00:00Z",
+     "end_at": "2026-09-24T00:00:00Z",
+     "limit": 100,
+     "cursor": "",
+     "include_superseded": false
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_1fcd6ce296dc43f280c14e6c0656c232\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"饮食\",\"LDL\",\"胆固醇\",\"Lab\",\"B\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_dd1111e0dc4d4dffa36493cf52cd45c6\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my LDL lower since the diet change?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+   },
+   {
+    "turn": 3,
+    "prompt_tokens": 5318,
+    "completion_tokens": 588,
+    "tool_calls": 0,
+    "seconds": 14.7
+   }
+  ],
+  "error": null,
+  "seconds": 43.4,
+  "turns": 4,
+  "tokens": {
+   "prompt": 17733,
+   "completion": 1134
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_199b5d1b33fd4cdfa654cfe15c5d7fd2",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_2df848fde9234766a563041ff2b39438",
+      "rec_5b27e4c46183493e9503955112c0920d",
+      "rec_f462d966de0c472c8e9b98d781e42592",
+      "rec_dd1111e0dc4d4dffa36493cf52cd45c6"
+     ],
+     "evidence_versions": {
+      "rec_2df848fde9234766a563041ff2b39438": "active",
+      "rec_5b27e4c46183493e9503955112c0920d": "active",
+      "rec_dd1111e0dc4d4dffa36493cf52cd45c6": "active",
+      "rec_f462d966de0c472c8e9b98d781e42592": "active"
+     },
+     "next_step": "If the decision is whether to continue this diet approach for lowering LDL, compare a further LDL result from Lab B, in mmol/L, after a consistent period on the diet. A return below 4.1 would support a lower subsequent value; another higher result would strengthen the case that LDL has not fallen. Neither would establish what caused the change.",
+     "question_id": "rec_dd1111e0dc4d4dffa36493cf52cd45c6",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "LDL is not lower on the latest result",
+     "unknowns": "One later result does not establish a rising trend or show whether the diet caused the difference. The records do not establish a pre-diet LDL baseline.",
+     "what_changed": "The recorded LDL was 4.1 mmol/L on June 10 and 4.4 mmol/L on September 21; both notes name Lab B. The latest value is higher, not lower.",
+     "why_now": "The new same-lab LDL result goes against the earlier analysis that LDL was probably improving with the diet change."
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "The assistant surfaced the new, same-lab LDL result (4.4 versus 4.1 mmol/L) and explicitly corrected the earlier suggestion of improvement. It did not attribute the difference to diet, identified the missing pre-diet baseline, and proposed a comparable follow-up measurement tied to a decision. The automatic causal-assertion flag misreads an explicit statement that causation is not established.",
+  "violated_forbidden": []
+ }
+}

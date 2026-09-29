@@ -31,7 +31,10 @@ Failures (one-line cause):
   The old prompt names the schema file but never shows its shape. **Contract gap (loop).**
 - B05 r3: re-surfaced a 5 km result the user had already been shown. The old task gives no outbox history. **Context gap.**
 - B11 r1: surfaced one short night as worth tracking. **Judgment, no range context.**
-- B09 r1, B12 r2, B12 r3: causal wording ("见效", "because"). **Prompt gap.**
+- B09 r1, B12 r2, B12 r3: flagged `no_causal_assertion`. **Correction (2026-09-29): these were checker false
+  positives.** Each flagged clause negates causation ("does not establish that the plan caused it"), and the judge
+  passed all three. The checker split clauses at commas and missed English negation; it was fixed in round 2 (commit
+  ecabbe1 and later). The iteration-0 conclusion does not change: its failures were dominated by the 30 invalid candidates.
 - E046 r1–r3: the review job stayed silent on a fat-loss goal with a checkpoint next week. The review task only gives a
   seq window, with no goals and no trigger content. **Context gap.**
 - B14 r3, B21 r3: the gate rejected the candidate as `stale_evidence`.

@@ -336,14 +336,16 @@ GAP_TERMS = {'useful_unasked_measurement_gap': (['体脂', '脂肪', '身体成�
                                                 ['检查点', '评估', '决定', '判断', '调整', 'checkpoint', 'decide'])}
 # Assertions of cause in the fields that state what happened; `unknowns` is where competing explanations belong.
 CAUSAL = re.compile(r'导致|引起|造成|所致|归因|由于|因为|是原因|的原因|原因是|起作用|奏效|见效|有效果|起效|'
-                    r'\bcaused?\b|\bdue to\b|\bbecause\b|\bresult(ed|s)? (of|from)\b|\bworking\b', re.I)
+                    r'\bcaused?\b|\bdue to\b|\bbecause\b|\b(is|was|are|were) (a |the )?result(ed)? (of|from)\b|'
+                    r'\bresulted (in|from)\b|\bis working\b', re.I)
 HEDGE = re.compile(r'不能|无法|不一定|未必|不代表|不说明|不足以|尚不|还不|不宜|不应|并非|可能|或许|假设|是否|cannot|can\'t|not (necessarily|'
-                   r'yet|enough)|(would|could|does|do|did|will) not|won\'t|doesn\'t|no evidence|may|might|unclear|whether', re.I)  # 是否/whether: a question asked, not a cause asserted
+                   r'yet|enough)|(would|could|does|do|did|will) not|\bneither\b|\bnor\b|won\'t|doesn\'t|no evidence|may|might|unclear|whether', re.I)  # 是否/whether: a question asked, not a cause asserted
 
 
 def _causal(text: str) -> list[str]:
-    """Clauses asserting a cause without a hedge or negation in the same clause."""
-    return [c.strip() for c in re.split(r'[。；;.!?！？\n，,]', text) if CAUSAL.search(c) and not HEDGE.search(c)]
+    """Sentences asserting a cause without a hedge or negation in the same sentence (a comma does not end the scope of
+    "it would not, by itself, establish what caused the change")."""
+    return [c.strip() for c in re.split(r'(?<!\d)[.](?!\d)|[。；;!?！？\n]', text) if CAUSAL.search(c) and not HEDGE.search(c)]
 
 
 def candidate_checks(case: dict, ctx: dict, run: dict) -> list[dict]:

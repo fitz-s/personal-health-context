@@ -1,0 +1,289 @@
+{
+ "record": {
+  "case_id": "GC12",
+  "run": 3,
+  "category": "measurement",
+  "split": "holdout2",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "Surfacing is appropriate because a September 30 therapist session will decide whether to continue the running plan. The candidate explains that steps and HRV cannot answer whether mood improved, acknowledges that the available mood records cannot support a before-and-after comparison, and proposes a daily 0–10 mood rating to inform that decision without claiming causation. Its factual claims are supported by the packet, and nothing had previously been surfaced on this question.",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_7be52ca44b0a4a729a1cd0723abf1f09\", \"request_id\": \"worker:job_6fdae7d37e1f4bfd96b9252d480d8757:0:w_5203a76180664406afc7fc46a5dfcf81\", \"status\": \"committed\", \"request_hash\": \"ae251b2b8d2e880e1c5b65aa52910bf9d52d8f5e167b93754e3832d8ab2c41eb\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_5d3189eb68f14894bcde04956c3e98a3",
+    "hard": true
+   },
+   {
+    "check": "next_step_names_a_method",
+    "ok": true,
+    "detail": "量表,0–10",
+    "hard": true
+   },
+   {
+    "check": "gap_names_outcome_and_decision",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-luna",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 18.5,
+  "tool_calls": [
+   "context_bootstrap",
+   "context_read"
+  ],
+  "error": null,
+  "turns": 3,
+  "tokens": {
+   "prompt": 14580,
+   "completion": 502
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_cf99c4590f654a479b980001e819cc5e",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_5d3189eb68f14894bcde04956c3e98a3:589ffd3acf522ae8"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_5d3189eb68f14894bcde04956c3e98a3:589ffd3acf522ae8",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_7be52ca44b0a4a729a1cd0723abf1f09",
+      "request_id": "worker:job_6fdae7d37e1f4bfd96b9252d480d8757:0:w_5203a76180664406afc7fc46a5dfcf81",
+      "status": "committed",
+      "request_hash": "ae251b2b8d2e880e1c5b65aa52910bf9d52d8f5e167b93754e3832d8ab2c41eb"
+     },
+     "tool_calls": 5
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_cf99c4590f654a479b980001e819cc5e\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_5d3189eb68f14894bcde04956c3e98a3:589ffd3acf522ae8\"]}, \"jobs\": [{\"job\": \"revisit:rec_5d3189eb68f14894bcde04956c3e98a3:589ffd3acf522ae8\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_7be52ca44b0a4a729a1cd0723abf1f09\", \"request_id\": \"worker:job_6fdae7d37e1f4bfd96b9252d480d8757:0:w_5203a76180664406afc7fc46a5dfcf81\", \"status\": \"committed\", \"request_hash\": \"ae251b2b8d2e880e1c5b65aa52910bf9d52d8f5e167b93754e3832d8ab2c41eb\"}, \"tool_calls\": 5}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_5d3189eb68f14894bcde04956c3e98a3:589ffd3acf522ae8",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by new data matching one open question. Decide whether it changes what the user should know about that question.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_5d3189eb68f14894bcde04956c3e98a3\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"outcome\":\"mood\",\"state\":\"open\",\"watch_metrics\":[\"mood\",\"therapist\"],\"watch_terms\":[\"mood\",\"therapist\"]},\"text\":\"SYNTHETIC: Is my mood better since starting morning runs?\"}\n\n## Prior analyses of this question (newest first)\n{\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_5d3189eb68f14894bcde04956c3e98a3\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_75e820608b8049dbba6ffead73e3656b\",\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis (Aug): HRV and steps do not measure mood.\"}\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\n{\"date\":\"2026-09-30\",\"days_until\":7,\"kind\":\"note\",\"read_as\":\"explicit date\",\"record_id\":\"rec_30d02adb2ede4edab269160f65673381\",\"text\":\"SYNTHETIC: therapist session on 2026-09-30 to decide whether to keep the running plan; no mood notes since August.\"}\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"days_since_latest_sample\":0.5,\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_success_at\":\"2026-09-29T15:17:21.481062+00:00\",\"latest_sample_at\":\"2026-09-23T02:00:30.000000+00:00\",\"state\":\"ready\"}\n\n## Passive data available (observation catalog)\n{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierHeartRateVariabilitySDNN\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"ms\"}\n{\"first_at\":\"2026-09-02T02:00:00.000000+00:00\",\"last_at\":\"2026-09-23T02:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count\"}\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"record\":{\"id\":\"rec_30d02adb2ede4edab269160f65673381\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: therapist session on 2026-09-30 to decide whether to keep the running plan; no mood notes since August.\"}}\n\nIf you surface, set question_id to rec_5d3189eb68f14894bcde04956c3e98a3.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_5d3189eb68f14894bcde04956c3e98a3",
+     "topic": "跑步计划与情绪评估",
+     "why_now": "9月30日的治疗师会谈将决定是否继续跑步计划；现有被记录的数据无法判断情绪是否改善，而会谈临近。",
+     "what_changed": "记录显示你计划在9月30日与治疗师讨论是否继续跑步，并注明自8月以来没有情绪记录。你记录的晨跑频率为每周3次。",
+     "unknowns": "目前没有足够的情绪记录来比较开始晨跑前后；手表的步数和HRV不能直接回答情绪是否变好，也无法单独说明变化是否由跑步造成。",
+     "next_step": "会谈前每天用同一简单量表（例如0–10分）记录一次心情，并回顾最近一周；用这一周的情绪记录和你是否愿意继续跑步，帮助决定是否延续计划。它不能证明跑步导致情绪变化。",
+     "evidence_ids": [
+      "rec_30d02adb2ede4edab269160f65673381",
+      "rec_81e3b5fc510b436d83def149b7cb48aa",
+      "rec_75e820608b8049dbba6ffead73e3656b"
+     ],
+     "evidence_versions": {
+      "rec_30d02adb2ede4edab269160f65673381": "active",
+      "rec_81e3b5fc510b436d83def149b7cb48aa": "active",
+      "rec_75e820608b8049dbba6ffead73e3656b": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3387,
+      "completion_tokens": 15,
+      "tool_calls": 1,
+      "seconds": 1.8
+     },
+     {
+      "tool": "context_bootstrap",
+      "arguments": {},
+      "is_error": false,
+      "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T15:17:21.487682+00:00\",\"last_worker_run_at\":\"2026-09-29T15:17:21.487682+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":7,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T15:17:21.482519+00:00\",\"id\":\"rec_30d02adb2ede4edab269160f65673381\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: therapist session on 2026-09-30 to decide whether to keep the running plan; no mood notes since August.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:17:21.473976+00:00\",\"id\":\"rec_81e3b5fc510b436d83def149b7cb48aa\",\"kind\":\"routine\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC morning runs 3x/week.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:17:21.472668+00:00\",\"id\":\"rec_5d3189eb68f14894bcde04956c3e98a3\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"mood\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"mood\",\"therapist\"],\"watch_terms\":[\"mood\",\"therapist\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my mood better since starting morning runs?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierHeartRateVariabilitySDNN\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"ms\"},{\"first_at\":\"2026-09-02T02:00:00.000000+00:00\",\"last_at\":\"2026-09-23T02:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count\"}],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_9fde26e44a0441b18033b4bb74ad6f6f\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T15:17:21.475346+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_5d3189eb68f14894bcde04956c3e98a3\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_75e820608b8049dbba6ffead73e3656b\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_5d3189eb68f14894bcde04956c3e98a3\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (Aug): HRV and steps do not measure mood.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":1,\"question\":1,\"routine\":1},\"source_status\":{\"checked_at\":\"2026-09-29T15:17:23.317829+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":44,\"coverage\":{},\"cursor\":\"fixture-134\",\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_attempt_at\":\"2026-09-29T15:17:21.481062+00:00\",\"last_success_at\":\"2026-09-29T15:17:21.481062+00:00\",\"latest_sample_at\":\"2026-09-23T02:00:30.000000+00:00\",\"policy\":\"durable\",\"state\":\"ready\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 5006,
+      "completion_tokens": 104,
+      "tool_calls": 1,
+      "seconds": 4.1
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_5d3189eb68f14894bcde04956c3e98a3",
+        "rec_75e820608b8049dbba6ffead73e3656b",
+        "rec_30d02adb2ede4edab269160f65673381",
+        "rec_81e3b5fc510b436d83def149b7cb48aa"
+       ],
+       "include_history": true
+      },
+      "is_error": false,
+      "result_text": "{\"history\":{\"rec_30d02adb2ede4edab269160f65673381\":[\"rec_30d02adb2ede4edab269160f65673381\"],\"rec_5d3189eb68f14894bcde04956c3e98a3\":[\"rec_5d3189eb68f14894bcde04956c3e98a3\"],\"rec_75e820608b8049dbba6ffead73e3656b\":[\"rec_75e820608b8049dbba6ffead73e3656b\"],\"rec_81e3b5fc510b436d83def149b7cb48aa\":[\"rec_81e3b5fc510b436d83def149b7cb48aa\"]},\"missing_ids\":[],\"read_receipt\":\"rr_e974b6f4f23f4ef99081bf3c6a05f73d\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:17:21.482519+00:00\",\"id\":\"rec_30d02adb2ede4edab269160f65673381\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: therapist session on 2026-09-30 to decide whether to keep the running plan; no mood notes since August.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:17:21.472668+00:00\",\"id\":\"rec_5d3189eb68f14894bcde04956c3e98a3\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"mood\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"mood\",\"therapist\"],\"watch_terms\":[\"mood\",\"therapist\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my mood better since starting morning runs?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:17:21.475346+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_5d3189eb68f14894bcde04956c3e98a3\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_75e820608b8049dbba6ffead73e3656b\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_5d3189eb68f14894bcde04956c3e98a3\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (Aug): HRV and steps do not measure mood.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:17:21.473976+00:00\",\"id\":\"rec_81e3b5fc510b436d83def149b7cb48aa\",\"kind\":\"routine\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC morning runs 3x/week.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_30d02adb2ede4edab269160f65673381\":\"active\",\"rec_5d3189eb68f14894bcde04956c3e98a3\":\"active\",\"rec_75e820608b8049dbba6ffead73e3656b\":\"active\",\"rec_81e3b5fc510b436d83def149b7cb48aa\":\"active\"}}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 6187,
+      "completion_tokens": 383,
+      "tool_calls": 0,
+      "seconds": 12.6
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3387,
+    "completion_tokens": 15,
+    "tool_calls": 1,
+    "seconds": 1.8
+   },
+   {
+    "tool": "context_bootstrap",
+    "arguments": {},
+    "is_error": false,
+    "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T15:17:21.487682+00:00\",\"last_worker_run_at\":\"2026-09-29T15:17:21.487682+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":7,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T15:17:21.482519+00:00\",\"id\":\"rec_30d02adb2ede4edab269160f65673381\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: therapist session on 2026-09-30 to decide whether to keep the running plan; no mood notes since August.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:17:21.473976+00:00\",\"id\":\"rec_81e3b5fc510b436d83def149b7cb48aa\",\"kind\":\"routine\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC morning runs 3x/week.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:17:21.472668+00:00\",\"id\":\"rec_5d3189eb68f14894bcde04956c3e98a3\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"mood\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"mood\",\"therapist\"],\"watch_terms\":[\"mood\",\"therapist\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my mood better since starting morning runs?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierHeartRateVariabilitySDNN\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"ms\"},{\"first_at\":\"2026-09-02T02:00:00.000000+00:00\",\"last_at\":\"2026-09-23T02:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count\"}],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_9fde26e44a0441b18033b4bb74ad6f6f\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T15:17:21.475346+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_5d3189eb68f14894bcde04956c3e98a3\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_75e820608b8049dbba6ffead73e3656b\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_5d3189eb68f14894bcde04956c3e98a3\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (Aug): HRV and steps do not measure mood.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":1,\"question\":1,\"routine\":1},\"source_status\":{\"checked_at\":\"2026-09-29T15:17:23.317829+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":44,\"coverage\":{},\"cursor\":\"fixture-134\",\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_attempt_at\":\"2026-09-29T15:17:21.481062+00:00\",\"last_success_at\":\"2026-09-29T15:17:21.481062+00:00\",\"latest_sample_at\":\"2026-09-23T02:00:30.000000+00:00\",\"policy\":\"durable\",\"state\":\"ready\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 5006,
+    "completion_tokens": 104,
+    "tool_calls": 1,
+    "seconds": 4.1
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_5d3189eb68f14894bcde04956c3e98a3",
+      "rec_75e820608b8049dbba6ffead73e3656b",
+      "rec_30d02adb2ede4edab269160f65673381",
+      "rec_81e3b5fc510b436d83def149b7cb48aa"
+     ],
+     "include_history": true
+    },
+    "is_error": false,
+    "result_text": "{\"history\":{\"rec_30d02adb2ede4edab269160f65673381\":[\"rec_30d02adb2ede4edab269160f65673381\"],\"rec_5d3189eb68f14894bcde04956c3e98a3\":[\"rec_5d3189eb68f14894bcde04956c3e98a3\"],\"rec_75e820608b8049dbba6ffead73e3656b\":[\"rec_75e820608b8049dbba6ffead73e3656b\"],\"rec_81e3b5fc510b436d83def149b7cb48aa\":[\"rec_81e3b5fc510b436d83def149b7cb48aa\"]},\"missing_ids\":[],\"read_receipt\":\"rr_e974b6f4f23f4ef99081bf3c6a05f73d\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:17:21.482519+00:00\",\"id\":\"rec_30d02adb2ede4edab269160f65673381\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: therapist session on 2026-09-30 to decide whether to keep the running plan; no mood notes since August.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:17:21.472668+00:00\",\"id\":\"rec_5d3189eb68f14894bcde04956c3e98a3\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"mood\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"mood\",\"therapist\"],\"watch_terms\":[\"mood\",\"therapist\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my mood better since starting morning runs?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:17:21.475346+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_5d3189eb68f14894bcde04956c3e98a3\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_75e820608b8049dbba6ffead73e3656b\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_5d3189eb68f14894bcde04956c3e98a3\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (Aug): HRV and steps do not measure mood.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:17:21.473976+00:00\",\"id\":\"rec_81e3b5fc510b436d83def149b7cb48aa\",\"kind\":\"routine\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC morning runs 3x/week.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_30d02adb2ede4edab269160f65673381\":\"active\",\"rec_5d3189eb68f14894bcde04956c3e98a3\":\"active\",\"rec_75e820608b8049dbba6ffead73e3656b\":\"active\",\"rec_81e3b5fc510b436d83def149b7cb48aa\":\"active\"}}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 6187,
+    "completion_tokens": 383,
+    "tool_calls": 0,
+    "seconds": 12.6
+   }
+  ],
+  "error": null,
+  "seconds": 18.5,
+  "turns": 3,
+  "tokens": {
+   "prompt": 14580,
+   "completion": 502
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_7be52ca44b0a4a729a1cd0723abf1f09",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_30d02adb2ede4edab269160f65673381",
+      "rec_81e3b5fc510b436d83def149b7cb48aa",
+      "rec_75e820608b8049dbba6ffead73e3656b"
+     ],
+     "evidence_versions": {
+      "rec_30d02adb2ede4edab269160f65673381": "active",
+      "rec_75e820608b8049dbba6ffead73e3656b": "active",
+      "rec_81e3b5fc510b436d83def149b7cb48aa": "active"
+     },
+     "next_step": "会谈前每天用同一简单量表（例如0–10分）记录一次心情，并回顾最近一周；用这一周的情绪记录和你是否愿意继续跑步，帮助决定是否延续计划。它不能证明跑步导致情绪变化。",
+     "question_id": "rec_5d3189eb68f14894bcde04956c3e98a3",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "跑步计划与情绪评估",
+     "unknowns": "目前没有足够的情绪记录来比较开始晨跑前后；手表的步数和HRV不能直接回答情绪是否变好，也无法单独说明变化是否由跑步造成。",
+     "what_changed": "记录显示你计划在9月30日与治疗师讨论是否继续跑步，并注明自8月以来没有情绪记录。你记录的晨跑频率为每周3次。",
+     "why_now": "9月30日的治疗师会谈将决定是否继续跑步计划；现有被记录的数据无法判断情绪是否改善，而会谈临近。"
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "Surfacing is appropriate because a September 30 therapist session will decide whether to continue the running plan. The candidate explains that steps and HRV cannot answer whether mood improved, acknowledges that the available mood records cannot support a before-and-after comparison, and proposes a daily 0–10 mood rating to inform that decision without claiming causation. Its factual claims are supported by the packet, and nothing had previously been surfaced on this question.",
+  "violated_forbidden": []
+ }
+}

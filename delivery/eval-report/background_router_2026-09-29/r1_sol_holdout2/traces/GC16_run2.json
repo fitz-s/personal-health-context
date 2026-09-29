@@ -1,0 +1,248 @@
+{
+ "record": {
+  "case_id": "GC16",
+  "run": 2,
+  "category": "measurement",
+  "split": "holdout2",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "deterministic: no surface candidate, so no semantic content to judge",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "no_new_surface",
+    "ok": true,
+    "detail": "jobs=1 queued=0 model_silence=1 gate_blocked=0",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "model_silent",
+    "ok": true,
+    "detail": "jobs=1 queued=0 model_silence=1 gate_blocked=0",
+    "hard": true,
+    "needs_turn": false
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-sol",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 14.4,
+  "tool_calls": [
+   "context_read",
+   "context_search",
+   "context_search"
+  ],
+  "error": null,
+  "turns": 2,
+  "tokens": {
+   "prompt": 7815,
+   "completion": 333
+  },
+  "effort": "medium",
+  "decisions": [
+   "silence"
+  ],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_d4091cb587bd4b13ab581650884c9656",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_db5d9e04eb734c90be71c72f73c750d4:fe94b827f0455bee"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_db5d9e04eb734c90be71c72f73c750d4:fe94b827f0455bee",
+     "outcome": "silence",
+     "gate": {
+      "queued": false,
+      "reason": "silence"
+     },
+     "tool_calls": 5
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_d4091cb587bd4b13ab581650884c9656\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_db5d9e04eb734c90be71c72f73c750d4:fe94b827f0455bee\"]}, \"jobs\": [{\"job\": \"revisit:rec_db5d9e04eb734c90be71c72f73c750d4:fe94b827f0455bee\", \"outcome\": \"silence\", \"gate\": {\"queued\": false, \"reason\": \"silence\"}, \"tool_calls\": 5}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_db5d9e04eb734c90be71c72f73c750d4:fe94b827f0455bee",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by new data matching one open question. Decide whether it changes what the user should know about that question.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_db5d9e04eb734c90be71c72f73c750d4\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"outcome\":\"posture\",\"state\":\"open\",\"watch_metrics\":[\"posture\"],\"watch_terms\":[\"posture\"]},\"text\":\"SYNTHETIC: Is my posture improving?\"}\n\n## Prior analyses of this question (newest first)\n{\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_db5d9e04eb734c90be71c72f73c750d4\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_cb52c74872c846c390781c647664f536\",\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis (July): baseline photo only.\"}\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\nNone: no record names a date in the next 21 days.\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"days_since_latest_sample\":0.5,\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_success_at\":\"2026-09-29T15:28:29.290636+00:00\",\"latest_sample_at\":\"2026-09-23T02:00:30.000000+00:00\",\"state\":\"ready\"}\n\n## Passive data available (observation catalog)\n{\"first_at\":\"2026-09-02T02:00:00.000000+00:00\",\"last_at\":\"2026-09-23T02:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count\"}\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"record\":{\"id\":\"rec_26548ef61bc54193b461a350067b9bb5\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: did my posture drills today.\"}}\n\nIf you surface, set question_id to rec_db5d9e04eb734c90be71c72f73c750d4.",
+    "candidate": {
+     "decision": "silence",
+     "question_id": "rec_db5d9e04eb734c90be71c72f73c750d4",
+     "topic": "新增记录只说明做了姿势练习，没有提供姿势是否改善的测量"
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3207,
+      "completion_tokens": 253,
+      "tool_calls": 3,
+      "seconds": 10.1
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_db5d9e04eb734c90be71c72f73c750d4",
+        "rec_cb52c74872c846c390781c647664f536",
+        "rec_26548ef61bc54193b461a350067b9bb5"
+       ],
+       "include_history": false
+      },
+      "is_error": false,
+      "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_d76e7e307ceb4270bc4dd15caf522ec0\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:28:29.292478+00:00\",\"id\":\"rec_26548ef61bc54193b461a350067b9bb5\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: did my posture drills today.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:28:29.288365+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_db5d9e04eb734c90be71c72f73c750d4\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_cb52c74872c846c390781c647664f536\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_db5d9e04eb734c90be71c72f73c750d4\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): baseline photo only.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:28:29.286218+00:00\",\"id\":\"rec_db5d9e04eb734c90be71c72f73c750d4\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"posture\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"posture\"],\"watch_terms\":[\"posture\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my posture improving?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_26548ef61bc54193b461a350067b9bb5\":\"active\",\"rec_cb52c74872c846c390781c647664f536\":\"active\",\"rec_db5d9e04eb734c90be71c72f73c750d4\":\"active\"}}"
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "posture",
+       "kind": "attachment",
+       "start_at": "2026-01-01T00:00:00Z",
+       "end_at": "2026-10-01T00:00:00Z",
+       "limit": 100,
+       "cursor": "",
+       "include_superseded": false
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_e79df7254dd445c88743a7d8993ddb11\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"posture\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_71b9fcaa9d7e412f8e6c1d6bd48d688d\",\"kind\":\"routine\",\"text\":\"SYNTHETIC: posture drills most days.\"},{\"id\":\"rec_db5d9e04eb734c90be71c72f73c750d4\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my posture improving?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "posture",
+       "kind": "note",
+       "start_at": "2026-01-01T00:00:00Z",
+       "end_at": "2026-10-01T00:00:00Z",
+       "limit": 100,
+       "cursor": "",
+       "include_superseded": false
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_4e4916a4fbde4a7997e8030e7a1ab817\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:28:29.292478+00:00\",\"id\":\"rec_26548ef61bc54193b461a350067b9bb5\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: did my posture drills today.\",\"timezone\":\"America/Chicago\"}],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"posture\"],\"total_matches\":1,\"zero_hit_hint\":null}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4608,
+      "completion_tokens": 80,
+      "tool_calls": 0,
+      "seconds": 4.2
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3207,
+    "completion_tokens": 253,
+    "tool_calls": 3,
+    "seconds": 10.1
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_db5d9e04eb734c90be71c72f73c750d4",
+      "rec_cb52c74872c846c390781c647664f536",
+      "rec_26548ef61bc54193b461a350067b9bb5"
+     ],
+     "include_history": false
+    },
+    "is_error": false,
+    "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_d76e7e307ceb4270bc4dd15caf522ec0\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:28:29.292478+00:00\",\"id\":\"rec_26548ef61bc54193b461a350067b9bb5\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: did my posture drills today.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:28:29.288365+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_db5d9e04eb734c90be71c72f73c750d4\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_cb52c74872c846c390781c647664f536\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_db5d9e04eb734c90be71c72f73c750d4\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): baseline photo only.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:28:29.286218+00:00\",\"id\":\"rec_db5d9e04eb734c90be71c72f73c750d4\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"posture\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"posture\"],\"watch_terms\":[\"posture\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my posture improving?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_26548ef61bc54193b461a350067b9bb5\":\"active\",\"rec_cb52c74872c846c390781c647664f536\":\"active\",\"rec_db5d9e04eb734c90be71c72f73c750d4\":\"active\"}}"
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "posture",
+     "kind": "attachment",
+     "start_at": "2026-01-01T00:00:00Z",
+     "end_at": "2026-10-01T00:00:00Z",
+     "limit": 100,
+     "cursor": "",
+     "include_superseded": false
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_e79df7254dd445c88743a7d8993ddb11\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"posture\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_71b9fcaa9d7e412f8e6c1d6bd48d688d\",\"kind\":\"routine\",\"text\":\"SYNTHETIC: posture drills most days.\"},{\"id\":\"rec_db5d9e04eb734c90be71c72f73c750d4\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my posture improving?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "posture",
+     "kind": "note",
+     "start_at": "2026-01-01T00:00:00Z",
+     "end_at": "2026-10-01T00:00:00Z",
+     "limit": 100,
+     "cursor": "",
+     "include_superseded": false
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_4e4916a4fbde4a7997e8030e7a1ab817\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:28:29.292478+00:00\",\"id\":\"rec_26548ef61bc54193b461a350067b9bb5\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: did my posture drills today.\",\"timezone\":\"America/Chicago\"}],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"posture\"],\"total_matches\":1,\"zero_hit_hint\":null}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4608,
+    "completion_tokens": 80,
+    "tool_calls": 0,
+    "seconds": 4.2
+   }
+  ],
+  "error": null,
+  "seconds": 14.4,
+  "turns": 2,
+  "tokens": {
+   "prompt": 7815,
+   "completion": 333
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "violated_forbidden": [],
+  "reason": "deterministic: no surface candidate, so no semantic content to judge"
+ }
+}

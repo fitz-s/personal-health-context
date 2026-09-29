@@ -1,0 +1,382 @@
+{
+ "record": {
+  "case_id": "GC06",
+  "run": 1,
+  "category": "measurement",
+  "split": "holdout2",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "The new endocrinology visit makes the unanswered fasting-glucose question timely. The candidate correctly says watch data cannot answer it, treats the earlier 108 mg/dL value as unverified, and proposes a comparable fasting-glucose measurement to inform the visit. It does not claim breakfast caused any change or recommend indiscriminate testing.",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_f35fa229774143388a02984a23ab36f8\", \"request_id\": \"worker:job_ce25014b51fd44dd876fd83918dfc626:0:w_b8b6ccd4f2f2497093d5c2d29f9bc85d\", \"status\": \"committed\", \"request_hash\": \"8545bfea5d600089c198391b0f255f0d43283a269db8fdc8f45efaa18e8fcdbc\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_c2ac480af8d44807ab1501b12fdb2d9b",
+    "hard": true
+   },
+   {
+    "check": "next_step_names_a_method",
+    "ok": true,
+    "detail": "fasting glucose",
+    "hard": true
+   },
+   {
+    "check": "gap_names_outcome_and_decision",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-sol",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 34.6,
+  "tool_calls": [
+   "context_read",
+   "context_search",
+   "context_search",
+   "context_query",
+   "context_search"
+  ],
+  "error": null,
+  "turns": 3,
+  "tokens": {
+   "prompt": 12783,
+   "completion": 1206
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_c456acb4204343c59b91c942c4ce94c9",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_c2ac480af8d44807ab1501b12fdb2d9b:fe94b827f0455bee"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_c2ac480af8d44807ab1501b12fdb2d9b:fe94b827f0455bee",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_f35fa229774143388a02984a23ab36f8",
+      "request_id": "worker:job_ce25014b51fd44dd876fd83918dfc626:0:w_b8b6ccd4f2f2497093d5c2d29f9bc85d",
+      "status": "committed",
+      "request_hash": "8545bfea5d600089c198391b0f255f0d43283a269db8fdc8f45efaa18e8fcdbc"
+     },
+     "tool_calls": 8
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_c456acb4204343c59b91c942c4ce94c9\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_c2ac480af8d44807ab1501b12fdb2d9b:fe94b827f0455bee\"]}, \"jobs\": [{\"job\": \"revisit:rec_c2ac480af8d44807ab1501b12fdb2d9b:fe94b827f0455bee\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_f35fa229774143388a02984a23ab36f8\", \"request_id\": \"worker:job_ce25014b51fd44dd876fd83918dfc626:0:w_b8b6ccd4f2f2497093d5c2d29f9bc85d\", \"status\": \"committed\", \"request_hash\": \"8545bfea5d600089c198391b0f255f0d43283a269db8fdc8f45efaa18e8fcdbc\"}, \"tool_calls\": 8}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_c2ac480af8d44807ab1501b12fdb2d9b:fe94b827f0455bee",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by new data matching one open question. Decide whether it changes what the user should know about that question.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_c2ac480af8d44807ab1501b12fdb2d9b\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"outcome\":\"glucose\",\"state\":\"open\",\"watch_metrics\":[\"glucose\",\"visit\"],\"watch_terms\":[\"glucose\",\"visit\"]},\"text\":\"SYNTHETIC: Is my fasting glucose lower since I changed breakfast?\"}\n\n## Prior analyses of this question (newest first)\n{\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_c2ac480af8d44807ab1501b12fdb2d9b\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_364de4f77f784cd6ade3185c9a6a229f\",\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis (June): one fasting glucose 108 mg/dL; nothing since. Wearables do not measure glucose.\"}\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\n{\"date\":\"2026-10-06\",\"days_until\":13,\"kind\":\"note\",\"read_as\":\"explicit date\",\"record_id\":\"rec_6c22887598864154b3515ff0c926d3fb\",\"text\":\"SYNTHETIC: endocrinology visit on 2026-10-06 to decide on next steps.\"}\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"days_since_latest_sample\":0.4,\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_success_at\":\"2026-09-29T15:25:24.009212+00:00\",\"latest_sample_at\":\"2026-09-23T04:00:30.000000+00:00\",\"state\":\"ready\"}\n\n## Passive data available (observation catalog)\n{\"first_at\":\"2026-09-02T02:00:00.000000+00:00\",\"last_at\":\"2026-09-23T02:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count\"}\n{\"first_at\":\"2026-09-02T04:00:00.000000+00:00\",\"last_at\":\"2026-09-23T04:00:30.000000+00:00\",\"metric\":\"HKCategoryTypeIdentifierSleepAnalysis\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"min\"}\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"record\":{\"id\":\"rec_6c22887598864154b3515ff0c926d3fb\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: endocrinology visit on 2026-10-06 to decide on next steps.\"}}\n\nIf you surface, set question_id to rec_c2ac480af8d44807ab1501b12fdb2d9b.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_c2ac480af8d44807ab1501b12fdb2d9b",
+     "topic": "Fasting glucose comparison before October 6 visit",
+     "why_now": "The recorded October 6 visit is a decision point, and the available watch data cannot show whether fasting glucose is lower since the breakfast change. There is still time to obtain a relevant comparison.",
+     "what_changed": "A September 22 note records an October 6 endocrinology visit to decide next steps. The earlier analysis mentions one fasting glucose value of 108 mg/dL and no later value; no newer glucose measurement was found. The available watch samples are steps and sleep, not glucose.",
+     "unknowns": "The original method and date for the 108 mg/dL result are not verified, so a later value cannot yet be assumed comparable. Even a comparable lower result would show a difference at that measurement, not that breakfast caused it or that the change persisted.",
+     "next_step": "If the earlier report confirms the method, bring it to the visit and, before then, obtain one fasting glucose result using the same method and unit. A comparable result would help decide whether to discuss a measured decrease or whether more follow-up measurements are needed; it would not establish why the value changed.",
+     "evidence_ids": [
+      "rec_c2ac480af8d44807ab1501b12fdb2d9b",
+      "rec_364de4f77f784cd6ade3185c9a6a229f",
+      "rec_6c22887598864154b3515ff0c926d3fb"
+     ],
+     "evidence_versions": {
+      "rec_c2ac480af8d44807ab1501b12fdb2d9b": "active",
+      "rec_364de4f77f784cd6ade3185c9a6a229f": "active",
+      "rec_6c22887598864154b3515ff0c926d3fb": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3382,
+      "completion_tokens": 109,
+      "tool_calls": 1,
+      "seconds": 4.2
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_c2ac480af8d44807ab1501b12fdb2d9b",
+        "rec_364de4f77f784cd6ade3185c9a6a229f",
+        "rec_6c22887598864154b3515ff0c926d3fb"
+       ],
+       "include_history": false
+      },
+      "is_error": false,
+      "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_d842cf1a382d4fa4a9c8c5717638f60e\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:25:24.004557+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_c2ac480af8d44807ab1501b12fdb2d9b\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_364de4f77f784cd6ade3185c9a6a229f\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_c2ac480af8d44807ab1501b12fdb2d9b\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): one fasting glucose 108 mg/dL; nothing since. Wearables do not measure glucose.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:25:24.010722+00:00\",\"id\":\"rec_6c22887598864154b3515ff0c926d3fb\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: endocrinology visit on 2026-10-06 to decide on next steps.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:25:24.003376+00:00\",\"id\":\"rec_c2ac480af8d44807ab1501b12fdb2d9b\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"glucose\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"glucose\",\"visit\"],\"watch_terms\":[\"glucose\",\"visit\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my fasting glucose lower since I changed breakfast?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_364de4f77f784cd6ade3185c9a6a229f\":\"active\",\"rec_6c22887598864154b3515ff0c926d3fb\":\"active\",\"rec_c2ac480af8d44807ab1501b12fdb2d9b\":\"active\"}}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4207,
+      "completion_tokens": 300,
+      "tool_calls": 4,
+      "seconds": 7.1
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "glucose",
+       "kind": "event",
+       "start_at": "2026-01-01T00:00:00Z",
+       "end_at": "2026-09-24T00:00:00Z",
+       "limit": 100,
+       "cursor": "",
+       "include_superseded": false
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_de2a64578d90439db41e33c43dc506f0\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"glucose\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_c2ac480af8d44807ab1501b12fdb2d9b\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my fasting glucose lower since I changed breakfast?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "breakfast",
+       "kind": "routine",
+       "start_at": "2026-01-01T00:00:00Z",
+       "end_at": "2026-09-24T00:00:00Z",
+       "limit": 100,
+       "cursor": "",
+       "include_superseded": false
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_4c6b4c3858c34d59aecd0364db3be034\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"breakfast\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_c2ac480af8d44807ab1501b12fdb2d9b\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my fasting glucose lower since I changed breakfast?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+     },
+     {
+      "tool": "context_query",
+      "arguments": {
+       "sql": "SELECT id,source_id,metric,start_at,value_num,value_text,unit,source_name FROM canonical_observations WHERE lower(metric) LIKE '%glucose%' ORDER BY start_at DESC LIMIT 100",
+       "parameters": [],
+       "limit": 100
+      },
+      "is_error": false,
+      "result_text": "{\"columns\":[\"id\",\"source_id\",\"metric\",\"start_at\",\"value_num\",\"value_text\",\"unit\",\"source_name\"],\"max_rows\":100,\"query_sha256\":\"e56c4a50071bbbe2bac98eebe17a7566e13c36456959e242a2427ae22c485434\",\"read_receipt\":\"rr_c4e2a13f38244d238a9bc98d4f3f9b64\",\"reads_observations\":true,\"rows\":[],\"tables_read\":[\"canonical_observations\",\"canonical_observations_raw\",\"observations\",\"supersessions\"],\"truncated\":false}"
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "fasting",
+       "kind": "attachment",
+       "start_at": "2026-01-01T00:00:00Z",
+       "end_at": "2026-09-24T00:00:00Z",
+       "limit": 100,
+       "cursor": "",
+       "include_superseded": false
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_2dacec1c5f214b1ba04b5e51200b29e0\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"fasting\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_c2ac480af8d44807ab1501b12fdb2d9b\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my fasting glucose lower since I changed breakfast?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 5194,
+      "completion_tokens": 797,
+      "tool_calls": 0,
+      "seconds": 23.2
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3382,
+    "completion_tokens": 109,
+    "tool_calls": 1,
+    "seconds": 4.2
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_c2ac480af8d44807ab1501b12fdb2d9b",
+      "rec_364de4f77f784cd6ade3185c9a6a229f",
+      "rec_6c22887598864154b3515ff0c926d3fb"
+     ],
+     "include_history": false
+    },
+    "is_error": false,
+    "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_d842cf1a382d4fa4a9c8c5717638f60e\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:25:24.004557+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_c2ac480af8d44807ab1501b12fdb2d9b\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_364de4f77f784cd6ade3185c9a6a229f\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_c2ac480af8d44807ab1501b12fdb2d9b\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): one fasting glucose 108 mg/dL; nothing since. Wearables do not measure glucose.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:25:24.010722+00:00\",\"id\":\"rec_6c22887598864154b3515ff0c926d3fb\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: endocrinology visit on 2026-10-06 to decide on next steps.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:25:24.003376+00:00\",\"id\":\"rec_c2ac480af8d44807ab1501b12fdb2d9b\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"glucose\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"glucose\",\"visit\"],\"watch_terms\":[\"glucose\",\"visit\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my fasting glucose lower since I changed breakfast?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_364de4f77f784cd6ade3185c9a6a229f\":\"active\",\"rec_6c22887598864154b3515ff0c926d3fb\":\"active\",\"rec_c2ac480af8d44807ab1501b12fdb2d9b\":\"active\"}}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4207,
+    "completion_tokens": 300,
+    "tool_calls": 4,
+    "seconds": 7.1
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "glucose",
+     "kind": "event",
+     "start_at": "2026-01-01T00:00:00Z",
+     "end_at": "2026-09-24T00:00:00Z",
+     "limit": 100,
+     "cursor": "",
+     "include_superseded": false
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_de2a64578d90439db41e33c43dc506f0\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"glucose\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_c2ac480af8d44807ab1501b12fdb2d9b\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my fasting glucose lower since I changed breakfast?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "breakfast",
+     "kind": "routine",
+     "start_at": "2026-01-01T00:00:00Z",
+     "end_at": "2026-09-24T00:00:00Z",
+     "limit": 100,
+     "cursor": "",
+     "include_superseded": false
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_4c6b4c3858c34d59aecd0364db3be034\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"breakfast\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_c2ac480af8d44807ab1501b12fdb2d9b\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my fasting glucose lower since I changed breakfast?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+   },
+   {
+    "tool": "context_query",
+    "arguments": {
+     "sql": "SELECT id,source_id,metric,start_at,value_num,value_text,unit,source_name FROM canonical_observations WHERE lower(metric) LIKE '%glucose%' ORDER BY start_at DESC LIMIT 100",
+     "parameters": [],
+     "limit": 100
+    },
+    "is_error": false,
+    "result_text": "{\"columns\":[\"id\",\"source_id\",\"metric\",\"start_at\",\"value_num\",\"value_text\",\"unit\",\"source_name\"],\"max_rows\":100,\"query_sha256\":\"e56c4a50071bbbe2bac98eebe17a7566e13c36456959e242a2427ae22c485434\",\"read_receipt\":\"rr_c4e2a13f38244d238a9bc98d4f3f9b64\",\"reads_observations\":true,\"rows\":[],\"tables_read\":[\"canonical_observations\",\"canonical_observations_raw\",\"observations\",\"supersessions\"],\"truncated\":false}"
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "fasting",
+     "kind": "attachment",
+     "start_at": "2026-01-01T00:00:00Z",
+     "end_at": "2026-09-24T00:00:00Z",
+     "limit": 100,
+     "cursor": "",
+     "include_superseded": false
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_2dacec1c5f214b1ba04b5e51200b29e0\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"fasting\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_c2ac480af8d44807ab1501b12fdb2d9b\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my fasting glucose lower since I changed breakfast?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 5194,
+    "completion_tokens": 797,
+    "tool_calls": 0,
+    "seconds": 23.2
+   }
+  ],
+  "error": null,
+  "seconds": 34.6,
+  "turns": 3,
+  "tokens": {
+   "prompt": 12783,
+   "completion": 1206
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_f35fa229774143388a02984a23ab36f8",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_c2ac480af8d44807ab1501b12fdb2d9b",
+      "rec_364de4f77f784cd6ade3185c9a6a229f",
+      "rec_6c22887598864154b3515ff0c926d3fb"
+     ],
+     "evidence_versions": {
+      "rec_364de4f77f784cd6ade3185c9a6a229f": "active",
+      "rec_6c22887598864154b3515ff0c926d3fb": "active",
+      "rec_c2ac480af8d44807ab1501b12fdb2d9b": "active"
+     },
+     "next_step": "If the earlier report confirms the method, bring it to the visit and, before then, obtain one fasting glucose result using the same method and unit. A comparable result would help decide whether to discuss a measured decrease or whether more follow-up measurements are needed; it would not establish why the value changed.",
+     "question_id": "rec_c2ac480af8d44807ab1501b12fdb2d9b",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "Fasting glucose comparison before October 6 visit",
+     "unknowns": "The original method and date for the 108 mg/dL result are not verified, so a later value cannot yet be assumed comparable. Even a comparable lower result would show a difference at that measurement, not that breakfast caused it or that the change persisted.",
+     "what_changed": "A September 22 note records an October 6 endocrinology visit to decide next steps. The earlier analysis mentions one fasting glucose value of 108 mg/dL and no later value; no newer glucose measurement was found. The available watch samples are steps and sleep, not glucose.",
+     "why_now": "The recorded October 6 visit is a decision point, and the available watch data cannot show whether fasting glucose is lower since the breakfast change. There is still time to obtain a relevant comparison."
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "The new endocrinology visit makes the unanswered fasting-glucose question timely. The candidate correctly says watch data cannot answer it, treats the earlier 108 mg/dL value as unverified, and proposes a comparable fasting-glucose measurement to inform the visit. It does not claim breakfast caused any change or recommend indiscriminate testing.",
+  "violated_forbidden": []
+ }
+}

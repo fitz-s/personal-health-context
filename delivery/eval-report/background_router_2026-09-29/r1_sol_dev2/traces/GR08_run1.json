@@ -1,0 +1,254 @@
+{
+ "record": {
+  "case_id": "GR08",
+  "run": 1,
+  "category": "revisit",
+  "split": "dev2",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "新记录提供了同一楼梯、同为晚间的膝痛复评，6/10降至3/10；候选内容据此回应了用户的问题，同时明确两次评分不能证明改善持续或由康复造成。该问题此前未被推送。",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_d0a4b67cc8f140869bf41d3ed99daa0c\", \"request_id\": \"worker:job_30bdae6095e24e559b61e8d570ccc7da:0:w_31b38def30f3480884ea04199661fd8c\", \"status\": \"committed\", \"request_hash\": \"d710f6446e8749b924552a78775c9c4662ad636cd7afa9b5bc3284013581185c\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_a7c94f4738a84d04b2249c11d943ab99",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-sol",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 18.5,
+  "tool_calls": [
+   "context_read"
+  ],
+  "error": null,
+  "turns": 2,
+  "tokens": {
+   "prompt": 7578,
+   "completion": 680
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_4e1f28323b6d40ed86f73d20474653dd",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_a7c94f4738a84d04b2249c11d943ab99:fe94b827f0455bee"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_a7c94f4738a84d04b2249c11d943ab99:fe94b827f0455bee",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_d0a4b67cc8f140869bf41d3ed99daa0c",
+      "request_id": "worker:job_30bdae6095e24e559b61e8d570ccc7da:0:w_31b38def30f3480884ea04199661fd8c",
+      "status": "committed",
+      "request_hash": "d710f6446e8749b924552a78775c9c4662ad636cd7afa9b5bc3284013581185c"
+     },
+     "tool_calls": 3
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_4e1f28323b6d40ed86f73d20474653dd\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_a7c94f4738a84d04b2249c11d943ab99:fe94b827f0455bee\"]}, \"jobs\": [{\"job\": \"revisit:rec_a7c94f4738a84d04b2249c11d943ab99:fe94b827f0455bee\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_d0a4b67cc8f140869bf41d3ed99daa0c\", \"request_id\": \"worker:job_30bdae6095e24e559b61e8d570ccc7da:0:w_31b38def30f3480884ea04199661fd8c\", \"status\": \"committed\", \"request_hash\": \"d710f6446e8749b924552a78775c9c4662ad636cd7afa9b5bc3284013581185c\"}, \"tool_calls\": 3}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_a7c94f4738a84d04b2249c11d943ab99:fe94b827f0455bee",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by new data matching one open question. Decide whether it changes what the user should know about that question.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_a7c94f4738a84d04b2249c11d943ab99\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"state\":\"open\",\"watch_terms\":[\"knee\"]},\"text\":\"SYNTHETIC: Is my knee pain improving with rehab?\"}\n\n## Prior analyses of this question (newest first)\n{\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_a7a77ad0043c4fc5a114fdc7228bc21d\",\"rec_a7c94f4738a84d04b2249c11d943ab99\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_85829234f2c64446a1c05297c0b3f8c2\",\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis: baseline pain 6/10; repeat the same stairs rating after 8 weeks.\"}\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 168 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user asked to be interrupted less: surface only a direct answer to their own question that the new evidence itself provides, a correction of something they were shown, or a measurement gap tied to an entry in \\\"Upcoming dated events\\\" with days_until <= 14 that bears on the same outcome; with no such entry a measurement gap is silence\",\"proactivity\":\"quiet\"}\n\n## Upcoming dated events in the user's records (next 21 days)\nNone: no record names a date in the next 21 days.\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n\n## Passive data available (observation catalog)\nNo observations stored.\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"record\":{\"id\":\"rec_8f0306030cd9465cbb32c7321a65f10b\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: knee pain 3/10 on the same stairs, evening, week 9 of rehab.\"}}\n\nIf you surface, set question_id to rec_a7c94f4738a84d04b2249c11d943ab99.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_a7c94f4738a84d04b2249c11d943ab99",
+     "topic": "康复期间的爬楼梯膝痛评分降低",
+     "why_now": "新记录首次提供了与先前同一楼梯、同为晚间的疼痛评分，可以直接回应你关心的疼痛是否有所改善。",
+     "what_changed": "7月20日晚记录的爬楼梯膝痛为6/10；9月21日晚、康复第9周，在同一楼梯记录为3/10。这一次评分比先前低。",
+     "unknowns": "只有两次记录，尚不能判断下降是否持续，也不能确定是康复造成的；日间波动或其他变化也可能影响评分。",
+     "next_step": "接下来每周选一个晚间，在同一楼梯记录一次0–10分膝痛，连续记录两到三周。若较低评分持续，可更有把握地判断这项爬楼梯疼痛正在改善；若回升，则不宜仅凭这次3/10判断当前做法有效。这仍不能单独证明康复是原因。",
+     "evidence_ids": [
+      "rec_a7c94f4738a84d04b2249c11d943ab99",
+      "rec_a7a77ad0043c4fc5a114fdc7228bc21d",
+      "rec_8f0306030cd9465cbb32c7321a65f10b"
+     ],
+     "evidence_versions": {
+      "rec_a7c94f4738a84d04b2249c11d943ab99": "active",
+      "rec_a7a77ad0043c4fc5a114fdc7228bc21d": "active",
+      "rec_8f0306030cd9465cbb32c7321a65f10b": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3173,
+      "completion_tokens": 131,
+      "tool_calls": 1,
+      "seconds": 3.7
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_a7c94f4738a84d04b2249c11d943ab99",
+        "rec_a7a77ad0043c4fc5a114fdc7228bc21d",
+        "rec_85829234f2c64446a1c05297c0b3f8c2",
+        "rec_8f0306030cd9465cbb32c7321a65f10b"
+       ],
+       "include_history": true
+      },
+      "is_error": false,
+      "result_text": "{\"history\":{\"rec_85829234f2c64446a1c05297c0b3f8c2\":[\"rec_85829234f2c64446a1c05297c0b3f8c2\"],\"rec_8f0306030cd9465cbb32c7321a65f10b\":[\"rec_8f0306030cd9465cbb32c7321a65f10b\"],\"rec_a7a77ad0043c4fc5a114fdc7228bc21d\":[\"rec_a7a77ad0043c4fc5a114fdc7228bc21d\"],\"rec_a7c94f4738a84d04b2249c11d943ab99\":[\"rec_a7c94f4738a84d04b2249c11d943ab99\"]},\"missing_ids\":[],\"read_receipt\":\"rr_b372a8e7a40342a38e58b23328de1299\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:23:03.460401+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_a7a77ad0043c4fc5a114fdc7228bc21d\",\"rec_a7c94f4738a84d04b2249c11d943ab99\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_85829234f2c64446a1c05297c0b3f8c2\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_a7c94f4738a84d04b2249c11d943ab99\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: baseline pain 6/10; repeat the same stairs rating after 8 weeks.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:23:03.461316+00:00\",\"id\":\"rec_8f0306030cd9465cbb32c7321a65f10b\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: knee pain 3/10 on the same stairs, evening, week 9 of rehab.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:23:03.459476+00:00\",\"id\":\"rec_a7a77ad0043c4fc5a114fdc7228bc21d\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-07-21T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-20T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: knee pain 6/10 on stairs (same stairs, evening).\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:23:03.458537+00:00\",\"id\":\"rec_a7c94f4738a84d04b2249c11d943ab99\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"knee\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my knee pain improving with rehab?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_85829234f2c64446a1c05297c0b3f8c2\":\"active\",\"rec_8f0306030cd9465cbb32c7321a65f10b\":\"active\",\"rec_a7a77ad0043c4fc5a114fdc7228bc21d\":\"active\",\"rec_a7c94f4738a84d04b2249c11d943ab99\":\"active\"}}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4405,
+      "completion_tokens": 549,
+      "tool_calls": 0,
+      "seconds": 14.6
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3173,
+    "completion_tokens": 131,
+    "tool_calls": 1,
+    "seconds": 3.7
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_a7c94f4738a84d04b2249c11d943ab99",
+      "rec_a7a77ad0043c4fc5a114fdc7228bc21d",
+      "rec_85829234f2c64446a1c05297c0b3f8c2",
+      "rec_8f0306030cd9465cbb32c7321a65f10b"
+     ],
+     "include_history": true
+    },
+    "is_error": false,
+    "result_text": "{\"history\":{\"rec_85829234f2c64446a1c05297c0b3f8c2\":[\"rec_85829234f2c64446a1c05297c0b3f8c2\"],\"rec_8f0306030cd9465cbb32c7321a65f10b\":[\"rec_8f0306030cd9465cbb32c7321a65f10b\"],\"rec_a7a77ad0043c4fc5a114fdc7228bc21d\":[\"rec_a7a77ad0043c4fc5a114fdc7228bc21d\"],\"rec_a7c94f4738a84d04b2249c11d943ab99\":[\"rec_a7c94f4738a84d04b2249c11d943ab99\"]},\"missing_ids\":[],\"read_receipt\":\"rr_b372a8e7a40342a38e58b23328de1299\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:23:03.460401+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_a7a77ad0043c4fc5a114fdc7228bc21d\",\"rec_a7c94f4738a84d04b2249c11d943ab99\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_85829234f2c64446a1c05297c0b3f8c2\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_a7c94f4738a84d04b2249c11d943ab99\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: baseline pain 6/10; repeat the same stairs rating after 8 weeks.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:23:03.461316+00:00\",\"id\":\"rec_8f0306030cd9465cbb32c7321a65f10b\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: knee pain 3/10 on the same stairs, evening, week 9 of rehab.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:23:03.459476+00:00\",\"id\":\"rec_a7a77ad0043c4fc5a114fdc7228bc21d\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-07-21T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-20T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: knee pain 6/10 on stairs (same stairs, evening).\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:23:03.458537+00:00\",\"id\":\"rec_a7c94f4738a84d04b2249c11d943ab99\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"knee\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my knee pain improving with rehab?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_85829234f2c64446a1c05297c0b3f8c2\":\"active\",\"rec_8f0306030cd9465cbb32c7321a65f10b\":\"active\",\"rec_a7a77ad0043c4fc5a114fdc7228bc21d\":\"active\",\"rec_a7c94f4738a84d04b2249c11d943ab99\":\"active\"}}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4405,
+    "completion_tokens": 549,
+    "tool_calls": 0,
+    "seconds": 14.6
+   }
+  ],
+  "error": null,
+  "seconds": 18.5,
+  "turns": 2,
+  "tokens": {
+   "prompt": 7578,
+   "completion": 680
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_d0a4b67cc8f140869bf41d3ed99daa0c",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_a7c94f4738a84d04b2249c11d943ab99",
+      "rec_a7a77ad0043c4fc5a114fdc7228bc21d",
+      "rec_8f0306030cd9465cbb32c7321a65f10b"
+     ],
+     "evidence_versions": {
+      "rec_8f0306030cd9465cbb32c7321a65f10b": "active",
+      "rec_a7a77ad0043c4fc5a114fdc7228bc21d": "active",
+      "rec_a7c94f4738a84d04b2249c11d943ab99": "active"
+     },
+     "next_step": "接下来每周选一个晚间，在同一楼梯记录一次0–10分膝痛，连续记录两到三周。若较低评分持续，可更有把握地判断这项爬楼梯疼痛正在改善；若回升，则不宜仅凭这次3/10判断当前做法有效。这仍不能单独证明康复是原因。",
+     "question_id": "rec_a7c94f4738a84d04b2249c11d943ab99",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "康复期间的爬楼梯膝痛评分降低",
+     "unknowns": "只有两次记录，尚不能判断下降是否持续，也不能确定是康复造成的；日间波动或其他变化也可能影响评分。",
+     "what_changed": "7月20日晚记录的爬楼梯膝痛为6/10；9月21日晚、康复第9周，在同一楼梯记录为3/10。这一次评分比先前低。",
+     "why_now": "新记录首次提供了与先前同一楼梯、同为晚间的疼痛评分，可以直接回应你关心的疼痛是否有所改善。"
+    }
+   }
+  ],
+  "preferences_before": {
+   "proactivity": "quiet"
+  },
+  "preferences_after": {
+   "proactivity": "quiet"
+  },
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "新记录提供了同一楼梯、同为晚间的膝痛复评，6/10降至3/10；候选内容据此回应了用户的问题，同时明确两次评分不能证明改善持续或由康复造成。该问题此前未被推送。",
+  "violated_forbidden": []
+ }
+}

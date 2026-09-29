@@ -1,0 +1,265 @@
+{
+ "record": {
+  "case_id": "GR07",
+  "run": 1,
+  "category": "revisit",
+  "split": "dev2",
+  "severity": "critical",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "deterministic: no surface candidate, so no semantic content to judge",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "no_new_surface",
+    "ok": true,
+    "detail": "jobs=1 queued=0 model_silence=1 gate_blocked=0",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "model_silent",
+    "ok": true,
+    "detail": "jobs=1 queued=0 model_silence=1 gate_blocked=0",
+    "hard": true,
+    "needs_turn": false
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-luna",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 10.9,
+  "tool_calls": [
+   "context_bootstrap",
+   "context_read",
+   "context_query"
+  ],
+  "error": null,
+  "turns": 3,
+  "tokens": {
+   "prompt": 13397,
+   "completion": 281
+  },
+  "effort": "medium",
+  "decisions": [
+   "silence"
+  ],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_6caf6db6a5ba40a48ffb92435452656f",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_0f5f1e05adf746adb06ac76d010bc400:1ae3592f8248c3f8"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_0f5f1e05adf746adb06ac76d010bc400:1ae3592f8248c3f8",
+     "outcome": "silence",
+     "gate": {
+      "queued": false,
+      "reason": "silence"
+     },
+     "tool_calls": 6
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_6caf6db6a5ba40a48ffb92435452656f\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_0f5f1e05adf746adb06ac76d010bc400:1ae3592f8248c3f8\"]}, \"jobs\": [{\"job\": \"revisit:rec_0f5f1e05adf746adb06ac76d010bc400:1ae3592f8248c3f8\", \"outcome\": \"silence\", \"gate\": {\"queued\": false, \"reason\": \"silence\"}, \"tool_calls\": 6}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_0f5f1e05adf746adb06ac76d010bc400:1ae3592f8248c3f8",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by new data matching one open question. Decide whether it changes what the user should know about that question.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_0f5f1e05adf746adb06ac76d010bc400\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"state\":\"open\",\"watch_terms\":[\"10 km\"]},\"text\":\"SYNTHETIC: Is my 10 km time improving?\"}\n\n## Prior analyses of this question (newest first)\nNone: this question was never analysed.\n\n## Already surfaced on this question\n{\"created_at\":\"2026-09-14T15:00:00+00:00\",\"delivered_at\":\"2026-09-14T15:00:00+00:00\",\"evidence_ids\":[\"rec_f99838990c9446b88f14af7a6a0e9650\"],\"id\":\"ins_c36b4ecde39d4b1e9375dd5fbc2bdecf\",\"next_step\":\"Repeat in 6 weeks.\",\"question_id\":\"rec_0f5f1e05adf746adb06ac76d010bc400\",\"state\":\"delivered (shown to the user)\",\"topic\":\"10 km retest\",\"what_changed\":\"SYNTHETIC same-course 54:30 → 52:05.\"}\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":\"2026-09-14T15:00:00+00:00\",\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\nNone: no record names a date in the next 21 days.\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n\n## Passive data available (observation catalog)\nNo observations stored.\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"record\":{\"id\":\"rec_72a351afc64d4d0daffa062c0f1ab9eb\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: really pleased about my 52:05 10 km.\"}}\n\nIf you surface, set question_id to rec_0f5f1e05adf746adb06ac76d010bc400.",
+    "candidate": {
+     "decision": "silence",
+     "question_id": "rec_0f5f1e05adf746adb06ac76d010bc400",
+     "topic": "52:05 的同一赛道成绩及其较 54:30 的变化已于 9 月 14 日告知；新便笺只是重述 52:05，没有带来新证据。"
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3112,
+      "completion_tokens": 15,
+      "tool_calls": 1,
+      "seconds": 2.2
+     },
+     {
+      "tool": "context_bootstrap",
+      "arguments": {},
+      "is_error": false,
+      "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T15:12:49.557241+00:00\",\"last_worker_run_at\":\"2026-09-29T15:12:49.557241+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":5,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T15:12:49.551892+00:00\",\"id\":\"rec_72a351afc64d4d0daffa062c0f1ab9eb\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: really pleased about my 52:05 10 km.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:12:49.546276+00:00\",\"id\":\"rec_0f5f1e05adf746adb06ac76d010bc400\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"10 km\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my 10 km time improving?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_b3513d340d1a4ffaaf4eacab9aac93b7\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T15:12:49.548364+00:00\",\"id\":\"rec_f99838990c9446b88f14af7a6a0e9650\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-09-12T12:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-12T07:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 10 km, same course, 52:05.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:12:49.547359+00:00\",\"id\":\"rec_c77f094513b148a5ba65331f73e073f6\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-07-10T12:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-10T07:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 10 km, same course, 54:30.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"event\":2,\"note\":1,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T15:12:51.771611+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4350,
+      "completion_tokens": 182,
+      "tool_calls": 2,
+      "seconds": 4.7
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_72a351afc64d4d0daffa062c0f1ab9eb",
+        "rec_0f5f1e05adf746adb06ac76d010bc400",
+        "rec_f99838990c9446b88f14af7a6a0e9650",
+        "rec_c77f094513b148a5ba65331f73e073f6"
+       ],
+       "include_history": true
+      },
+      "is_error": false,
+      "result_text": "{\"history\":{\"rec_0f5f1e05adf746adb06ac76d010bc400\":[\"rec_0f5f1e05adf746adb06ac76d010bc400\"],\"rec_72a351afc64d4d0daffa062c0f1ab9eb\":[\"rec_72a351afc64d4d0daffa062c0f1ab9eb\"],\"rec_c77f094513b148a5ba65331f73e073f6\":[\"rec_c77f094513b148a5ba65331f73e073f6\"],\"rec_f99838990c9446b88f14af7a6a0e9650\":[\"rec_f99838990c9446b88f14af7a6a0e9650\"]},\"missing_ids\":[],\"read_receipt\":\"rr_fb03106a396a4762a7e3645465ba8025\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:12:49.546276+00:00\",\"id\":\"rec_0f5f1e05adf746adb06ac76d010bc400\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"10 km\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my 10 km time improving?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:12:49.551892+00:00\",\"id\":\"rec_72a351afc64d4d0daffa062c0f1ab9eb\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: really pleased about my 52:05 10 km.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:12:49.547359+00:00\",\"id\":\"rec_c77f094513b148a5ba65331f73e073f6\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-07-10T12:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-10T07:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 10 km, same course, 54:30.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:12:49.548364+00:00\",\"id\":\"rec_f99838990c9446b88f14af7a6a0e9650\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-09-12T12:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-12T07:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 10 km, same course, 52:05.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_0f5f1e05adf746adb06ac76d010bc400\":\"active\",\"rec_72a351afc64d4d0daffa062c0f1ab9eb\":\"active\",\"rec_c77f094513b148a5ba65331f73e073f6\":\"active\",\"rec_f99838990c9446b88f14af7a6a0e9650\":\"active\"}}"
+     },
+     {
+      "tool": "context_query",
+      "arguments": {
+       "sql": "SELECT id, kind, occurred_at, text, payload_json, source_id, supersedes FROM active_records WHERE kind IN ('event','note','question','analysis') ORDER BY occurred_at",
+       "parameters": [],
+       "limit": 100
+      },
+      "is_error": false,
+      "result_text": "{\"columns\":[\"id\",\"kind\",\"occurred_at\",\"text\",\"payload_json\",\"source_id\",\"supersedes\"],\"max_rows\":100,\"query_sha256\":\"c94e4115f2c4ea06816f605b6a6616b7420e31c3eb1001d2036f9fb305f9ff63\",\"read_receipt\":\"rr_6e313875759c4ea393c2d21dc81b9689\",\"reads_observations\":false,\"rows\":[[\"rec_0f5f1e05adf746adb06ac76d010bc400\",\"question\",\"2026-07-01T14:00:00.000000+00:00\",\"SYNTHETIC: Is my 10 km time improving?\",\"{\\\"state\\\":\\\"open\\\",\\\"synthetic\\\":true,\\\"watch_terms\\\":[\\\"10 km\\\"]}\",\"user\",null],[\"rec_c77f094513b148a5ba65331f73e073f6\",\"event\",\"2026-07-10T12:00:00.000000+00:00\",\"SYNTHETIC 10 km, same course, 54:30.\",\"{\\\"synthetic\\\":true}\",\"user\",null],[\"rec_f99838990c9446b88f14af7a6a0e9650\",\"event\",\"2026-09-12T12:00:00.000000+00:00\",\"SYNTHETIC 10 km, same course, 52:05.\",\"{\\\"synthetic\\\":true}\",\"user\",null],[\"rec_72a351afc64d4d0daffa062c0f1ab9eb\",\"note\",\"2026-09-22T01:00:00.000000+00:00\",\"SYNTHETIC: really pleased about my 52:05 10 km.\",\"{\\\"synthetic\\\":true}\",\"user\",null]],\"tables_read\":[\"active_records\",\"records\"],\"truncated\":false}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 5935,
+      "completion_tokens": 84,
+      "tool_calls": 0,
+      "seconds": 4.0
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3112,
+    "completion_tokens": 15,
+    "tool_calls": 1,
+    "seconds": 2.2
+   },
+   {
+    "tool": "context_bootstrap",
+    "arguments": {},
+    "is_error": false,
+    "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T15:12:49.557241+00:00\",\"last_worker_run_at\":\"2026-09-29T15:12:49.557241+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":5,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T15:12:49.551892+00:00\",\"id\":\"rec_72a351afc64d4d0daffa062c0f1ab9eb\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: really pleased about my 52:05 10 km.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:12:49.546276+00:00\",\"id\":\"rec_0f5f1e05adf746adb06ac76d010bc400\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"10 km\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my 10 km time improving?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_b3513d340d1a4ffaaf4eacab9aac93b7\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T15:12:49.548364+00:00\",\"id\":\"rec_f99838990c9446b88f14af7a6a0e9650\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-09-12T12:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-12T07:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 10 km, same course, 52:05.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:12:49.547359+00:00\",\"id\":\"rec_c77f094513b148a5ba65331f73e073f6\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-07-10T12:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-10T07:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 10 km, same course, 54:30.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"event\":2,\"note\":1,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T15:12:51.771611+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4350,
+    "completion_tokens": 182,
+    "tool_calls": 2,
+    "seconds": 4.7
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_72a351afc64d4d0daffa062c0f1ab9eb",
+      "rec_0f5f1e05adf746adb06ac76d010bc400",
+      "rec_f99838990c9446b88f14af7a6a0e9650",
+      "rec_c77f094513b148a5ba65331f73e073f6"
+     ],
+     "include_history": true
+    },
+    "is_error": false,
+    "result_text": "{\"history\":{\"rec_0f5f1e05adf746adb06ac76d010bc400\":[\"rec_0f5f1e05adf746adb06ac76d010bc400\"],\"rec_72a351afc64d4d0daffa062c0f1ab9eb\":[\"rec_72a351afc64d4d0daffa062c0f1ab9eb\"],\"rec_c77f094513b148a5ba65331f73e073f6\":[\"rec_c77f094513b148a5ba65331f73e073f6\"],\"rec_f99838990c9446b88f14af7a6a0e9650\":[\"rec_f99838990c9446b88f14af7a6a0e9650\"]},\"missing_ids\":[],\"read_receipt\":\"rr_fb03106a396a4762a7e3645465ba8025\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:12:49.546276+00:00\",\"id\":\"rec_0f5f1e05adf746adb06ac76d010bc400\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"10 km\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my 10 km time improving?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:12:49.551892+00:00\",\"id\":\"rec_72a351afc64d4d0daffa062c0f1ab9eb\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: really pleased about my 52:05 10 km.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:12:49.547359+00:00\",\"id\":\"rec_c77f094513b148a5ba65331f73e073f6\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-07-10T12:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-10T07:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 10 km, same course, 54:30.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:12:49.548364+00:00\",\"id\":\"rec_f99838990c9446b88f14af7a6a0e9650\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-09-12T12:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-12T07:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 10 km, same course, 52:05.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_0f5f1e05adf746adb06ac76d010bc400\":\"active\",\"rec_72a351afc64d4d0daffa062c0f1ab9eb\":\"active\",\"rec_c77f094513b148a5ba65331f73e073f6\":\"active\",\"rec_f99838990c9446b88f14af7a6a0e9650\":\"active\"}}"
+   },
+   {
+    "tool": "context_query",
+    "arguments": {
+     "sql": "SELECT id, kind, occurred_at, text, payload_json, source_id, supersedes FROM active_records WHERE kind IN ('event','note','question','analysis') ORDER BY occurred_at",
+     "parameters": [],
+     "limit": 100
+    },
+    "is_error": false,
+    "result_text": "{\"columns\":[\"id\",\"kind\",\"occurred_at\",\"text\",\"payload_json\",\"source_id\",\"supersedes\"],\"max_rows\":100,\"query_sha256\":\"c94e4115f2c4ea06816f605b6a6616b7420e31c3eb1001d2036f9fb305f9ff63\",\"read_receipt\":\"rr_6e313875759c4ea393c2d21dc81b9689\",\"reads_observations\":false,\"rows\":[[\"rec_0f5f1e05adf746adb06ac76d010bc400\",\"question\",\"2026-07-01T14:00:00.000000+00:00\",\"SYNTHETIC: Is my 10 km time improving?\",\"{\\\"state\\\":\\\"open\\\",\\\"synthetic\\\":true,\\\"watch_terms\\\":[\\\"10 km\\\"]}\",\"user\",null],[\"rec_c77f094513b148a5ba65331f73e073f6\",\"event\",\"2026-07-10T12:00:00.000000+00:00\",\"SYNTHETIC 10 km, same course, 54:30.\",\"{\\\"synthetic\\\":true}\",\"user\",null],[\"rec_f99838990c9446b88f14af7a6a0e9650\",\"event\",\"2026-09-12T12:00:00.000000+00:00\",\"SYNTHETIC 10 km, same course, 52:05.\",\"{\\\"synthetic\\\":true}\",\"user\",null],[\"rec_72a351afc64d4d0daffa062c0f1ab9eb\",\"note\",\"2026-09-22T01:00:00.000000+00:00\",\"SYNTHETIC: really pleased about my 52:05 10 km.\",\"{\\\"synthetic\\\":true}\",\"user\",null]],\"tables_read\":[\"active_records\",\"records\"],\"truncated\":false}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 5935,
+    "completion_tokens": 84,
+    "tool_calls": 0,
+    "seconds": 4.0
+   }
+  ],
+  "error": null,
+  "seconds": 10.9,
+  "turns": 3,
+  "tokens": {
+   "prompt": 13397,
+   "completion": 281
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [
+   {
+    "id": "ins_c36b4ecde39d4b1e9375dd5fbc2bdecf",
+    "state": "delivered"
+   }
+  ],
+  "insights_after": [
+   {
+    "id": "ins_c36b4ecde39d4b1e9375dd5fbc2bdecf",
+    "state": "delivered",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_f99838990c9446b88f14af7a6a0e9650"
+     ],
+     "next_step": "Repeat in 6 weeks.",
+     "question_id": "rec_0f5f1e05adf746adb06ac76d010bc400",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "10 km retest",
+     "unknowns": "SYNTHETIC.",
+     "what_changed": "SYNTHETIC same-course 54:30 → 52:05.",
+     "why_now": "SYNTHETIC earlier finding."
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "violated_forbidden": [],
+  "reason": "deterministic: no surface candidate, so no semantic content to judge"
+ }
+}
