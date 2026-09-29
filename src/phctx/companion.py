@@ -363,9 +363,10 @@ MAX_CONN = 8
 PER_PEER = 2
 REQUEST_S = 60
 IDLE_S = 20
-# The app gives up after 30 s and re-queues the payload; a reply after that reads as a failed sync on the phone even
-# when the data was stored. A verified body is spooled to disk first, so it can be acknowledged by this deadline.
-ACK_WAIT_S = 20
+# The app gives up after 30 s and re-queues the payload, and iOS suspends a backgrounded app's request sooner; a late
+# reply reads as a failed sync on the phone even when the data was stored. A verified body is spooled to disk first, so
+# it is acknowledged at once: the store's own result if it commits within a second, 202 queued otherwise.
+ACK_WAIT_S = 1
 BUSY_RETRY_S = 15
 
 
