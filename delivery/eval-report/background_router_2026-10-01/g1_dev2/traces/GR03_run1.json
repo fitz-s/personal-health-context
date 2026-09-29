@@ -1,0 +1,282 @@
+{
+ "record": {
+  "case_id": "GR03",
+  "run": 1,
+  "category": "revisit",
+  "split": "dev2",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "新复测结果值得提示。两次记录均为 Lab A 的 HbA1c 百分比结果，支持从 6.1% 降至 5.8% 的比较；候选内容明确没有把下降归因于饮食，也没有重复已提示内容。",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_2dda104219ce478cb55a3b568ddbff68\", \"request_id\": \"worker:job_2a43fa420e534eecb55983d0d1dd6872:0:w_9456c92da03043fda1c0eba61be6fc38\", \"status\": \"committed\", \"request_hash\": \"7ed1b7627d347ea4511ab39d4e4d6d179437c7665566997e44b506cc8df85c9b\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_27d1ccc0a80a47c3b1f0621591554d5d",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-luna",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 19.5,
+  "tool_calls": [
+   "context_bootstrap",
+   "context_read"
+  ],
+  "error": null,
+  "turns": 3,
+  "tokens": {
+   "prompt": 13937,
+   "completion": 561
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "guards": [],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_3a21f21c333c41b692b639098564ec84",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_27d1ccc0a80a47c3b1f0621591554d5d:1ae3592f8248c3f8"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_27d1ccc0a80a47c3b1f0621591554d5d:1ae3592f8248c3f8",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_2dda104219ce478cb55a3b568ddbff68",
+      "request_id": "worker:job_2a43fa420e534eecb55983d0d1dd6872:0:w_9456c92da03043fda1c0eba61be6fc38",
+      "status": "committed",
+      "request_hash": "7ed1b7627d347ea4511ab39d4e4d6d179437c7665566997e44b506cc8df85c9b"
+     },
+     "tool_calls": 5
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_3a21f21c333c41b692b639098564ec84\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_27d1ccc0a80a47c3b1f0621591554d5d:1ae3592f8248c3f8\"]}, \"jobs\": [{\"job\": \"revisit:rec_27d1ccc0a80a47c3b1f0621591554d5d:1ae3592f8248c3f8\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_2dda104219ce478cb55a3b568ddbff68\", \"request_id\": \"worker:job_2a43fa420e534eecb55983d0d1dd6872:0:w_9456c92da03043fda1c0eba61be6fc38\", \"status\": \"committed\", \"request_hash\": \"7ed1b7627d347ea4511ab39d4e4d6d179437c7665566997e44b506cc8df85c9b\"}, \"tool_calls\": 5}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_27d1ccc0a80a47c3b1f0621591554d5d:1ae3592f8248c3f8",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by a change matching one open question. The change is either new data about the question or a dated event the user recorded (then the trigger carries `dated_event`). Decide whether the user should hear something about this question now: a new answer, a correction, or, when a dated event on this question is near and the data on record cannot answer it, which measurement would. Otherwise stay silent.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_27d1ccc0a80a47c3b1f0621591554d5d\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"state\":\"open\",\"watch_terms\":[\"HbA1c\"]},\"text\":\"SYNTHETIC: Is my HbA1c lower on the new diet?\"}\n\n## Prior analyses of this question (newest first)\n{\"days_ago\":52,\"evidence_status\":\"not verifiable (written without read receipts); not known to be stale\",\"id\":\"rec_ea62045ccade4cf8a2f9193d5841bdd3\",\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis: one baseline HbA1c 6.1% (Lab A); retest in 3 months at the same lab.\"}\n\n## Since the newest analysis (2026-08-02): records written\n{\"id\":\"rec_f9c74a6106e84e428c331210fb655708\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC lab (Lab A): HbA1c 5.8%.\"}\n## Since the newest analysis: passive samples added\nNone.\nThe newest analysis set no revisit condition field; read its text for one before assuming there is none.\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\nNone: no record names a date in the next 21 days.\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n\n## Passive data available (observation catalog)\nNo observations stored.\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"comparability\":{\"differences\":[],\"earlier_records_with_values\":[{\"id\":\"rec_3c06e5c4dbb04e0393f2351964aa98e6\",\"occurred_at\":\"2026-06-15\",\"stated_conditions\":[\"%\",\"lab a\"],\"text\":\"SYNTHETIC lab (Lab A): HbA1c 6.1%.\"}],\"new_record_conditions\":[\"%\",\"lab a\"],\"note\":\"Conditions as each record states them. A value measured under different stated conditions (lab, unit, device, venue, protocol, equipment) is not like for like with the others.\"},\"record\":{\"id\":\"rec_f9c74a6106e84e428c331210fb655708\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC lab (Lab A): HbA1c 5.8%.\"}}\n\nIf you surface, set question_id to rec_27d1ccc0a80a47c3b1f0621591554d5d.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_27d1ccc0a80a47c3b1f0621591554d5d",
+     "topic": "同一实验室的HbA1c复测较低",
+     "why_now": "新结果与基线可按记录中的实验室和单位比较，能初步回答HbA1c是否降低；但它不能单独证明是新饮食造成的。",
+     "what_changed": "记录显示，2026-06-15的HbA1c为6.1%（Lab A）；2026-09-22为5.8%（Lab A），下降0.3个百分点。",
+     "unknowns": "目前只有一次复测，尚不能判断这一下降是否持续，也无法确定饮食是否是原因；其他因素或测量波动也可能有关。",
+     "next_step": "若要判断下降是否持续，可约3个月后在Lab A复测一次HbA1c，并继续记录饮食变化；结果可帮助决定是否继续当前饮食做法，但仍不能单独证明因果。",
+     "evidence_ids": [
+      "rec_3c06e5c4dbb04e0393f2351964aa98e6",
+      "rec_f9c74a6106e84e428c331210fb655708",
+      "rec_27d1ccc0a80a47c3b1f0621591554d5d",
+      "rec_ea62045ccade4cf8a2f9193d5841bdd3"
+     ],
+     "evidence_versions": {
+      "rec_3c06e5c4dbb04e0393f2351964aa98e6": "active",
+      "rec_f9c74a6106e84e428c331210fb655708": "active",
+      "rec_27d1ccc0a80a47c3b1f0621591554d5d": "active",
+      "rec_ea62045ccade4cf8a2f9193d5841bdd3": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3369,
+      "completion_tokens": 15,
+      "tool_calls": 1,
+      "seconds": 3.1
+     },
+     {
+      "tool": "context_bootstrap",
+      "arguments": {},
+      "is_error": false,
+      "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T20:20:45.362060+00:00\",\"last_worker_run_at\":\"2026-09-29T20:20:45.362060+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":5,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T20:20:45.355979+00:00\",\"id\":\"rec_f9c74a6106e84e428c331210fb655708\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab A): HbA1c 5.8%.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:20:45.352750+00:00\",\"id\":\"rec_27d1ccc0a80a47c3b1f0621591554d5d\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"HbA1c\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my HbA1c lower on the new diet?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:20:45.353965+00:00\",\"id\":\"rec_3c06e5c4dbb04e0393f2351964aa98e6\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-06-15T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-15T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab A): HbA1c 6.1%.\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_75816f113a7f4e6f9bcbbbaca6506082\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T20:20:45.354976+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_27d1ccc0a80a47c3b1f0621591554d5d\",\"rec_3c06e5c4dbb04e0393f2351964aa98e6\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_ea62045ccade4cf8a2f9193d5841bdd3\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_27d1ccc0a80a47c3b1f0621591554d5d\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: one baseline HbA1c 6.1% (Lab A); retest in 3 months at the same lab.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":2,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T20:20:48.501596+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4756,
+      "completion_tokens": 111,
+      "tool_calls": 1,
+      "seconds": 4.1
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_f9c74a6106e84e428c331210fb655708",
+        "rec_3c06e5c4dbb04e0393f2351964aa98e6",
+        "rec_ea62045ccade4cf8a2f9193d5841bdd3",
+        "rec_27d1ccc0a80a47c3b1f0621591554d5d"
+       ],
+       "include_history": false
+      },
+      "is_error": false,
+      "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_3eb3d8e055084ab5beaad8d06d71344f\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:20:45.352750+00:00\",\"id\":\"rec_27d1ccc0a80a47c3b1f0621591554d5d\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"HbA1c\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my HbA1c lower on the new diet?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:20:45.353965+00:00\",\"id\":\"rec_3c06e5c4dbb04e0393f2351964aa98e6\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-06-15T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-15T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab A): HbA1c 6.1%.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:20:45.354976+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_27d1ccc0a80a47c3b1f0621591554d5d\",\"rec_3c06e5c4dbb04e0393f2351964aa98e6\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_ea62045ccade4cf8a2f9193d5841bdd3\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_27d1ccc0a80a47c3b1f0621591554d5d\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: one baseline HbA1c 6.1% (Lab A); retest in 3 months at the same lab.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:20:45.355979+00:00\",\"id\":\"rec_f9c74a6106e84e428c331210fb655708\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab A): HbA1c 5.8%.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_27d1ccc0a80a47c3b1f0621591554d5d\":\"active\",\"rec_3c06e5c4dbb04e0393f2351964aa98e6\":\"active\",\"rec_ea62045ccade4cf8a2f9193d5841bdd3\":\"active\",\"rec_f9c74a6106e84e428c331210fb655708\":\"active\"}}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 5812,
+      "completion_tokens": 435,
+      "tool_calls": 0,
+      "seconds": 12.2
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3369,
+    "completion_tokens": 15,
+    "tool_calls": 1,
+    "seconds": 3.1
+   },
+   {
+    "tool": "context_bootstrap",
+    "arguments": {},
+    "is_error": false,
+    "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T20:20:45.362060+00:00\",\"last_worker_run_at\":\"2026-09-29T20:20:45.362060+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":5,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T20:20:45.355979+00:00\",\"id\":\"rec_f9c74a6106e84e428c331210fb655708\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab A): HbA1c 5.8%.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:20:45.352750+00:00\",\"id\":\"rec_27d1ccc0a80a47c3b1f0621591554d5d\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"HbA1c\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my HbA1c lower on the new diet?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:20:45.353965+00:00\",\"id\":\"rec_3c06e5c4dbb04e0393f2351964aa98e6\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-06-15T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-15T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab A): HbA1c 6.1%.\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_75816f113a7f4e6f9bcbbbaca6506082\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T20:20:45.354976+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_27d1ccc0a80a47c3b1f0621591554d5d\",\"rec_3c06e5c4dbb04e0393f2351964aa98e6\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_ea62045ccade4cf8a2f9193d5841bdd3\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_27d1ccc0a80a47c3b1f0621591554d5d\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: one baseline HbA1c 6.1% (Lab A); retest in 3 months at the same lab.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":2,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T20:20:48.501596+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4756,
+    "completion_tokens": 111,
+    "tool_calls": 1,
+    "seconds": 4.1
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_f9c74a6106e84e428c331210fb655708",
+      "rec_3c06e5c4dbb04e0393f2351964aa98e6",
+      "rec_ea62045ccade4cf8a2f9193d5841bdd3",
+      "rec_27d1ccc0a80a47c3b1f0621591554d5d"
+     ],
+     "include_history": false
+    },
+    "is_error": false,
+    "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_3eb3d8e055084ab5beaad8d06d71344f\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T20:20:45.352750+00:00\",\"id\":\"rec_27d1ccc0a80a47c3b1f0621591554d5d\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"HbA1c\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my HbA1c lower on the new diet?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:20:45.353965+00:00\",\"id\":\"rec_3c06e5c4dbb04e0393f2351964aa98e6\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-06-15T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-15T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab A): HbA1c 6.1%.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:20:45.354976+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_27d1ccc0a80a47c3b1f0621591554d5d\",\"rec_3c06e5c4dbb04e0393f2351964aa98e6\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_ea62045ccade4cf8a2f9193d5841bdd3\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_27d1ccc0a80a47c3b1f0621591554d5d\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: one baseline HbA1c 6.1% (Lab A); retest in 3 months at the same lab.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T20:20:45.355979+00:00\",\"id\":\"rec_f9c74a6106e84e428c331210fb655708\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab A): HbA1c 5.8%.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_27d1ccc0a80a47c3b1f0621591554d5d\":\"active\",\"rec_3c06e5c4dbb04e0393f2351964aa98e6\":\"active\",\"rec_ea62045ccade4cf8a2f9193d5841bdd3\":\"active\",\"rec_f9c74a6106e84e428c331210fb655708\":\"active\"}}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 5812,
+    "completion_tokens": 435,
+    "tool_calls": 0,
+    "seconds": 12.2
+   }
+  ],
+  "error": null,
+  "seconds": 19.5,
+  "turns": 3,
+  "tokens": {
+   "prompt": 13937,
+   "completion": 561
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_2dda104219ce478cb55a3b568ddbff68",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_3c06e5c4dbb04e0393f2351964aa98e6",
+      "rec_f9c74a6106e84e428c331210fb655708",
+      "rec_27d1ccc0a80a47c3b1f0621591554d5d",
+      "rec_ea62045ccade4cf8a2f9193d5841bdd3"
+     ],
+     "evidence_versions": {
+      "rec_27d1ccc0a80a47c3b1f0621591554d5d": "active",
+      "rec_3c06e5c4dbb04e0393f2351964aa98e6": "active",
+      "rec_ea62045ccade4cf8a2f9193d5841bdd3": "active",
+      "rec_f9c74a6106e84e428c331210fb655708": "active"
+     },
+     "next_step": "若要判断下降是否持续，可约3个月后在Lab A复测一次HbA1c，并继续记录饮食变化；结果可帮助决定是否继续当前饮食做法，但仍不能单独证明因果。",
+     "question_id": "rec_27d1ccc0a80a47c3b1f0621591554d5d",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "同一实验室的HbA1c复测较低",
+     "unknowns": "目前只有一次复测，尚不能判断这一下降是否持续，也无法确定饮食是否是原因；其他因素或测量波动也可能有关。",
+     "what_changed": "记录显示，2026-06-15的HbA1c为6.1%（Lab A）；2026-09-22为5.8%（Lab A），下降0.3个百分点。",
+     "why_now": "新结果与基线可按记录中的实验室和单位比较，能初步回答HbA1c是否降低；但它不能单独证明是新饮食造成的。"
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "新复测结果值得提示。两次记录均为 Lab A 的 HbA1c 百分比结果，支持从 6.1% 降至 5.8% 的比较；候选内容明确没有把下降归因于饮食，也没有重复已提示内容。",
+  "violated_forbidden": []
+ }
+}
