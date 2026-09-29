@@ -26,6 +26,7 @@ import queue
 import secrets
 import socket
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Callable
 
@@ -530,6 +531,7 @@ def make_server(store: Store, host: str, port: int, secret: str, tz: str) -> Thr
         timeout = IDLE_S
 
         def handle(self):
+            self.t0 = time.monotonic()
             # Absolute deadline: a client trickling bytes resets no idle timer.
             self.timer = threading.Timer(REQUEST_S, self.cut)
             self.timer.daemon = True
@@ -551,7 +553,7 @@ def make_server(store: Store, host: str, port: int, secret: str, tz: str) -> Thr
             pass
 
         def log_request(self, code='-', size='-'):
-            log.info('%s %s %s', self.command, self.path.split('?')[0], code)
+            log.info('%s %s %s %.1fs', self.command, self.path.split('?')[0], code, time.monotonic() - self.t0)
 
         def reply(self, status: int, body: dict) -> None:
             data = json.dumps(body).encode()
