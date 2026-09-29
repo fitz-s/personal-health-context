@@ -382,6 +382,7 @@ C += [
 
 OUT.write_text(''.join(json.dumps(c, ensure_ascii=False) + '\n' for c in C))
 exec((Path(__file__).with_name('make_cases_holdout3.py')).read_text())  # holdout3: written before round-3 tuning
+exec((Path(__file__).with_name('make_cases_holdout4.py')).read_text())  # holdout4: written before the guards round
 if __name__ == '__main__':
     import collections
     print(collections.Counter((c['split'], c['category'], c['expect']) for c in C))
