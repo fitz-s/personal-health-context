@@ -1,0 +1,316 @@
+{
+ "record": {
+  "case_id": "B17",
+  "run": 1,
+  "category": "measurement",
+  "split": "holdout",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "新增复诊时间使血压测量缺口值得提醒。候选内容明确说明手表心率不能测血压、目前无法判断减盐后血压是否下降，并建议在复诊前用上臂式血压计记录家庭血压，以帮助讨论生活方式调整是否足够；也指出家庭读数与此前诊室读数不可直接等同比较。未把减盐与血压变化说成确定因果。",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_3c7da607497c4024a82f948016134a75\", \"request_id\": \"worker:job_67bd3d1997c0499095d10f9f38571161:0:w_5e86cd889ade45b69c226d2142acc492\", \"status\": \"committed\", \"request_hash\": \"c6b6982f38ae439cefc060cea3c02aaccb76c30f242459fa1e9d453c2c32bd53\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_5711a4736ca14bc7a3aa2f59ed5929df",
+    "hard": true
+   },
+   {
+    "check": "next_step_names_a_method",
+    "ok": true,
+    "detail": "血压计,早晚",
+    "hard": true
+   },
+   {
+    "check": "gap_names_outcome_and_decision",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-sol",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 27.4,
+  "tool_calls": [
+   "context_read",
+   "context_query",
+   "context_search"
+  ],
+  "error": null,
+  "turns": 2,
+  "tokens": {
+   "prompt": 8434,
+   "completion": 1060
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_7f71e653e98d4e51b67b170d4a5ce302",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_5711a4736ca14bc7a3aa2f59ed5929df:fe94b827f0455bee"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_5711a4736ca14bc7a3aa2f59ed5929df:fe94b827f0455bee",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_3c7da607497c4024a82f948016134a75",
+      "request_id": "worker:job_67bd3d1997c0499095d10f9f38571161:0:w_5e86cd889ade45b69c226d2142acc492",
+      "status": "committed",
+      "request_hash": "c6b6982f38ae439cefc060cea3c02aaccb76c30f242459fa1e9d453c2c32bd53"
+     },
+     "tool_calls": 5
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_7f71e653e98d4e51b67b170d4a5ce302\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_5711a4736ca14bc7a3aa2f59ed5929df:fe94b827f0455bee\"]}, \"jobs\": [{\"job\": \"revisit:rec_5711a4736ca14bc7a3aa2f59ed5929df:fe94b827f0455bee\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_3c7da607497c4024a82f948016134a75\", \"request_id\": \"worker:job_67bd3d1997c0499095d10f9f38571161:0:w_5e86cd889ade45b69c226d2142acc492\", \"status\": \"committed\", \"request_hash\": \"c6b6982f38ae439cefc060cea3c02aaccb76c30f242459fa1e9d453c2c32bd53\"}, \"tool_calls\": 5}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_5711a4736ca14bc7a3aa2f59ed5929df:fe94b827f0455bee",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by new data matching one open question. Decide whether it changes what the user should know about that question.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_5711a4736ca14bc7a3aa2f59ed5929df\",\"kind\":\"question\",\"occurred_at\":\"2026-07-10T14:00:00.000000+00:00\",\"payload\":{\"outcome\":\"blood_pressure\",\"state\":\"open\",\"watch_terms\":[\"blood pressure\",\"doctor\",\"appointment\"]},\"text\":\"SYNTHETIC: Is my blood pressure lower since I cut salt?\"}\n\n## Prior analyses of this question (newest first)\n{\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_5711a4736ca14bc7a3aa2f59ed5929df\",\"rec_a91ad998c36c43fbaf51e1b9d106025e\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_01b1e339e89b424cb48a3843f0773f16\",\"occurred_at\":\"2026-07-11T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis (July): one clinic reading only; no home readings. Wearable heart rate does not measure blood pressure.\"}\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\n{\"date\":\"2026-10-02\",\"days_until\":9,\"kind\":\"note\",\"read_as\":\"explicit date\",\"record_id\":\"rec_604ce3452ce84bb38c9e4452911cc4ce\",\"text\":\"SYNTHETIC: doctor follow-up appointment on 2026-10-02 to decide whether the lifestyle changes are enough.\"}\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"days_since_latest_sample\":0.5,\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_success_at\":\"2026-09-29T15:53:56.271062+00:00\",\"latest_sample_at\":\"2026-09-23T02:00:30.000000+00:00\",\"state\":\"ready\"}\n\n## Passive data available (observation catalog)\n{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierHeartRate\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count/min\"}\n{\"first_at\":\"2026-09-02T02:00:00.000000+00:00\",\"last_at\":\"2026-09-23T02:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count\"}\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"record\":{\"id\":\"rec_604ce3452ce84bb38c9e4452911cc4ce\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: doctor follow-up appointment on 2026-10-02 to decide whether the lifestyle changes are enough.\"}}\n\nIf you surface, set question_id to rec_5711a4736ca14bc7a3aa2f59ed5929df.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_5711a4736ca14bc7a3aa2f59ed5929df",
+     "topic": "复诊前的血压测量缺口",
+     "why_now": "你记录了10月2日的复诊，届时要判断生活方式调整是否足够；现在还有时间积累一周的血压读数。",
+     "what_changed": "此前记录只有7月一次诊室血压138/88；现有的手表心率和步数不能回答血压是否降低。新增的是10月2日复诊这一决策时间点，并非新的血压结果。",
+     "unknowns": "目前不知道血压是否比减盐前低，也不能凭之后的变化确定是否由减盐造成。居家读数与7月的诊室读数还可能受测量环境差异影响。",
+     "next_step": "若有合适的上臂式血压计，可在复诊前连续7天早晚各测两次，记下读数和时间，带去讨论当前血压水平是否支持继续现有生活方式方案。这些读数能帮助判断当前状况，但没有可比的减盐前居家读数，仍不能单凭它们确认减盐后的降幅或原因。",
+     "evidence_ids": [
+      "rec_5711a4736ca14bc7a3aa2f59ed5929df",
+      "rec_a91ad998c36c43fbaf51e1b9d106025e",
+      "rec_604ce3452ce84bb38c9e4452911cc4ce",
+      "rec_01b1e339e89b424cb48a3843f0773f16"
+     ],
+     "evidence_versions": {
+      "rec_5711a4736ca14bc7a3aa2f59ed5929df": "active",
+      "rec_a91ad998c36c43fbaf51e1b9d106025e": "active",
+      "rec_604ce3452ce84bb38c9e4452911cc4ce": "active",
+      "rec_01b1e339e89b424cb48a3843f0773f16": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3403,
+      "completion_tokens": 278,
+      "tool_calls": 3,
+      "seconds": 6.9
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_5711a4736ca14bc7a3aa2f59ed5929df",
+        "rec_a91ad998c36c43fbaf51e1b9d106025e",
+        "rec_01b1e339e89b424cb48a3843f0773f16",
+        "rec_604ce3452ce84bb38c9e4452911cc4ce"
+       ],
+       "include_history": false
+      },
+      "is_error": false,
+      "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_c85882c505714b4db45549507c507e59\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:53:56.275315+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_5711a4736ca14bc7a3aa2f59ed5929df\",\"rec_a91ad998c36c43fbaf51e1b9d106025e\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_01b1e339e89b424cb48a3843f0773f16\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-11T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-11T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_5711a4736ca14bc7a3aa2f59ed5929df\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): one clinic reading only; no home readings. Wearable heart rate does not measure blood pressure.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:53:56.273193+00:00\",\"id\":\"rec_5711a4736ca14bc7a3aa2f59ed5929df\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-10T09:00:00-05:00\",\"payload\":{\"outcome\":\"blood_pressure\",\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"blood pressure\",\"doctor\",\"appointment\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my blood pressure lower since I cut salt?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:53:56.276622+00:00\",\"id\":\"rec_604ce3452ce84bb38c9e4452911cc4ce\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: doctor follow-up appointment on 2026-10-02 to decide whether the lifestyle changes are enough.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:53:56.274313+00:00\",\"id\":\"rec_a91ad998c36c43fbaf51e1b9d106025e\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-07-08T15:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-08T10:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: clinic blood pressure 138/88 (July visit).\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_01b1e339e89b424cb48a3843f0773f16\":\"active\",\"rec_5711a4736ca14bc7a3aa2f59ed5929df\":\"active\",\"rec_604ce3452ce84bb38c9e4452911cc4ce\":\"active\",\"rec_a91ad998c36c43fbaf51e1b9d106025e\":\"active\"}}"
+     },
+     {
+      "tool": "context_query",
+      "arguments": {
+       "sql": "SELECT metric,unit,source_id,COUNT(*) AS n,MIN(start_at) AS first_at,MAX(start_at) AS last_at FROM canonical_observations GROUP BY metric,unit,source_id ORDER BY metric",
+       "parameters": [],
+       "limit": 100
+      },
+      "is_error": false,
+      "result_text": "{\"columns\":[\"metric\",\"unit\",\"source_id\",\"n\",\"first_at\",\"last_at\"],\"max_rows\":100,\"query_sha256\":\"7777c5e5c7e1c60d5875c7e1d74194d70eb7cc3e3c78572dc425bca623bba3fc\",\"read_receipt\":\"rr_972801a94ab54486b7938a51a910586b\",\"reads_observations\":true,\"rows\":[[\"HKQuantityTypeIdentifierHeartRate\",\"count/min\",\"synthetic:watch\",22,\"2026-09-01T12:00:00.000000+00:00\",\"2026-09-22T12:00:00.000000+00:00\"],[\"HKQuantityTypeIdentifierStepCount\",\"count\",\"synthetic:watch\",22,\"2026-09-02T02:00:00.000000+00:00\",\"2026-09-23T02:00:00.000000+00:00\"]],\"tables_read\":[\"canonical_observations\",\"canonical_observations_raw\",\"observations\",\"supersessions\"],\"truncated\":false}"
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "salt",
+       "kind": "event",
+       "start_at": "2026-01-01T00:00:00Z",
+       "end_at": "2026-09-24T00:00:00Z",
+       "limit": 100,
+       "cursor": "",
+       "include_superseded": false
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_67c531ddc58c45e793165d4b709bd8a8\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"salt\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_5711a4736ca14bc7a3aa2f59ed5929df\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my blood pressure lower since I cut salt?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 5031,
+      "completion_tokens": 782,
+      "tool_calls": 0,
+      "seconds": 20.4
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3403,
+    "completion_tokens": 278,
+    "tool_calls": 3,
+    "seconds": 6.9
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_5711a4736ca14bc7a3aa2f59ed5929df",
+      "rec_a91ad998c36c43fbaf51e1b9d106025e",
+      "rec_01b1e339e89b424cb48a3843f0773f16",
+      "rec_604ce3452ce84bb38c9e4452911cc4ce"
+     ],
+     "include_history": false
+    },
+    "is_error": false,
+    "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_c85882c505714b4db45549507c507e59\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:53:56.275315+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_5711a4736ca14bc7a3aa2f59ed5929df\",\"rec_a91ad998c36c43fbaf51e1b9d106025e\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_01b1e339e89b424cb48a3843f0773f16\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-11T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-11T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_5711a4736ca14bc7a3aa2f59ed5929df\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (July): one clinic reading only; no home readings. Wearable heart rate does not measure blood pressure.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:53:56.273193+00:00\",\"id\":\"rec_5711a4736ca14bc7a3aa2f59ed5929df\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-10T09:00:00-05:00\",\"payload\":{\"outcome\":\"blood_pressure\",\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"blood pressure\",\"doctor\",\"appointment\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my blood pressure lower since I cut salt?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:53:56.276622+00:00\",\"id\":\"rec_604ce3452ce84bb38c9e4452911cc4ce\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: doctor follow-up appointment on 2026-10-02 to decide whether the lifestyle changes are enough.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:53:56.274313+00:00\",\"id\":\"rec_a91ad998c36c43fbaf51e1b9d106025e\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-07-08T15:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-08T10:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: clinic blood pressure 138/88 (July visit).\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_01b1e339e89b424cb48a3843f0773f16\":\"active\",\"rec_5711a4736ca14bc7a3aa2f59ed5929df\":\"active\",\"rec_604ce3452ce84bb38c9e4452911cc4ce\":\"active\",\"rec_a91ad998c36c43fbaf51e1b9d106025e\":\"active\"}}"
+   },
+   {
+    "tool": "context_query",
+    "arguments": {
+     "sql": "SELECT metric,unit,source_id,COUNT(*) AS n,MIN(start_at) AS first_at,MAX(start_at) AS last_at FROM canonical_observations GROUP BY metric,unit,source_id ORDER BY metric",
+     "parameters": [],
+     "limit": 100
+    },
+    "is_error": false,
+    "result_text": "{\"columns\":[\"metric\",\"unit\",\"source_id\",\"n\",\"first_at\",\"last_at\"],\"max_rows\":100,\"query_sha256\":\"7777c5e5c7e1c60d5875c7e1d74194d70eb7cc3e3c78572dc425bca623bba3fc\",\"read_receipt\":\"rr_972801a94ab54486b7938a51a910586b\",\"reads_observations\":true,\"rows\":[[\"HKQuantityTypeIdentifierHeartRate\",\"count/min\",\"synthetic:watch\",22,\"2026-09-01T12:00:00.000000+00:00\",\"2026-09-22T12:00:00.000000+00:00\"],[\"HKQuantityTypeIdentifierStepCount\",\"count\",\"synthetic:watch\",22,\"2026-09-02T02:00:00.000000+00:00\",\"2026-09-23T02:00:00.000000+00:00\"]],\"tables_read\":[\"canonical_observations\",\"canonical_observations_raw\",\"observations\",\"supersessions\"],\"truncated\":false}"
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "salt",
+     "kind": "event",
+     "start_at": "2026-01-01T00:00:00Z",
+     "end_at": "2026-09-24T00:00:00Z",
+     "limit": 100,
+     "cursor": "",
+     "include_superseded": false
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_67c531ddc58c45e793165d4b709bd8a8\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"salt\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_5711a4736ca14bc7a3aa2f59ed5929df\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my blood pressure lower since I cut salt?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 5031,
+    "completion_tokens": 782,
+    "tool_calls": 0,
+    "seconds": 20.4
+   }
+  ],
+  "error": null,
+  "seconds": 27.4,
+  "turns": 2,
+  "tokens": {
+   "prompt": 8434,
+   "completion": 1060
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_3c7da607497c4024a82f948016134a75",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_5711a4736ca14bc7a3aa2f59ed5929df",
+      "rec_a91ad998c36c43fbaf51e1b9d106025e",
+      "rec_604ce3452ce84bb38c9e4452911cc4ce",
+      "rec_01b1e339e89b424cb48a3843f0773f16"
+     ],
+     "evidence_versions": {
+      "rec_01b1e339e89b424cb48a3843f0773f16": "active",
+      "rec_5711a4736ca14bc7a3aa2f59ed5929df": "active",
+      "rec_604ce3452ce84bb38c9e4452911cc4ce": "active",
+      "rec_a91ad998c36c43fbaf51e1b9d106025e": "active"
+     },
+     "next_step": "若有合适的上臂式血压计，可在复诊前连续7天早晚各测两次，记下读数和时间，带去讨论当前血压水平是否支持继续现有生活方式方案。这些读数能帮助判断当前状况，但没有可比的减盐前居家读数，仍不能单凭它们确认减盐后的降幅或原因。",
+     "question_id": "rec_5711a4736ca14bc7a3aa2f59ed5929df",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "复诊前的血压测量缺口",
+     "unknowns": "目前不知道血压是否比减盐前低，也不能凭之后的变化确定是否由减盐造成。居家读数与7月的诊室读数还可能受测量环境差异影响。",
+     "what_changed": "此前记录只有7月一次诊室血压138/88；现有的手表心率和步数不能回答血压是否降低。新增的是10月2日复诊这一决策时间点，并非新的血压结果。",
+     "why_now": "你记录了10月2日的复诊，届时要判断生活方式调整是否足够；现在还有时间积累一周的血压读数。"
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "新增复诊时间使血压测量缺口值得提醒。候选内容明确说明手表心率不能测血压、目前无法判断减盐后血压是否下降，并建议在复诊前用上臂式血压计记录家庭血压，以帮助讨论生活方式调整是否足够；也指出家庭读数与此前诊室读数不可直接等同比较。未把减盐与血压变化说成确定因果。",
+  "violated_forbidden": []
+ }
+}

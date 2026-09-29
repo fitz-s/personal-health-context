@@ -1,0 +1,254 @@
+{
+ "record": {
+  "case_id": "B10",
+  "run": 3,
+  "category": "revisit",
+  "split": "holdout",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "新复测直接回答了用户的问题：同一化验机构、均禁食10小时的两次空腹血糖记录分别为104和96 mg/dL。候选内容只称复测值较低，明确没有将下降归因于饮食，也未重复已推送内容。",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_e49d636c257443b3ae48f29772c37079\", \"request_id\": \"worker:job_517cbdc3095b40b69c75a3c0097479f4:0:w_7eb40e9a1c204d9ba37847059c9f053b\", \"status\": \"committed\", \"request_hash\": \"51c9fc1bb0b4523ad7d4e28b6da6b0b9a823c1aed7e693a59d4249f3ffff8a78\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_3529f2f8c7624c1b8c51765de6379a37",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-sol",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 19.6,
+  "tool_calls": [
+   "context_read"
+  ],
+  "error": null,
+  "turns": 2,
+  "tokens": {
+   "prompt": 7448,
+   "completion": 629
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_02dd2680f6694dc2b5f4c6fc18209cba",
+   "extraction": 0,
+   "plan": {
+    "changes": 2,
+    "enqueued": [
+     "revisit:rec_3529f2f8c7624c1b8c51765de6379a37:1ae3592f8248c3f8"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_3529f2f8c7624c1b8c51765de6379a37:1ae3592f8248c3f8",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_e49d636c257443b3ae48f29772c37079",
+      "request_id": "worker:job_517cbdc3095b40b69c75a3c0097479f4:0:w_7eb40e9a1c204d9ba37847059c9f053b",
+      "status": "committed",
+      "request_hash": "51c9fc1bb0b4523ad7d4e28b6da6b0b9a823c1aed7e693a59d4249f3ffff8a78"
+     },
+     "tool_calls": 3
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_02dd2680f6694dc2b5f4c6fc18209cba\", \"extraction\": 0, \"plan\": {\"changes\": 2, \"enqueued\": [\"revisit:rec_3529f2f8c7624c1b8c51765de6379a37:1ae3592f8248c3f8\"]}, \"jobs\": [{\"job\": \"revisit:rec_3529f2f8c7624c1b8c51765de6379a37:1ae3592f8248c3f8\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_e49d636c257443b3ae48f29772c37079\", \"request_id\": \"worker:job_517cbdc3095b40b69c75a3c0097479f4:0:w_7eb40e9a1c204d9ba37847059c9f053b\", \"status\": \"committed\", \"request_hash\": \"51c9fc1bb0b4523ad7d4e28b6da6b0b9a823c1aed7e693a59d4249f3ffff8a78\"}, \"tool_calls\": 3}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_3529f2f8c7624c1b8c51765de6379a37:1ae3592f8248c3f8",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by new data matching one open question. Decide whether it changes what the user should know about that question.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_3529f2f8c7624c1b8c51765de6379a37\",\"kind\":\"question\",\"occurred_at\":\"2026-06-20T14:00:00.000000+00:00\",\"payload\":{\"state\":\"open\",\"watch_terms\":[\"glucose\"]},\"text\":\"SYNTHETIC: Is my fasting glucose lower after the diet change?\"}\n\n## Prior analyses of this question (newest first)\n{\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_3529f2f8c7624c1b8c51765de6379a37\",\"rec_eda8887ad1704c8f84579d94122a0a74\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_3fa7863995bf40d5972977d37cf16530\",\"occurred_at\":\"2026-06-21T14:00:00.000000+00:00\",\"revisit_when\":\"retest at the same lab\",\"text\":\"SYNTHETIC analysis (June): one baseline value (104 mg/dL). Retest at the same lab after about three months of the diet.\"}\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 168 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user asked to be interrupted less: surface only a direct answer to their own question that the new evidence itself provides, a correction of something they were shown, or a measurement gap tied to an entry in \\\"Upcoming dated events\\\" with days_until <= 14 that bears on the same outcome; with no such entry a measurement gap is silence\",\"proactivity\":\"quiet\"}\n\n## Upcoming dated events in the user's records (next 21 days)\nNone: no record names a date in the next 21 days.\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n\n## Passive data available (observation catalog)\nNo observations stored.\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"record\":{\"id\":\"rec_29572ea8751546b8b802a1a14c4196f2\",\"kind\":\"note\",\"occurred_at\":\"2026-09-20T13:00:00.000000+00:00\",\"text\":\"SYNTHETIC lab result (Clinic A, same lab): fasting glucose 96 mg/dL after a 10 h fast.\"}}\n\nIf you surface, set question_id to rec_3529f2f8c7624c1b8c51765de6379a37.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_3529f2f8c7624c1b8c51765de6379a37",
+     "topic": "饮食调整后空腹血糖的复测结果",
+     "why_now": "用户关心饮食调整后空腹血糖是否降低；同一化验机构的复测现在提供了可比较的结果。",
+     "what_changed": "6月18日记录的空腹血糖为104 mg/dL；9月20日为96 mg/dL。两次记录均注明禁食10小时，后一次注明为同一化验机构。就这两次结果而言，复测值更低。",
+     "unknowns": "一次较低的复测值不能证明持续下降，也不能确定是饮食调整所致；正常波动或其他同时发生的变化也可能影响结果。",
+     "next_step": "若要判断下降是否持续，可按相同的禁食10小时条件在同一化验机构再复测一次空腹血糖。结果若仍较低，会更支持将这次下降视为持续变化；若回升，则更应谨慎看待单次差异。复测仍不能单独确定原因。",
+     "evidence_ids": [
+      "rec_3529f2f8c7624c1b8c51765de6379a37",
+      "rec_eda8887ad1704c8f84579d94122a0a74",
+      "rec_29572ea8751546b8b802a1a14c4196f2"
+     ],
+     "evidence_versions": {
+      "rec_3529f2f8c7624c1b8c51765de6379a37": "active",
+      "rec_eda8887ad1704c8f84579d94122a0a74": "active",
+      "rec_29572ea8751546b8b802a1a14c4196f2": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3191,
+      "completion_tokens": 125,
+      "tool_calls": 1,
+      "seconds": 6.8
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_3529f2f8c7624c1b8c51765de6379a37",
+        "rec_eda8887ad1704c8f84579d94122a0a74",
+        "rec_29572ea8751546b8b802a1a14c4196f2",
+        "rec_3fa7863995bf40d5972977d37cf16530"
+       ],
+       "include_history": false
+      },
+      "is_error": false,
+      "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_eeb12bb5ca7d47e586487c7ac4bf5d47\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:52:39.505439+00:00\",\"id\":\"rec_29572ea8751546b8b802a1a14c4196f2\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-20T13:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-20T08:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab result (Clinic A, same lab): fasting glucose 96 mg/dL after a 10 h fast.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:52:39.502303+00:00\",\"id\":\"rec_3529f2f8c7624c1b8c51765de6379a37\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-06-20T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-20T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"glucose\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my fasting glucose lower after the diet change?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:52:39.504439+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_3529f2f8c7624c1b8c51765de6379a37\",\"rec_eda8887ad1704c8f84579d94122a0a74\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_3fa7863995bf40d5972977d37cf16530\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-06-21T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-21T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_3529f2f8c7624c1b8c51765de6379a37\",\"revisit_when\":\"retest at the same lab\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): one baseline value (104 mg/dL). Retest at the same lab after about three months of the diet.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:52:39.503424+00:00\",\"id\":\"rec_eda8887ad1704c8f84579d94122a0a74\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-06-18T13:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-18T08:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab result (Clinic A): fasting glucose 104 mg/dL after a 10 h fast.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_29572ea8751546b8b802a1a14c4196f2\":\"active\",\"rec_3529f2f8c7624c1b8c51765de6379a37\":\"active\",\"rec_3fa7863995bf40d5972977d37cf16530\":\"active\",\"rec_eda8887ad1704c8f84579d94122a0a74\":\"active\"}}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4257,
+      "completion_tokens": 504,
+      "tool_calls": 0,
+      "seconds": 12.8
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3191,
+    "completion_tokens": 125,
+    "tool_calls": 1,
+    "seconds": 6.8
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_3529f2f8c7624c1b8c51765de6379a37",
+      "rec_eda8887ad1704c8f84579d94122a0a74",
+      "rec_29572ea8751546b8b802a1a14c4196f2",
+      "rec_3fa7863995bf40d5972977d37cf16530"
+     ],
+     "include_history": false
+    },
+    "is_error": false,
+    "result_text": "{\"missing_ids\":[],\"read_receipt\":\"rr_eeb12bb5ca7d47e586487c7ac4bf5d47\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T15:52:39.505439+00:00\",\"id\":\"rec_29572ea8751546b8b802a1a14c4196f2\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-20T13:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-20T08:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab result (Clinic A, same lab): fasting glucose 96 mg/dL after a 10 h fast.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:52:39.502303+00:00\",\"id\":\"rec_3529f2f8c7624c1b8c51765de6379a37\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-06-20T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-20T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"glucose\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my fasting glucose lower after the diet change?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:52:39.504439+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_3529f2f8c7624c1b8c51765de6379a37\",\"rec_eda8887ad1704c8f84579d94122a0a74\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_3fa7863995bf40d5972977d37cf16530\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-06-21T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-21T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_3529f2f8c7624c1b8c51765de6379a37\",\"revisit_when\":\"retest at the same lab\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): one baseline value (104 mg/dL). Retest at the same lab after about three months of the diet.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T15:52:39.503424+00:00\",\"id\":\"rec_eda8887ad1704c8f84579d94122a0a74\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-06-18T13:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-18T08:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab result (Clinic A): fasting glucose 104 mg/dL after a 10 h fast.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_29572ea8751546b8b802a1a14c4196f2\":\"active\",\"rec_3529f2f8c7624c1b8c51765de6379a37\":\"active\",\"rec_3fa7863995bf40d5972977d37cf16530\":\"active\",\"rec_eda8887ad1704c8f84579d94122a0a74\":\"active\"}}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4257,
+    "completion_tokens": 504,
+    "tool_calls": 0,
+    "seconds": 12.8
+   }
+  ],
+  "error": null,
+  "seconds": 19.6,
+  "turns": 2,
+  "tokens": {
+   "prompt": 7448,
+   "completion": 629
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_e49d636c257443b3ae48f29772c37079",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_3529f2f8c7624c1b8c51765de6379a37",
+      "rec_eda8887ad1704c8f84579d94122a0a74",
+      "rec_29572ea8751546b8b802a1a14c4196f2"
+     ],
+     "evidence_versions": {
+      "rec_29572ea8751546b8b802a1a14c4196f2": "active",
+      "rec_3529f2f8c7624c1b8c51765de6379a37": "active",
+      "rec_eda8887ad1704c8f84579d94122a0a74": "active"
+     },
+     "next_step": "若要判断下降是否持续，可按相同的禁食10小时条件在同一化验机构再复测一次空腹血糖。结果若仍较低，会更支持将这次下降视为持续变化；若回升，则更应谨慎看待单次差异。复测仍不能单独确定原因。",
+     "question_id": "rec_3529f2f8c7624c1b8c51765de6379a37",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "饮食调整后空腹血糖的复测结果",
+     "unknowns": "一次较低的复测值不能证明持续下降，也不能确定是饮食调整所致；正常波动或其他同时发生的变化也可能影响结果。",
+     "what_changed": "6月18日记录的空腹血糖为104 mg/dL；9月20日为96 mg/dL。两次记录均注明禁食10小时，后一次注明为同一化验机构。就这两次结果而言，复测值更低。",
+     "why_now": "用户关心饮食调整后空腹血糖是否降低；同一化验机构的复测现在提供了可比较的结果。"
+    }
+   }
+  ],
+  "preferences_before": {
+   "proactivity": "quiet"
+  },
+  "preferences_after": {
+   "proactivity": "quiet"
+  },
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "新复测直接回答了用户的问题：同一化验机构、均禁食10小时的两次空腹血糖记录分别为104和96 mg/dL。候选内容只称复测值较低，明确没有将下降归因于饮食，也未重复已推送内容。",
+  "violated_forbidden": []
+ }
+}
