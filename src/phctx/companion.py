@@ -471,6 +471,7 @@ class _Writer:
 
     def stop(self) -> None:
         self.jobs.put(None)
+        self.thread.join(30)
 
     def run(self) -> None:
         while (job := self.jobs.get()) is not None:

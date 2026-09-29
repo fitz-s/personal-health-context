@@ -1304,13 +1304,21 @@ class Store:
             context = [self._decorate(c, r) for r in c.execute(
                 "SELECT * FROM active_records WHERE kind IN ('routine','question','note','preference') "
                 "ORDER BY occurred_at DESC LIMIT 20")]
-            recent = [self._decorate(c, r) for r in c.execute(
-                "SELECT * FROM active_records WHERE kind IN ('event','attachment','analysis') "
-                'ORDER BY occurred_at DESC LIMIT 10')]
+            recent = [{'id': r['id'], 'kind': r['kind'], 'occurred_at_local': datetime.fromisoformat(
+                           r['occurred_at']).astimezone(ZoneInfo(r['timezone'])).isoformat(timespec='minutes'),
+                       'preview': ' '.join(r['text'].split())[:200]} for r in c.execute(
+                "SELECT * FROM active_records WHERE kind IN ('event','attachment') ORDER BY occurred_at DESC LIMIT 15")]
+            digest = c.execute("SELECT * FROM active_records WHERE kind='analysis' AND "
+                               "json_extract(payload_json, '$.type')='digest' ORDER BY occurred_at DESC LIMIT 1").fetchone()
+            last_digest = self._decorate(c, digest) if digest else None
+            ledger = [self._ledger_entry(c, r) for r in c.execute(
+                "SELECT * FROM active_records WHERE kind='analysis' ORDER BY occurred_at DESC LIMIT 30")]
+            since = self._since(c, digest['created_at'] if digest else None)
             counts = {k: n for k, n in c.execute('SELECT kind, count(*) FROM active_records GROUP BY kind')}
-            metrics = [] if 'observation_reads' in status else [dict(r) for r in c.execute(
-                'SELECT source_id, metric, unit, n, first_at, last_at FROM observation_catalog '
-                'ORDER BY source_id, metric LIMIT 300')]
+            metrics = [] if 'observation_reads' in status else [
+                [r[0], r[1], r[2], r[3], (r[4] or '')[:10], (r[5] or '')[:10]] for r in c.execute(
+                    'SELECT source_id, metric, unit, n, first_at, last_at FROM observation_catalog '
+                    'ORDER BY source_id, metric LIMIT 300')]
             change_seq = c.execute('SELECT coalesce(max(seq),0) FROM changes').fetchone()[0]
             first, last = c.execute('SELECT min(started_at), max(started_at) FROM worker_runs').fetchone()
         observed = None
@@ -1321,6 +1329,8 @@ class Store:
                                                        'are offered at the next conversation'}
         return {'preferences': self.preferences(), 'source_status': status,
                 'record_counts': counts, 'observation_catalog': metrics,
+                'observation_catalog_columns': ['source_id', 'metric', 'unit', 'n', 'first_day', 'last_day'],
+                'last_digest': last_digest, 'analysis_ledger': ledger, 'since_last_digest': since,
                 'context_index': context, 'recent': recent, 'pending': self.pending_insights(),
                 'background': background,
                 'change_watermark': change_seq, 'index_complete': False,
@@ -1329,6 +1339,40 @@ class Store:
                 'boundaries': ['No record without a committed receipt.',
                                'No original attachment without its bytes and verified checksum.',
                                'Silence, missing data or no sync is not a normal measurement.']}
+
+    def _ledger_entry(self, c: sqlite3.Connection, row: sqlite3.Row) -> dict:
+        """One line per past analysis: enough to know it exists and whether to read it, not its body."""
+        p = json.loads(row['payload_json'])
+        f = self._freshness(c, row['id'])
+        return {'id': row['id'], 'date': datetime.fromisoformat(row['occurred_at']).astimezone(
+                    ZoneInfo(row['timezone'])).date().isoformat(),
+                'type': p.get('type', 'analysis'),
+                'summary': p.get('summary') or ' '.join(row['text'].split())[:160],
+                'revisit_when': p.get('revisit_when'),
+                'evidence': 'unverified' if not f or not f[0] else ('stale' if f[1] else 'current')}
+
+    def _since(self, c: sqlite3.Connection, at: str | None) -> dict:
+        """What arrived after the last digest was written (or in the last 7 days when there is none)."""
+        at = at or (datetime.now(timezone.utc) - timedelta(days=7)).isoformat(timespec='microseconds')
+        records = {k: n for k, n in c.execute('SELECT kind, count(*) FROM active_records WHERE created_at>? '
+                                              'GROUP BY kind', (at,))}
+        batches: dict[str, dict] = {}
+        for src, detail in c.execute("SELECT entity_id, detail FROM changes WHERE entity='observations' AND at>?",
+                                     (at,)):
+            d = json.loads(detail)
+            b = batches.setdefault(src, {'batches': 0, 'upserted': 0, 'deleted': 0, 'metrics': set(),
+                                         'first': None, 'last': None})
+            b['batches'] += 1
+            b['upserted'] += d.get('upserted', 0)
+            b['deleted'] += d.get('deleted', 0)
+            b['metrics'].update(d.get('metrics', []))
+            if d.get('start'):  # a deletion-only batch names no sample window
+                b['first'] = min(filter(None, (b['first'], d['start'])))
+                b['last'] = max(filter(None, (b['last'], d['end'])))
+        # Metric names past a dozen are a count: an import touches every metric, and the catalog already names them.
+        return {'since': at, 'new_records': records, 'observation_batches': {
+            k: {**v, 'metrics': sorted(v['metrics']) if len(v['metrics']) <= 12 else f"{len(v['metrics'])} metrics"}
+            for k, v in batches.items()}}
 
     def status(self) -> dict:
         """Operational metadata only; no health content."""

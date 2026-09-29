@@ -41,6 +41,10 @@ class CompanionTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.base = Path(self.tmp.name)
         self.store = Store(self.base / 'store', 'synthetic')
+        from unittest import mock
+        wait = mock.patch.object(companion, 'ACK_WAIT_S', 30)  # these tests read the store's result in the reply
+        wait.start()
+        self.addCleanup(wait.stop)
         self.server = companion.make_server(self.store, '127.0.0.1', 0, SECRET, 'America/Chicago')
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()

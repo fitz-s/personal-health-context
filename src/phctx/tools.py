@@ -48,7 +48,8 @@ def delivered(name: str, data: dict) -> set[str]:
     index entry) are not delivered. A query delivers none: table access does not say where a cell came from (a literal,
     a pointer column), so its receipt certifies the result as a whole — an observation-dependent one by dependency."""
     if name == 'context_bootstrap':
-        return {r['id'] for k in ('context_index', 'recent') for r in data[k]}
+        return {r['id'] for r in data['context_index']} | (  # `recent` holds previews, not bodies
+            {data['last_digest']['id']} if data['last_digest'] else set())
     if name in {'context_search', 'context_read'}:
         return {r['id'] for r in data['records']}
     if name == 'context_read_original':
