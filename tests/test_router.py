@@ -161,6 +161,23 @@ class Packet(unittest.TestCase):
         self.assertEqual((m['previous_28_days_same_source']['n'], m['previous_28_days_same_source']['max']), (10, 58))
         self.assertEqual(m['new_values_vs_previous_range']['above_previous_max'], 3)
 
+    def test_upcoming_lists_dated_user_events_not_analysis_revisit_times(self):
+        from datetime import datetime
+        def put(kind, text, at):
+            self.n += 1
+            self.store.put_record(request_id=f'SYNTHETIC-{self.n}', kind=kind, text=text, occurred_at=at)
+        put('note', 'SYNTHETIC doctor follow-up on 2026-10-02 to decide on treatment.', AT)
+        put('note', 'SYNTHETIC: checkpoint is next week.', '2026-09-22T09:00:00-05:00')
+        put('routine', 'SYNTHETIC goal over 12 weeks (started 2026-07-01).', '2026-07-01T09:00:00-05:00')
+        put('analysis', 'SYNTHETIC analysis: revisit on 2026-09-30.', AT)
+        put('note', 'SYNTHETIC visit on 2026-12-24.', AT)  # beyond the window
+        put('note', 'SYNTHETIC appointment on 2026-02-31.', AT)  # not a date
+        with self.store.connect() as c:
+            got = worker.upcoming(c, datetime.fromisoformat('2026-09-23T09:00:00-05:00'))
+        self.assertEqual([(e['date'], e['days_until'], e['read_as']) for e in got],
+                         [('2026-09-23', 0, 'weeks from the stated start'), ('2026-09-29', 6, 'relative to the record date'),
+                          ('2026-10-02', 9, 'explicit date')])
+
     def test_oversized_sections_say_what_was_left_out(self):
         text = worker._section('T', [{'x': 'y' * 50}] * 10, 120, 'none')
         self.assertIn('8 more omitted', text)

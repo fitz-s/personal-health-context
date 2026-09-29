@@ -9,9 +9,11 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import re
 import time
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from . import extract, model
 from .config import Config
@@ -178,6 +180,47 @@ MEANING = {'pending': 'queued, not yet shown to the user', 'delivered': 'shown t
            'expired': 'expired unshown'}
 
 
+# Dates a user writes into records: an explicit ISO date, a span of weeks from a stated start, or a phrase relative to
+# when the record was written. Analyses are excluded: a revisit time the system set is not the user's event.
+DATED = [
+    (re.compile(r'(\d+)[- ]?weeks?\b[^.;。；]*?started (20\d\d-\d\d-\d\d)', re.I),
+     lambda m, at: date.fromisoformat(m[2]) + timedelta(weeks=int(m[1])), 'weeks from the stated start'),
+    (re.compile(r'20\d\d-\d\d-\d\d'), lambda m, at: date.fromisoformat(m[0]), 'explicit date'),
+    (re.compile(r'next week|下周|下星期', re.I), lambda m, at: at + timedelta(days=7), 'relative to the record date'),
+    (re.compile(r'tomorrow|明天', re.I), lambda m, at: at + timedelta(days=1), 'relative to the record date'),
+    (re.compile(r'in (\d+) (day|week)s?\b|(\d+)\s*(天|周)后', re.I),
+     lambda m, at: at + timedelta(days=int(m[1] or m[3]) * (7 if (m[2] or m[4]) in ('week', '周') else 1)),
+     'relative to the record date'),
+]
+UPCOMING_DAYS = 21
+
+
+def upcoming(c, now: datetime) -> list[dict]:
+    """Dated events in the user's own records that fall within the next UPCOMING_DAYS days (today included), soonest
+    first. Deterministic: what the records say, not whether the event matters."""
+    out, seen = [], set()
+    for r in c.execute("SELECT id, kind, text, occurred_at, timezone FROM active_records WHERE kind != 'analysis'"):
+        tz = ZoneInfo(r['timezone'])
+        today, at = now.astimezone(tz).date(), datetime.fromisoformat(r['occurred_at']).astimezone(tz).date()
+        taken: list[tuple[int, int]] = []
+        for rx, when, how in DATED:
+            for m in rx.finditer(r['text']):
+                if any(a < m.end() and m.start() < b for a, b in taken):
+                    continue  # inside a span another rule already read (the start date of "12 weeks (started …)")
+                taken.append(m.span())
+                try:
+                    d = when(m, at)
+                except ValueError:
+                    continue
+                days = (d - today).days
+                if 0 <= days <= UPCOMING_DAYS and (r['id'], d) not in seen:
+                    seen.add((r['id'], d))
+                    lo = max(0, m.start() - 90)
+                    out.append({'date': d.isoformat(), 'days_until': days, 'record_id': r['id'], 'kind': r['kind'],
+                                'read_as': how, 'text': ('…' if lo else '') + r['text'][lo:m.end() + 90]})
+    return sorted(out, key=lambda e: (e['days_until'], e['record_id']))
+
+
 def _cut(text: str, n: int) -> str:
     return text if len(text) <= n else text[:n] + f'…[truncated: {n} of {len(text)} chars]'
 
@@ -326,9 +369,9 @@ def packet(store: Store, job: dict, now: datetime | None = None) -> str:
                      'meaning': {'normal': 'the user accepts occasional proactive messages',
                                  'quiet': 'the user asked to be interrupted less: surface only a direct answer to their '
                                           'own question that the new evidence itself provides, a correction of '
-                                          'something they were shown, or a measurement gap tied to a choice the user '
-                                          'has said they are making within about two weeks (a revisit time an '
-                                          'analysis set is not such a choice); everything else is silence',
+                                          'something they were shown, or a measurement gap tied to an entry in '
+                                          '"Upcoming dated events" with days_until <= 14 that bears on the same '
+                                          'outcome; with no such entry a measurement gap is silence',
                                  'off': 'the user turned proactive messages off'}.get(prefs['proactivity']),
                      'last_insight_queued_or_shown_at': last,
                      'attention_budget': f'at most one proactive message per {hours} h (enforced by the gate)',
@@ -379,6 +422,8 @@ def packet(store: Store, job: dict, now: datetime | None = None) -> str:
                                                  "('record','observations','extraction') ORDER BY seq DESC LIMIT 50",
                                                  (p['since_seq'], p['through_seq']))]}
         parts.append('## User preferences and attention\n' + dump(attention))
+        parts.append(_section(f'Upcoming dated events in the user\'s records (next {UPCOMING_DAYS} days)', upcoming(c, now),
+                              4_000, f'None: no record names a date in the next {UPCOMING_DAYS} days.'))
         parts.append(_section('Source status (sync health, not health data)', _sources(c, now), 5_000,
                               'No device or vendor sources are connected.'))
         parts.append(_section('Passive data available (observation catalog)', [dict(r) for r in c.execute(

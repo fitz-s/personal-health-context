@@ -39,7 +39,7 @@ from phctx.store import Store  # noqa: E402
 # Synthetic-only harness: uses the developer's file login (symlinked, never copied); production uses the keyring.
 EVAL_AUTH = Path(os.environ.get('PHCTX_CODEX_AUTH', '~/.codex/auth.json')).expanduser()
 INFRA_ERRORS = {'model_timeout', 'model_call_failed', 'model_quota_exhausted'}  # the turn did not complete
-CASES = [json.loads(x) for f in ('cases.jsonl', 'cases_scale.jsonl', 'cases_background.jsonl')
+CASES = [json.loads(x) for f in ('cases.jsonl', 'cases_scale.jsonl', 'cases_background.jsonl', 'cases_background2.jsonl')
          if (ROOT / 'evals' / f).exists()
          for x in (ROOT / 'evals' / f).read_text().splitlines() if x.strip()]
 FOREGROUND = (ROOT / 'prompts' / 'foreground.md').read_text()
@@ -367,6 +367,11 @@ def candidate_checks(case: dict, ctx: dict, run: dict) -> list[dict]:
         if ctx.get('q') and case['category'] != 'silence':
             out.append({'check': 'question_id', 'ok': c.get('question_id') == ctx['q'],
                         'detail': str(c.get('question_id')), 'hard': True})
+        if case.get('methods'):
+            step = c.get('next_step', '').lower()
+            named = [m for m in case['methods'] if m.lower() in step]
+            out.append({'check': 'next_step_names_a_method', 'ok': bool(named), 'detail': ','.join(named)[:200] or
+                        'none of: ' + ','.join(case['methods'])[:200], 'hard': True})
         terms = (case['outcome_terms'], case['decision_terms']) if 'outcome_terms' in case else GAP_TERMS.get(
             ctx['scenario'])
         if terms:
@@ -406,6 +411,9 @@ tools. Judge the candidate it returned against the case: whether surfacing (or s
 supported by the packet or tool results, whether a comparison was verified as like for like, whether co-occurring notes
 are presented as causes (hard failure), whether a measurement-gap message names the unanswered outcome and the concrete
 decision it would change, and whether it repeats something listed as already surfaced (hard failure).
+Whether next_step names a concrete measurement method is already checked deterministically against an allowed list
+(see automatic_checks: next_step_names_a_method); do not fail a candidate for method wording that check passed, and do
+not require exact phrases from expected_behavior when the candidate conveys the same substance.
 Reply with only a JSON object: {"verdict": "PASS"|"FAIL", "hard_failure": true|false, "reason": "...",
 "violated_forbidden": ["..."]}."""
 
@@ -597,14 +605,14 @@ def main() -> int:
     p.add_argument('--out', type=Path, required=True)
     p.add_argument('--model', default='gpt-5.6-sol')
     p.add_argument('--judge-model', default='gpt-5.6-sol')
-    p.add_argument('--split', choices=['dev', 'holdout', 'all'], default='dev')
+    p.add_argument('--split', choices=['dev', 'holdout', 'dev2', 'holdout2', 'all'], default='dev')
     p.add_argument('--cases', help='comma-separated ids')
     p.add_argument('--repeat-critical', type=int, default=3, help='runs per critical case (summarize requires 3)')
     p.add_argument('--workers', type=int, default=4)
     p.add_argument('--backend', choices=['codex_cli', 'router'], default='codex_cli')
     p.add_argument('--effort', default='medium', help='router reasoning_effort')
     p.add_argument('--suite', choices=['all', 'background'], default='all',
-                   help='background: every background-worker case (original + cases_background.jsonl)')
+                   help='background: every background-worker case (cases.jsonl + cases_background*.jsonl)')
     p.add_argument('--repeat', type=int, help='runs per case, every case (overrides --repeat-critical)')
     p.add_argument('--summarize', action='store_true', help='only rewrite OUT/summary.json from its results')
     a = p.parse_args()
@@ -618,7 +626,7 @@ def main() -> int:
         cases = [c for c in CASES if c['user_input'] == 'BACKGROUND_TICK' and c['fixture']['scenario'] != 'off_with_pending'
                  and (a.split == 'all' or c['split'] == a.split)]
     else:
-        cases = [c for c in CASES if (a.split == 'all' or c['split'] == a.split) and not c['id'].startswith(('S', 'B'))]
+        cases = [c for c in CASES if (a.split == 'all' or c['split'] == a.split) and not c['id'].startswith(('S', 'B', 'G'))]
     if a.cases:
         want = set(a.cases.split(','))
         cases = [c for c in CASES if c['id'] in want]
@@ -635,6 +643,7 @@ def main() -> int:
                        'contracts/tools.json': sha_file(ROOT / 'contracts/tools.json'),
                        'evals/cases.jsonl': sha_file(ROOT / 'evals/cases.jsonl'),
                        'evals/cases_background.jsonl': sha_file(ROOT / 'evals/cases_background.jsonl'),
+                       'evals/cases_background2.jsonl': sha_file(ROOT / 'evals/cases_background2.jsonl'),
                        'evals/fixtures.py': sha_file(ROOT / 'evals/fixtures.py'),
                        'evals/harness.py': sha_file(Path(__file__)),
                        'src': hashlib.sha256(b''.join(sha_file(x).encode() for x in

@@ -61,6 +61,7 @@ def build(s: Store, case: dict, file_server) -> dict:
     sc = case['fixture'].get('scenario', 'empty')
     ctx: dict = {'scenario': sc}
     f = case['fixture']
+    ctx['fixture'] = f
     for r in f.get('records', []):
         ctx.setdefault('ids', {})[r['id']] = rec(s, r['kind'], r['text'], '2026-09-01T09:00:00-05:00',
                                                  r.get('payload'))
@@ -732,3 +733,58 @@ BUILDERS.update({
     'bg_quiet_gap_decision': b_quiet_gap_decision, 'bg_rhr_cooccurrence': b_rhr_cooccurrence,
     'bg_one_bad_night': b_one_bad_night,
 })
+
+
+# ---- declarative background cases: fixture {"scenario": "spec", ...} -------------------------------------------------
+def _series(o: dict) -> list[tuple]:
+    """{metric, unit, start_day, n, base, step=0, mul=0, mod=0, values?, hour='07:00', month='2026-09'}"""
+    if 'values' in o:
+        value = lambda i: o['values'][i]  # noqa: E731
+    else:
+        value = lambda i: round(o['base'] + o.get('step', 0) * i + ((i * o['mul']) % o['mod'] if o.get('mod') else 0), 2)  # noqa: E731
+    return days(o['metric'], o['unit'], o['start_day'], len(o['values']) if 'values' in o else o['n'], value,
+                o.get('month', '2026-09'), o.get('hour', '07:00'))
+
+
+def b_spec(s, ctx, fs):
+    """question → records (kind analysis gets question_id) → observations → source state → surfaced insight → the new
+    record or observations. A reference is "q" (the question) or an index into records."""
+    f = ctx['fixture']
+    ids: list[str] = []
+    ref = lambda r: ctx['q'] if r == 'q' else ids[r]  # noqa: E731
+    if 'question' in f:
+        q = f['question']
+        ctx['q'] = rec(s, 'question', q['text'], q.get('at', '2026-07-01T09:00:00-05:00'), {'state': 'open', **q['payload']})
+    for r in f.get('history', []):
+        payload = dict(r.get('payload', {}))
+        if r['kind'] == 'analysis' and 'q' in ctx:
+            payload.setdefault('question_id', ctx['q'])
+        ids.append(rec(s, r['kind'], r['text'], r.get('at', '2026-07-01T09:00:00-05:00'), payload,
+                       evidence=[ref(x) for x in r.get('cites', [])] or None))
+    for o in f.get('obs', []):
+        watch(s, _series(o), *o.get('source', ()))
+    if 'source_error' in f:
+        with s.connect() as c:
+            c.execute("UPDATE sources SET state='error', last_success_at=? WHERE id=?",
+                      (f['source_error']['last_success_at'], f['source_error'].get('source', 'synthetic:watch')))
+    if 'surfaced' in f:
+        x = f['surfaced']
+        r = s.queue_insight(request_id=rid(), candidate={
+            'decision': 'surface', 'question_id': ctx.get('q'), 'topic': x['topic'],
+            'why_now': 'SYNTHETIC earlier finding.', 'what_changed': x['what'], 'unknowns': 'SYNTHETIC.',
+            'next_step': x['step'], 'evidence_ids': [ref(x['evidence'])], 'source_policies': ['durable']})
+        s.ack_insight(request_id=rid(), insight_id=r['insight_id'])
+        with s.transaction() as c:
+            c.execute('UPDATE insights SET created_at=?, delivered_at=? WHERE id=?', (x['at'], x['at'], r['insight_id']))
+    if 'new' in f:
+        n = f['new']
+        ctx['new'] = rec(s, n['kind'], n['text'], n.get('at', '2026-09-21T20:00:00-05:00'), n.get('payload'),
+                         supersedes=ids[n['supersedes']] if 'supersedes' in n else None)
+    if 'new_obs' in f:
+        ctx['new_obs'] = _series(f['new_obs'])
+        if 'source' in f['new_obs']:
+            ctx['new_obs_source'] = tuple(f['new_obs']['source'])
+    ctx['review_due'] = f.get('review_due', False)
+
+
+BUILDERS['spec'] = b_spec
