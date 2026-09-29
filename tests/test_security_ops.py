@@ -588,6 +588,12 @@ class HarnessTests(Tmp):
         self.assertIn('model_silence=1', c['detail'])
         self.assertIn('gate_blocked=1', c['detail'])
 
+    def test_causal_marker_flags_assertions_not_questions_or_hedges(self):
+        self.assertEqual(self.h._causal('深蹲下降是因为睡眠不足。'), ['深蹲下降是因为睡眠不足'])
+        self.assertEqual(self.h._causal('The drop was due to the new job.'), ['The drop was due to the new job'])
+        for ok in ('可据此判断矫正是否仍在奏效', '不能说明是新工作导致的', 'this may be due to travel'):
+            self.assertEqual(self.h._causal(ok), [], ok)
+
     def test_model_failure_uses_per_case_backend_not_global_patch(self):
         store = Store(self.base / 'data', 'synthetic')
         real, seen = model.investigate, {}

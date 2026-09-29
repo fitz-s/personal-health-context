@@ -248,11 +248,20 @@ def _observation_change(c, source: str, detail: dict) -> dict:
         if new and old:
             top, bottom = max(r[1] for r in old), min(r[1] for r in old)
             entry['new_values_vs_previous_range'] = {
-                'new_values': [r[1] for r in new][:30], 'previous_range': [bottom, top],
+                'new_values_in_time_order': [[r[0][:10], r[1]] for r in new][:30], 'previous_range': [bottom, top],
                 'above_previous_max': sum(r[1] > top for r in new), 'below_previous_min': sum(r[1] < bottom for r in new),
                 'inside_previous_range': sum(bottom <= r[1] <= top for r in new)}
-        entry['sources_reporting_metric'] = [dict(r) for r in c.execute(
-            'SELECT source_id, unit, n, first_at, last_at FROM observation_catalog WHERE metric=?', (m,))]
+        others = [dict(r) for r in c.execute(
+            'SELECT source_id, unit, n, first_at, last_at FROM observation_catalog WHERE metric=? AND source_id!=?',
+            (m, source))]
+        entry['sources_reporting_metric'] = others + [{'source_id': source, 'new': True}]
+        if new and not old and (before := [o for o in others if o['last_at'] and o['last_at'] <= hi]):
+            prev = max(before, key=lambda o: o['last_at'])
+            entry['source_switch'] = {
+                'from': prev['source_id'], 'to': source,
+                'previous_source_values': _stats(_values(c, prev['source_id'], m, base, lo)),
+                'meaning': 'This metric now comes from a different device than before. Values across the switch are '
+                           'not comparable; a difference between them is a data event, not a change in the person.'}
         metrics.append(entry)
     return {'source_id': source, 'window': [lo, detail['end']], 'upserted': detail.get('upserted'),
             'deleted': detail.get('deleted'), 'metrics': metrics,

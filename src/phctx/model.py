@@ -202,17 +202,19 @@ def _post(body: dict, key: str, timeout: float) -> dict:
     req = urllib.request.Request(ROUTER_URL, json.dumps(body).encode(),
                                  {'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json'})
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-    for attempt in range(3):
+    for attempt in range(4):
         try:
             with opener.open(req, timeout=timeout) as r:
                 return json.loads(r.read())
         except urllib.error.HTTPError as e:
-            if e.code not in RETRY or attempt == 2:
-                raise ModelError('model_quota_exhausted' if e.code == 429 else 'model_call_failed') from None
-        except (urllib.error.URLError, TimeoutError, ValueError):
-            if attempt == 2:
-                raise ModelError('model_call_failed') from None
-        time.sleep(5 * 2 ** attempt)
+            why = f'http_{e.code}'
+            if e.code not in RETRY or attempt == 3:
+                raise ModelError('model_quota_exhausted' if e.code == 429 else 'model_call_failed',
+                                 [{'event': 'router_error', 'detail': why}]) from None
+        except (urllib.error.URLError, TimeoutError, ValueError) as e:
+            if attempt == 3:
+                raise ModelError('model_call_failed', [{'event': 'router_error', 'detail': type(e).__name__}]) from None
+        time.sleep(10 * 2 ** attempt)
     raise AssertionError('unreachable')
 
 
@@ -245,7 +247,7 @@ def run_router(system: str, user: str, *, model_id: str, reasoning_effort: str, 
         try:
             r = _post(body, key, min(left, 300))
         except ModelError as e:
-            raise ModelError(e.code, trace) from None
+            raise ModelError(e.code, trace + e.trace) from None
         waited = round(time.monotonic() - sent, 1)
         usage = r.get('usage') or {}
         used += usage.get('total_tokens') or 0
