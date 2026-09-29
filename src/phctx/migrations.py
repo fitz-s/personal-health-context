@@ -5,7 +5,7 @@ import hashlib
 import json
 import sqlite3
 
-TARGET = 15
+TARGET = 16
 
 
 def statements(sql: str):
@@ -366,7 +366,15 @@ ALTER TABLE record_dependencies_v15 RENAME TO record_dependencies;
 """)
 
 
-STEPS = {2: _v2, 3: _v3, 4: _v4, 5: _v5, 6: _v6, 7: _v7, 8: _v8, 9: _v9, 10: _v10, 11: _v11, 12: _v12, 13: _v13, 14: _v14, 15: _v15}
+def _v16(c: sqlite3.Connection) -> None:
+    # Token usage per model call, summed over its turns (router backend; NULL where a backend reports none).
+    have = {r[1] for r in c.execute('PRAGMA table_info(model_calls)')}
+    for col in ('prompt_tokens', 'completion_tokens'):
+        if col not in have:
+            c.execute(f'ALTER TABLE model_calls ADD COLUMN {col} INTEGER')
+
+
+STEPS = {2: _v2, 3: _v3, 4: _v4, 5: _v5, 6: _v6, 7: _v7, 8: _v8, 9: _v9, 10: _v10, 11: _v11, 12: _v12, 13: _v13, 14: _v14, 15: _v15, 16: _v16}
 
 
 def apply(c: sqlite3.Connection, current: int, now: str) -> int:

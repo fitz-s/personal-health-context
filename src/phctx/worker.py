@@ -155,6 +155,13 @@ def plan(store: Store, cfg: Config) -> dict:
     return {'changes': len(changes), 'enqueued': enqueued}
 
 
+def _tokens(trace) -> tuple[int | None, int | None]:
+    turns = [t for t in trace or [] if 'turn' in t]
+    if not turns:
+        return None, None
+    return sum(t['prompt_tokens'] for t in turns), sum(t['completion_tokens'] for t in turns)
+
+
 def calls_today(store: Store) -> int:
     start = _now().replace(hour=0, minute=0, second=0, microsecond=0).isoformat(timespec='microseconds')
     with store.connect() as c:
@@ -575,7 +582,8 @@ def execute(store: Store, cfg: Config, job: dict, owner: str, config_path: str,
         if calls_today(store) >= cfg.daily_call_cap:
             raise model.ModelError('budget_exhausted')
         with store.transaction() as c:
-            c.execute('INSERT INTO model_calls VALUES(?,?,?,?,?,?,NULL,?,NULL,NULL)',
+            c.execute('INSERT INTO model_calls(id,job_id,backend,model_id,prompt_sha256,started_at,status) '
+                      'VALUES(?,?,?,?,?,?,?)',
                       (call_id, job['id'], backend, cfg.model_id or backend, prompt_sha, started, 'running'))
         tools = Tools(ToolContext(store=store, profile='readonly')) if backend == 'router' else None
         task = packet(store, job, now)
@@ -589,8 +597,8 @@ def execute(store: Store, cfg: Config, job: dict, owner: str, config_path: str,
         delay = min(3600 * 24, 900 * 2 ** attempts)
         final = e.code not in {'model_disabled', 'budget_exhausted'} and attempts >= MAX_ATTEMPTS
         with store.transaction() as c:
-            c.execute("UPDATE model_calls SET finished_at=?, status='failed', error_code=? WHERE id=?",
-                      (utcnow(), e.code, call_id))
+            c.execute("UPDATE model_calls SET finished_at=?, status='failed', error_code=?, prompt_tokens=?, "
+                      'completion_tokens=? WHERE id=?', (utcnow(), e.code, *_tokens(e.trace), call_id))
             if not c.execute('UPDATE jobs SET state=?, attempts=?, next_run_at=?, last_error_code=?, lease_owner=NULL, '
                              'lease_expires_at=NULL, updated_at=? WHERE id=? AND lease_owner=?',
                              ('failed' if final else 'queued',
@@ -599,8 +607,8 @@ def execute(store: Store, cfg: Config, job: dict, owner: str, config_path: str,
                 return {'job': job['dedupe_key'], 'outcome': 'lease_lost'}
         return {'job': job['dedupe_key'], 'outcome': 'deferred', 'error': e.code}
     with store.transaction() as c:
-        c.execute("UPDATE model_calls SET finished_at=?, status='done', model_id=? WHERE id=?",
-                  (utcnow(), result.model_id, call_id))
+        c.execute("UPDATE model_calls SET finished_at=?, status='done', model_id=?, prompt_tokens=?, "
+                  'completion_tokens=? WHERE id=?', (utcnow(), result.model_id, *_tokens(result.trace), call_id))
     if traces is not None:
         traces.append({'job': job['dedupe_key'], 'task': task, 'candidate': result.candidate, 'trace': result.trace})
 
@@ -715,10 +723,14 @@ def status(cfg: Config) -> dict:
         first = c.execute('SELECT min(started_at) FROM worker_runs').fetchone()[0]
         jobs = {r[0]: r[1] for r in c.execute('SELECT state, count(*) FROM jobs GROUP BY state')}
         shadow = c.execute('SELECT count(*) FROM shadow_insights').fetchone()[0]
+        usage = [dict(r) for r in c.execute(
+            "SELECT substr(started_at,1,10) AS day, count(*) AS calls, sum(status='failed') AS failed, "
+            'sum(prompt_tokens) AS prompt_tokens, sum(completion_tokens) AS completion_tokens FROM model_calls '
+            "WHERE status!='skipped' GROUP BY day ORDER BY day DESC LIMIT 14")]
     observed = None
     if first:
         observed = round((_now() - datetime.fromisoformat(first)).total_seconds() / 86400, 2)
     return {'mode': cfg.worker_mode, 'model': {'enabled': cfg.model_enabled, 'backend': cfg.model_backend,
                                                'model_id': cfg.model_id},
             'first_run_at': first, 'observed_days': observed, 'recent_runs': runs, 'jobs': jobs,
-            'shadow_candidates': shadow, 'calls_today': calls_today(store)}
+            'shadow_candidates': shadow, 'calls_today': calls_today(store), 'model_usage_by_day': usage}

@@ -290,6 +290,23 @@ class WorkerBackupTests(unittest.TestCase):
         self.assertGreater(datetime.fromisoformat(job['next_run_at']), datetime.now(timezone.utc))
         self.assertEqual(self.count('SELECT count(*) FROM insights'), 0)
 
+    def test_a_failed_call_records_the_tokens_its_turns_used_and_status_sums_them_by_day(self):
+        self.cfg.model_enabled = True
+        self.cfg.model_backend = 'scripted'
+        self.question()
+        self.record(text='SYNTHETIC posture measurement added')
+        def spent_then_failed(task):
+            raise model.ModelError('model_call_failed', [{'turn': 0, 'prompt_tokens': 1200, 'completion_tokens': 40},
+                                                         {'event': 'router_error'},
+                                                         {'turn': 1, 'prompt_tokens': 1500, 'completion_tokens': 60}])
+        worker.run_once(self.cfg, scripted=spent_then_failed)
+        with self.store.connect() as c:
+            row = c.execute('SELECT prompt_tokens, completion_tokens FROM model_calls').fetchone()
+        self.assertEqual(tuple(row), (2700, 100))
+        day = worker.status(self.cfg)['model_usage_by_day'][0]
+        self.assertEqual((day['calls'], day['failed'], day['prompt_tokens'], day['completion_tokens']),
+                         (1, 1, 2700, 100))
+
     def test_scripted_model_error_requeues_with_backoff_without_user_record(self):
         self.cfg.model_enabled = True
         self.cfg.model_backend = 'scripted'
