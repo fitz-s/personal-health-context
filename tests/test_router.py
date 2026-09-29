@@ -94,6 +94,25 @@ class Router(unittest.TestCase):
         with self.assertRaises(model.ModelError):
             self.run_with([read, reply(json.dumps(cut)), reply(json.dumps(cut))])
 
+    def test_numbers_not_in_tool_results_or_packet_earn_a_repair_then_fail(self):
+        rid = self.store.put_record(request_id='SYNTHETIC-w', kind='note', text='SYNTHETIC weight 80.00 kg on 2026-09-01',
+                                    occurred_at=AT)['record_id']
+        base = {'decision': 'surface', 'topic': 't', 'why_now': 'w', 'unknowns': 'u', 'next_step': 'measure waist 3 times',
+                'evidence_ids': [rid], 'source_policies': ['durable']}
+        read = reply(calls=[('context_read', {'record_ids': [rid]})])
+        ok = dict(base, what_changed='80.00 kg, down 0.42 kg to 79.58 kg')  # 79.58 given in the packet below
+        bad = dict(base, what_changed='80.00 kg then 77.79 kg')
+        it = iter([read, reply(json.dumps(ok))])
+        with patch.object(model, '_post', lambda b, k, t: next(it)), patch.object(model, 'keychain_get', return_value='k'):
+            cand, _ = model.run_router('s', 'packet: latest 79.58', model_id='m', reasoning_effort='low', tools=self.tools,
+                                       parse=model.parse_candidate)
+        self.assertEqual(cand['what_changed'], ok['what_changed'])
+        with self.assertRaises(model.ModelError) as e:
+            self.run_with([read, reply(json.dumps(bad)), reply(json.dumps(bad))])
+        self.assertEqual(e.exception.code, 'candidate_numbers_unverified')
+        self.assertIn('77.79', self.sent[-1]['messages'][-1]['content'])
+        self.assertEqual(model.numbers('8分40秒 → 8:05, "mean":56.94'), {520, 485, 56.94})
+
     def test_missing_key_never_calls_the_router(self):
         with patch.object(model, 'keychain_get', return_value=None), patch.object(model, '_post') as post:
             with self.assertRaises(model.ModelError) as e:
@@ -182,6 +201,31 @@ class Packet(unittest.TestCase):
         self.assertEqual([(e['date'], e['days_until'], e['read_as']) for e in got],
                          [('2026-09-23', 0, 'weeks from the stated start'), ('2026-09-29', 6, 'relative to the record date'),
                           ('2026-10-02', 9, 'explicit date')])
+
+    def test_duplicate_guard_drops_a_restated_delivered_insight_but_not_a_new_value(self):
+        q = self.rec('question', 'SYNTHETIC knee pain', {'state': 'open', 'watch_terms': ['knee']})
+        e1 = self.rec('note', 'SYNTHETIC knee pain 3/10 on the same stairs')
+        r = self.store.queue_insight(request_id='SYNTHETIC-i', candidate={
+            'decision': 'surface', 'question_id': q, 'topic': 'knee', 'why_now': 'w', 'what_changed': 'pain 6/10 to 3/10',
+            'unknowns': 'u', 'next_step': 'n', 'evidence_ids': [e1], 'source_policies': ['durable']})
+        self.store.ack_insight(request_id='SYNTHETIC-a', insight_id=r['insight_id'])
+        restate = self.rec('note', 'SYNTHETIC knee felt ok on the stairs again')
+        cand = {'decision': 'surface', 'question_id': q, 'topic': 'knee', 'why_now': 'w', 'what_changed': '6/10 to 3/10',
+                'evidence_ids': [e1, restate]}
+        self.assertEqual(worker.duplicate_of(self.store, cand, ''), r['insight_id'])
+        new = self.rec('note', 'SYNTHETIC knee pain 1/10 on the same stairs')
+        self.assertIsNone(worker.duplicate_of(self.store, dict(cand, evidence_ids=[e1, new],
+                                                                what_changed='3/10 to 1/10'), ''))
+
+    def test_comparability_puts_stated_conditions_side_by_side(self):
+        q = self.rec('question', 'SYNTHETIC LDL', {'state': 'open', 'watch_terms': ['ldl']})
+        self.n += 1
+        self.store.put_record(request_id=f'SYNTHETIC-{self.n}', kind='note', text='SYNTHETIC lab (Lab B): LDL 4.1 mmol/L.',
+                              occurred_at='2026-06-10T09:00:00-05:00')
+        new = self.rec('note', 'SYNTHETIC lab (Lab C): LDL 150 mg/dL.')
+        with self.store.connect() as c:
+            got = worker._comparable(c, worker._record(c, new) | {'occurred_at': '2026-09-21T01:00:00+00:00'}, q)
+        self.assertEqual(got['differences'], ['lab b', 'lab c', 'mg/dl', 'mmol/l'])
 
     def test_oversized_sections_say_what_was_left_out(self):
         text = worker._section('T', [{'x': 'y' * 50}] * 10, 120, 'none')

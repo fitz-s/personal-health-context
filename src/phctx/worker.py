@@ -326,6 +326,78 @@ def _observation_change(c, source: str, detail: dict) -> dict:
             'note': 'Per-sample values, not daily totals; the previous window ends where the new one starts.'}
 
 
+# Measurement-condition words a record states about itself: lab, unit, device/equipment, venue, protocol, method.
+CONDITION = re.compile(
+    r'\b(?:Lab\s+\w+|same lab|different (?:lab|assay|method|machine|gym \w+)|(?:mg/dL|mmol/L|nmol/L|ng/mL|ug/L|mIU/L|%))'
+    r'|\b(?:same|different|new)(?: flat)? (?:course|pool|track|box|stairs|machine|protocol|examiner|therapist|cuff|scale|'
+    r'device)\b|\bflat course\b|\b3RM\b|\b5x5\b|\bsets?\b'
+    r'|\b(?:treadmill|trail|open-water|wetsuit|straps?|belt|phone app|fingerstick|kit|incline|damper \d+|goniometer)\b'
+    r'|\bprotocol\s+P\d\b|\b\d+\s*m\s+climbing\b|\(no box\)|no box', re.I)
+
+
+def _conditions(text: str) -> list[str]:
+    # "same X" and "X" state the same condition; compare them as one
+    return sorted({re.sub(r'^(?:same|different|new) ', '', m[0].strip().lower()).replace('flat ', '')
+                   for m in CONDITION.finditer(text)} | ({'different'} if re.search(r'\bdifferent\b', text, re.I) else set()))
+
+
+def _comparable(c, rec: dict, qid: str | None) -> dict | None:
+    """For a new record with a number: the question's earlier records with numbers, with the measurement conditions each
+    one states, side by side. Deterministic; it says what the texts state, not whether they are comparable."""
+    if not qid or not re.search(r'\d', rec['text']):
+        return None
+    q = c.execute('SELECT payload_json FROM active_records WHERE id=?', (qid,)).fetchone()
+    terms = [t.lower() for t in json.loads(q[0]).get('watch_terms', [])] if q else []
+    earlier = [dict(r) for r in c.execute(
+        "SELECT id, occurred_at, text FROM active_records WHERE kind IN ('event','note') AND id != ? AND occurred_at < ? "
+        'ORDER BY occurred_at DESC LIMIT 40', (rec['id'], rec['occurred_at']))]
+    earlier = [e for e in earlier if re.search(r'\d', e['text']) and any(t in e['text'].lower() for t in terms)][:4]
+    if not earlier:
+        return None
+    new = _conditions(rec['text'])
+    rows = [{'id': e['id'], 'occurred_at': e['occurred_at'][:10], 'text': _cut(e['text'], 200),
+             'stated_conditions': _conditions(e['text'])} for e in earlier]
+    return {'new_record_conditions': new, 'earlier_records_with_values': rows,
+            'differences': sorted({x for r in rows for x in set(r['stated_conditions']) ^ set(new)}),
+            'note': 'Conditions as each record states them. A value measured under different stated conditions (lab, '
+                    'unit, device, venue, protocol, equipment) is not like for like with the others.'}
+
+
+def _delivered(c, qid: str | None) -> list[str]:
+    """One line per insight the user was shown on this question: its claim and evidence."""
+    if not qid:
+        return []
+    return [f'already delivered {r["delivered_at"][:10]}: {_cut(json.loads(r["payload_json"]).get("what_changed", ""), 200)}'
+            f' — evidence {", ".join(json.loads(r["payload_json"]).get("evidence_ids", []))}'
+            for r in c.execute("SELECT payload_json, delivered_at FROM insights WHERE question_id=? AND state='delivered' "
+                               'ORDER BY delivered_at DESC LIMIT 5', (qid,))]
+
+
+def duplicate_of(store: Store, cand: dict, packet: str) -> str | None:
+    """Id of a delivered insight whose evidence contains every id this candidate cites, when the candidate's factual
+    fields state no number beyond that insight's own text and the packet's record texts; else None."""
+    ev = set(cand.get('evidence_ids', []))
+    with store.connect() as c:
+        rows = c.execute("SELECT id, payload_json FROM insights WHERE state='delivered' AND question_id IS ?",
+                         (cand.get('question_id'),)).fetchall()
+        for r in rows:
+            p = json.loads(r['payload_json'])
+            shown = set(p.get('evidence_ids', []))
+            if not shown:
+                continue
+            # evidence the insight cited, plus records that only restate it (no number of their own)
+            restating = {i for i in ev - shown if (t := c.execute('SELECT text FROM records WHERE id=?', (i,)).fetchone())
+                         and not model.numbers(t[0]) - model.numbers(dump(p))}
+            if ev - shown - restating:
+                continue
+            ids = sorted(ev | shown)
+            known = dump(p) + ''.join(t[0] for t in c.execute(
+                f'SELECT text FROM records WHERE id IN ({",".join("?" * len(ids))})', ids))
+            if not model.unverified_numbers(cand, known):
+                return r['id']
+    return None
+
+
 def _trigger(c, ev: dict):
     if ev['entity'] == 'record':
         return {'change': 'record', 'record': _record(c, ev['id']), 'already_cited_by': _citing(c, ev['id'])}
@@ -468,10 +540,17 @@ def packet(store: Store, job: dict, now: datetime | None = None) -> str:
         used = sum(map(len, parts))
         events = {e['record_id']: e for e in dated}
         triggers = [_trigger(c, ev) for ev in p['evidence']]
+        qid = p.get('question_id')
+        told = _delivered(c, qid)
         for t in triggers:
-            if t['change'] == 'record' and t['record'] and (e := events.get(t['record']['id'])):
-                t['dated_event'] = {'date': e['date'], 'days_until': e['days_until'],
-                                    'meaning': 'this record is a dated event the user recorded, not a measurement'}
+            if told:
+                t['already_delivered_on_this_question'] = told
+            if t['change'] == 'record' and t['record']:
+                if e := events.get(t['record']['id']):
+                    t['dated_event'] = {'date': e['date'], 'days_until': e['days_until'],
+                                        'meaning': 'this record is a dated event the user recorded, not a measurement'}
+                if cmp := _comparable(c, t['record'], qid):
+                    t['comparability'] = cmp
         parts.append(_section('What changed since the last look (the trigger of this job)', triggers,
                               max(4_000, PACKET_CHARS - used), 'No change descriptors.'))
     if job['type'] == 'revisit':
@@ -536,6 +615,11 @@ def execute(store: Store, cfg: Config, job: dict, owner: str, config_path: str,
                           owner)).rowcount:
             raise StoreError('lease_lost', 'Another worker owns this job; its result is dropped.')
     cand = result.candidate
+    if cand['decision'] == 'surface' and (dup := duplicate_of(store, cand, task or '')):
+        # Deterministic safety net before the gate: same (or fewer) evidence than a shown insight and no new value.
+        if traces is not None:
+            traces[-1]['guard'] = {'duplicate_of': dup, 'dropped': cand}
+        cand = {'decision': 'silence', 'question_id': cand.get('question_id'), 'topic': 'duplicate of ' + dup}
     gate, done = {'queued': False, 'reason': 'silence'}, False
     try:
         if cand['decision'] == 'surface':

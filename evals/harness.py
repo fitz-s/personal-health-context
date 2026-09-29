@@ -430,7 +430,7 @@ def judge_router(case: dict, run: dict, checks: list[dict], judge_model: str) ->
     packet = {'case': {k: case[k] for k in ('id', 'category', 'expected_behavior', 'forbidden_behaviors', 'severity')},
               'investigations': calls, 'worker_summary': run['summary'], 'automatic_checks': checks}
 
-    def parse(text: str, returned: str = '') -> dict:
+    def parse(text: str, returned: str = '', packet: str = '') -> dict:
         try:
             v = json.loads(text.strip().strip('`').removeprefix('json').strip())
             if v.get('verdict') not in {'PASS', 'FAIL'}:
@@ -527,6 +527,10 @@ def run_case(case: dict, out_dir: Path, model_id: str, judge_model: str, run_no:
                'error': run.get('error'), 'turns': run.get('turns'), 'tokens': run.get('tokens'),
                'effort': effort if backend == 'router' else None,
                'decisions': [c.get('candidate', {}).get('decision') or c.get('error') for c in run.get('calls', [])],
+               'guards': [g for c in run.get('calls', []) for g in (
+                   [{'guard': 'duplicate', 'of': c['guard']['duplicate_of']}] if c.get('guard') else []) + [
+                   {'guard': 'numeric_fidelity', 'repair': t.get('detail', '')[:300]} for t in c.get('trace', [])
+                   if t.get('event') == 'repair' and t.get('code') == 'candidate_numbers_unverified']],
                'prompt_sha256': hashlib.sha256(
                    (model.background_prompt() if bg else FOREGROUND).encode()).hexdigest()}
         evidence = out_dir / 'traces' / f'{case["id"]}_run{run_no}.json'

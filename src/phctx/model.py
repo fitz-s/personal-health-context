@@ -191,6 +191,47 @@ def normalize(raw: dict) -> dict:
     return c
 
 
+NUMBER = re.compile(r'(?<![A-Za-z0-9_.])(?<!\d:)(\d+(?::\d{2}(?!\d)|\.\d+)?)')
+HEXISH = re.compile(r'\b(?:rec|obs|rr|ins|shd|job|mc)_[0-9a-f]+\b|\bobj:[0-9a-f]{64}(?:#p\d+)?|\b[0-9a-f]{16,}\b')
+FACT_FIELDS = ('topic', 'why_now', 'what_changed')  # claims about data; unknowns/next_step propose, not report
+
+
+MINSEC = re.compile(r'(\d+)\s*分\s*(\d{1,2})\s*秒')
+
+
+def _plain(text: str) -> str:
+    """Ids and hashes removed; "8分40秒" written as 8:40."""
+    return MINSEC.sub(lambda m: f'{m[1]}:{int(m[2]):02d}', HEXISH.sub(' ', text))
+
+
+def numbers(text: str) -> set[float]:
+    """Numeric values stated in text (ids and hashes removed); m:ss is read as seconds."""
+    out = set()
+    for tok in NUMBER.findall(_plain(text)):
+        m, _, sec = tok.partition(':')
+        out.add(int(m) * 60 + int(sec) if sec else float(tok))
+    return out
+
+
+def unverified_numbers(cand: dict, sources: str) -> list[str]:
+    """Numbers in the candidate's factual fields that neither appear in the sources (tool results + packet) nor
+    follow from them by one difference or percentage change, nor are small counts (integers up to 31: days, weeks,
+    readings). Values are compared at the precision the candidate states them."""
+    known = sorted(numbers(sources))
+    bad = []
+    for tok in NUMBER.findall(_plain(' '.join(cand.get(k, '') for k in FACT_FIELDS))):
+        m, _, sec = tok.partition(':')
+        x = int(m) * 60 + int(sec) if sec else float(tok)
+        d = len(tok.partition('.')[2]) if '.' in tok else 0
+        if (x == int(x) and x <= 31) or any(round(k, d) == x for k in known):
+            continue
+        if len(known) <= 1500 and any(round(abs(a - b), d) == x or (b and round(abs(a - b) / abs(b) * 100, d) == x)
+                                      for i, a in enumerate(known) for b in known[i + 1:] + known[:i]):
+            continue
+        bad.append(tok)
+    return bad
+
+
 EVIDENCE = re.compile(r'\b(?:(?:rec|obs)_[0-9a-f]{32,64}|obj:[0-9a-f]{64}(?:#p[1-9][0-9]{0,4})?)\b')
 ROUTER_URL = 'http://127.0.0.1:20128/v1/chat/completions'
 ROUTER_KEY = 'phctx-router-key'  # Keychain service (account phctx); read per call, never stored or logged
@@ -284,18 +325,19 @@ def run_router(system: str, user: str, *, model_id: str, reasoning_effort: str, 
         if parse is None:
             return text, trace
         try:
-            return parse(text, ''.join(t['result_text'] for t in trace if 'tool' in t)), trace
+            return parse(text, ''.join(t['result_text'] for t in trace if 'tool' in t), user), trace
         except ModelError as e:
             if repaired:
                 raise ModelError(e.code, trace) from None
             repaired = last = True
             why = getattr(e.__cause__, 'message', None) or (str(e.__cause__) if e.__cause__ else e.code)
+            trace.append({'event': 'repair', 'code': e.code, 'detail': why[:500]})
             messages += [{'role': 'assistant', 'content': text},
                          {'role': 'user', 'content': f'That reply is not a valid candidate ({why}). Reply with only '
                                                      'the JSON object.'}]
 
 
-def parse_candidate(text: str, returned: str = '') -> dict:
+def parse_candidate(text: str, returned: str = '', packet: str = '') -> dict:
     """The final reply is the candidate JSON, optionally inside one code fence. Every evidence id must be a stored
     evidence reference (not a receipt or a name) that a tool returned in this run (not recalled or retyped)."""
     body = text.strip()
@@ -316,6 +358,10 @@ def parse_candidate(text: str, returned: str = '') -> dict:
         raise ModelError('candidate_evidence_invalid') from ValueError(
             f'evidence_ids must be rec_…, obs_… or obj:… ids copied exactly from tool results of this run; not so: '
             f'{", ".join(bad[:3])}')
+    if cand['decision'] == 'surface' and (bad := unverified_numbers(cand, returned + packet)):
+        raise ModelError('candidate_numbers_unverified') from ValueError(
+            f'these numbers in topic/why_now/what_changed are not in this investigation\'s tool results or packet and '
+            f'do not follow from them by one difference: {", ".join(bad[:6])}. Use only reported values, or remove them')
     return cand
 
 
