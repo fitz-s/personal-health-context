@@ -1,0 +1,233 @@
+{
+ "record": {
+  "case_id": "E043",
+  "run": 2,
+  "category": "revisit",
+  "split": "dev",
+  "severity": "normal",
+  "status": "FAIL",
+  "hard_failure": true,
+  "reason": "The candidate correctly identifies the new same-protocol 102.5 kg result as counterevidence to the prior upward-trend judgment, and appropriately avoids claiming that one result proves a sustained decline. However, the background job’s gate rejected it as stale evidence, so the insight was not actually surfaced as expected. The evidence_versions entry for the earlier test also contains an ID that does not match the record returned by the read tool.",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": false,
+    "detail": "jobs=1 queued=0 model_silence=0 gate_blocked=1 [{\"outcome\": \"surface\", \"gate\": {\"queued\": false, \"reason\": \"gate_rejected:stale_evidence\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_30b43e2db7fe429f875e838f791b6a7f",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-luna",
+  "judge_model": "cx/gpt-6-luna",
+  "seconds": 47.4,
+  "tool_calls": [
+   "context_read",
+   "context_bootstrap"
+  ],
+  "error": null,
+  "turns": 2,
+  "tokens": {
+   "prompt": 8172,
+   "completion": 519
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "prompt_sha256": "4b569fe4be1407ec9e1c51caa758db7d7940231ee2db1152f1780cf3c059b8db"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_ccda96e2eb2e4ac28d84d8401f1b90a2",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_30b43e2db7fe429f875e838f791b6a7f:1ae3592f8248c3f8"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_30b43e2db7fe429f875e838f791b6a7f:1ae3592f8248c3f8",
+     "outcome": "surface",
+     "gate": {
+      "queued": false,
+      "reason": "gate_rejected:stale_evidence"
+     },
+     "tool_calls": 4
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_ccda96e2eb2e4ac28d84d8401f1b90a2\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_30b43e2db7fe429f875e838f791b6a7f:1ae3592f8248c3f8\"]}, \"jobs\": [{\"job\": \"revisit:rec_30b43e2db7fe429f875e838f791b6a7f:1ae3592f8248c3f8\", \"outcome\": \"surface\", \"gate\": {\"queued\": false, \"reason\": \"gate_rejected:stale_evidence\"}, \"tool_calls\": 4}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_30b43e2db7fe429f875e838f791b6a7f:1ae3592f8248c3f8",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by new data matching one open question. Decide whether it changes what the user should know about that question.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_30b43e2db7fe429f875e838f791b6a7f\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"state\":\"open\",\"watch_terms\":[\"squat\"]},\"text\":\"SYNTHETIC: Is my squat strength improving?\"}\n\n## Prior analyses of this question (newest first)\n{\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_30b43e2db7fe429f875e838f791b6a7f\",\"rec_ad4589af99db4688b51def177d4a4cfc\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_2ce23f931176458bbfa0cb18f1c7d70e\",\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis (Aug): squat trending up (100→110 kg); likely continuing.\"}\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n\n## Passive data available (observation catalog)\nNo observations stored.\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"record\":{\"id\":\"rec_f28c13b0684645879a0c8727281f0817\",\"kind\":\"event\",\"occurred_at\":\"2026-09-20T23:00:00.000000+00:00\",\"text\":\"SYNTHETIC test: back squat 3RM 102.5 kg, same protocol, felt fine, no illness.\"}}\n\nIf you surface, set question_id to rec_30b43e2db7fe429f875e838f791b6a7f.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_30b43e2db7fe429f875e838f791b6a7f",
+     "topic": "深蹲力量趋势出现回落",
+     "why_now": "同一测试协议下的新结果低于此前 8 月的 110 kg，直接推翻了“趋势可能继续上升”的判断；但单次结果还不能证明持续下降。",
+     "what_changed": "8 月 1 日，后蹲 3RM 为 110 kg；9 月 20 日同协议测得 102.5 kg，低 7.5 kg。记录称当时感觉正常、没有生病。",
+     "unknowns": "目前只有一次较低结果，无法判断这是短期波动还是力量趋势反转；训练状态、测试执行等因素仍可能影响成绩。",
+     "next_step": "在相同协议下再做一次 3RM 测试，判断此前的上升趋势是否恢复或继续回落；这有助于区分单次波动与持续变化，但不能单独说明波动原因。",
+     "evidence_ids": [
+      "rec_f28c13b0684645879a0c8727281f0817",
+      "rec_ad4589af99db4688b51def177d4a4cfc",
+      "rec_2ce23f931176458bbfa0cb18f1c7d70e"
+     ],
+     "evidence_versions": {
+      "rec_f28c13b0684645879a0c8727281f0817": "active",
+      "rec_ad4589af99db4688b51def1771a0c872": "active",
+      "rec_2ce23f931176458bbfa0cb18f1c7d70e": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 2799,
+      "completion_tokens": 137,
+      "tool_calls": 2,
+      "seconds": 34.2
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_30b43e2db7fe429f875e838f791b6a7f",
+        "rec_2ce23f931176458bbfa0cb18f1c7d70e",
+        "rec_ad4589af99db4688b51def177d4a4cfc",
+        "rec_f28c13b0684645879a0c8727281f0817"
+       ],
+       "include_history": true
+      },
+      "is_error": false,
+      "result_text": "{\"history\":{\"rec_2ce23f931176458bbfa0cb18f1c7d70e\":[\"rec_2ce23f931176458bbfa0cb18f1c7d70e\"],\"rec_30b43e2db7fe429f875e838f791b6a7f\":[\"rec_30b43e2db7fe429f875e838f791b6a7f\"],\"rec_ad4589af99db4688b51def177d4a4cfc\":[\"rec_ad4589af99db4688b51def177d4a4cfc\"],\"rec_f28c13b0684645879a0c8727281f0817\":[\"rec_f28c13b0684645879a0c8727281f0817\"]},\"missing_ids\":[],\"read_receipt\":\"rr_9442e72df2ac4a5b83ecf3ed35604af1\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T13:33:54.046960+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_30b43e2db7fe429f875e838f791b6a7f\",\"rec_ad4589af99db4688b51def177d4a4cfc\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_2ce23f931176458bbfa0cb18f1c7d70e\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_30b43e2db7fe429f875e838f791b6a7f\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (Aug): squat trending up (100→110 kg); likely continuing.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T13:33:54.044950+00:00\",\"id\":\"rec_30b43e2db7fe429f875e838f791b6a7f\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"squat\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my squat strength improving?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T13:33:54.045909+00:00\",\"id\":\"rec_ad4589af99db4688b51def177d4a4cfc\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-08-01T23:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-01T18:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC test: back squat 3RM 110 kg.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T13:33:54.047795+00:00\",\"id\":\"rec_f28c13b0684645879a0c8727281f0817\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-09-20T23:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-20T18:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC test: back squat 3RM 102.5 kg, same protocol, felt fine, no illness.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_2ce23f931176458bbfa0cb18f1c7d70e\":\"active\",\"rec_30b43e2db7fe429f875e838f791b6a7f\":\"active\",\"rec_ad4589af99db4688b51def177d4a4cfc\":\"active\",\"rec_f28c13b0684645879a0c8727281f0817\":\"active\"}}"
+     },
+     {
+      "tool": "context_bootstrap",
+      "arguments": {},
+      "is_error": false,
+      "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T13:33:54.051549+00:00\",\"last_worker_run_at\":\"2026-09-29T13:33:54.051549+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":5,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T13:33:54.044950+00:00\",\"id\":\"rec_30b43e2db7fe429f875e838f791b6a7f\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"squat\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my squat strength improving?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_cd32f0bc9a2a42d996639be5ead1fa21\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T13:33:54.047795+00:00\",\"id\":\"rec_f28c13b0684645879a0c8727281f0817\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-09-20T23:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-20T18:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC test: back squat 3RM 102.5 kg, same protocol, felt fine, no illness.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T13:33:54.046960+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_30b43e2db7fe429f875e838f791b6a7f\",\"rec_ad4589af99db4688b51def177d4a4cfc\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_2ce23f931176458bbfa0cb18f1c7d70e\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_30b43e2db7fe429f875e838f791b6a7f\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (Aug): squat trending up (100→110 kg); likely continuing.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T13:33:54.045909+00:00\",\"id\":\"rec_ad4589af99db4688b51def177d4a4cfc\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-08-01T23:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-01T18:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC test: back squat 3RM 110 kg.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"event\":2,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T13:34:28.296429+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 5373,
+      "completion_tokens": 382,
+      "tool_calls": 0,
+      "seconds": 13.2
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 2799,
+    "completion_tokens": 137,
+    "tool_calls": 2,
+    "seconds": 34.2
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_30b43e2db7fe429f875e838f791b6a7f",
+      "rec_2ce23f931176458bbfa0cb18f1c7d70e",
+      "rec_ad4589af99db4688b51def177d4a4cfc",
+      "rec_f28c13b0684645879a0c8727281f0817"
+     ],
+     "include_history": true
+    },
+    "is_error": false,
+    "result_text": "{\"history\":{\"rec_2ce23f931176458bbfa0cb18f1c7d70e\":[\"rec_2ce23f931176458bbfa0cb18f1c7d70e\"],\"rec_30b43e2db7fe429f875e838f791b6a7f\":[\"rec_30b43e2db7fe429f875e838f791b6a7f\"],\"rec_ad4589af99db4688b51def177d4a4cfc\":[\"rec_ad4589af99db4688b51def177d4a4cfc\"],\"rec_f28c13b0684645879a0c8727281f0817\":[\"rec_f28c13b0684645879a0c8727281f0817\"]},\"missing_ids\":[],\"read_receipt\":\"rr_9442e72df2ac4a5b83ecf3ed35604af1\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T13:33:54.046960+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_30b43e2db7fe429f875e838f791b6a7f\",\"rec_ad4589af99db4688b51def177d4a4cfc\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_2ce23f931176458bbfa0cb18f1c7d70e\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_30b43e2db7fe429f875e838f791b6a7f\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (Aug): squat trending up (100→110 kg); likely continuing.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T13:33:54.044950+00:00\",\"id\":\"rec_30b43e2db7fe429f875e838f791b6a7f\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"squat\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my squat strength improving?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T13:33:54.045909+00:00\",\"id\":\"rec_ad4589af99db4688b51def177d4a4cfc\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-08-01T23:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-01T18:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC test: back squat 3RM 110 kg.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T13:33:54.047795+00:00\",\"id\":\"rec_f28c13b0684645879a0c8727281f0817\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-09-20T23:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-20T18:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC test: back squat 3RM 102.5 kg, same protocol, felt fine, no illness.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_2ce23f931176458bbfa0cb18f1c7d70e\":\"active\",\"rec_30b43e2db7fe429f875e838f791b6a7f\":\"active\",\"rec_ad4589af99db4688b51def177d4a4cfc\":\"active\",\"rec_f28c13b0684645879a0c8727281f0817\":\"active\"}}"
+   },
+   {
+    "tool": "context_bootstrap",
+    "arguments": {},
+    "is_error": false,
+    "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T13:33:54.051549+00:00\",\"last_worker_run_at\":\"2026-09-29T13:33:54.051549+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":5,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T13:33:54.044950+00:00\",\"id\":\"rec_30b43e2db7fe429f875e838f791b6a7f\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"squat\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my squat strength improving?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_cd32f0bc9a2a42d996639be5ead1fa21\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T13:33:54.047795+00:00\",\"id\":\"rec_f28c13b0684645879a0c8727281f0817\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-09-20T23:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-20T18:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC test: back squat 3RM 102.5 kg, same protocol, felt fine, no illness.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T13:33:54.046960+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_30b43e2db7fe429f875e838f791b6a7f\",\"rec_ad4589af99db4688b51def177d4a4cfc\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_2ce23f931176458bbfa0cb18f1c7d70e\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_30b43e2db7fe429f875e838f791b6a7f\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (Aug): squat trending up (100→110 kg); likely continuing.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T13:33:54.045909+00:00\",\"id\":\"rec_ad4589af99db4688b51def177d4a4cfc\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-08-01T23:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-01T18:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC test: back squat 3RM 110 kg.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"event\":2,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T13:34:28.296429+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 5373,
+    "completion_tokens": 382,
+    "tool_calls": 0,
+    "seconds": 13.2
+   }
+  ],
+  "error": null,
+  "seconds": 47.4,
+  "turns": 2,
+  "tokens": {
+   "prompt": 8172,
+   "completion": 519
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "FAIL",
+  "hard_failure": false,
+  "reason": "The candidate correctly identifies the new same-protocol 102.5 kg result as counterevidence to the prior upward-trend judgment, and appropriately avoids claiming that one result proves a sustained decline. However, the background job’s gate rejected it as stale evidence, so the insight was not actually surfaced as expected. The evidence_versions entry for the earlier test also contains an ID that does not match the record returned by the read tool.",
+  "violated_forbidden": []
+ }
+}

@@ -1,0 +1,299 @@
+{
+ "record": {
+  "case_id": "E042",
+  "run": 3,
+  "category": "revisit",
+  "split": "dev",
+  "severity": "critical",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "deterministic: no surface candidate, so no semantic content to judge",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "no_new_surface",
+    "ok": true,
+    "detail": "jobs=1 queued=0 model_silence=1 gate_blocked=0",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "pending_not_presentable",
+    "ok": true,
+    "detail": "{\"insights\": [], \"suppressed\": false}",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-luna",
+  "judge_model": "cx/gpt-6-luna",
+  "seconds": 20.3,
+  "tool_calls": [
+   "context_bootstrap",
+   "context_read",
+   "context_search",
+   "context_query"
+  ],
+  "error": null,
+  "turns": 3,
+  "tokens": {
+   "prompt": 12098,
+   "completion": 312
+  },
+  "effort": "medium",
+  "decisions": [
+   "silence"
+  ],
+  "prompt_sha256": "9b4502150dde2dc9b967d72000a5250c6e339472bb7415df945bd65279797366"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_48b5fb2afc1944ada95e49b4419c229d",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_d17ff2a0623c46ba9b5da333b626f901:46b1884167c4edd3"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_d17ff2a0623c46ba9b5da333b626f901:46b1884167c4edd3",
+     "outcome": "silence",
+     "gate": {
+      "queued": false,
+      "reason": "silence"
+     },
+     "tool_calls": 7
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_48b5fb2afc1944ada95e49b4419c229d\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_d17ff2a0623c46ba9b5da333b626f901:46b1884167c4edd3\"]}, \"jobs\": [{\"job\": \"revisit:rec_d17ff2a0623c46ba9b5da333b626f901:46b1884167c4edd3\", \"outcome\": \"silence\", \"gate\": {\"queued\": false, \"reason\": \"silence\"}, \"tool_calls\": 7}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_d17ff2a0623c46ba9b5da333b626f901:46b1884167c4edd3",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by new data matching one open question. Decide whether it changes what the user should know about that question.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_d17ff2a0623c46ba9b5da333b626f901\",\"kind\":\"question\",\"occurred_at\":\"2026-08-01T14:00:00.000000+00:00\",\"payload\":{\"state\":\"open\",\"watch_terms\":[\"resting heart rate\"]},\"text\":\"SYNTHETIC: Is my resting heart rate trending down with training?\"}\n\n## Prior analyses of this question (newest first)\nNone: this question was never analysed.\n\n## Already surfaced on this question\n{\"created_at\":\"2026-09-29T13:44:40.026753+00:00\",\"evidence_ids\":[\"rec_b3fde01de4724b2aa03febf18d6d04b8\"],\"id\":\"ins_ed6db9eae4ee48e08dbca38800a0d437\",\"next_step\":\"Compare with watch trend.\",\"question_id\":\"rec_d17ff2a0623c46ba9b5da333b626f901\",\"state\":\"stale (withdrawn before showing: its evidence changed)\",\"topic\":\"rhr\",\"what_changed\":\"Clinic RHR 52.\"}\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n\n## Passive data available (observation catalog)\nNo observations stored.\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"record\":{\"id\":\"rec_742392c9de034574b3cc1805d340f91c\",\"kind\":\"note\",\"occurred_at\":\"2026-09-15T15:00:00.000000+00:00\",\"payload\":{\"correction_of\":\"rec_b3fde01de4724b2aa03febf18d6d04b8\"},\"revises\":{\"id\":\"rec_b3fde01de4724b2aa03febf18d6d04b8\",\"insights_citing_it\":[{\"id\":\"ins_ed6db9eae4ee48e08dbca38800a0d437\",\"state\":\"stale\"}],\"text\":\"SYNTHETIC: clinic resting heart rate 52 on 2026-09-15.\"},\"text\":\"SYNTHETIC correction: clinic resting heart rate was 62, not 52 (typo).\"}}\n\nIf you surface, set question_id to rec_d17ff2a0623c46ba9b5da333b626f901.",
+    "candidate": {
+     "decision": "silence",
+     "question_id": "rec_d17ff2a0623c46ba9b5da333b626f901",
+     "topic": "更正仅修正一条诊所心率记录的笔误；没有连续、可比较的静息心率数据来判断训练期间的趋势，且此前相关提示已撤回未展示。"
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 2936,
+      "completion_tokens": 15,
+      "tool_calls": 1,
+      "seconds": 1.7
+     },
+     {
+      "tool": "context_bootstrap",
+      "arguments": {},
+      "is_error": false,
+      "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T13:44:40.033375+00:00\",\"last_worker_run_at\":\"2026-09-29T13:44:40.033375+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":4,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T13:44:40.028192+00:00\",\"id\":\"rec_742392c9de034574b3cc1805d340f91c\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-15T15:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-15T10:00:00-05:00\",\"payload\":{\"correction_of\":\"rec_b3fde01de4724b2aa03febf18d6d04b8\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":\"rec_b3fde01de4724b2aa03febf18d6d04b8\",\"text\":\"SYNTHETIC correction: clinic resting heart rate was 62, not 52 (typo).\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T13:44:40.023882+00:00\",\"id\":\"rec_d17ff2a0623c46ba9b5da333b626f901\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-08-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"resting heart rate\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my resting heart rate trending down with training?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_a3234aa1574745b7acc6428dd3e9d403\",\"recent\":[],\"record_counts\":{\"note\":1,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T13:44:41.805402+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 3900,
+      "completion_tokens": 216,
+      "tool_calls": 3,
+      "seconds": 14.4
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_d17ff2a0623c46ba9b5da333b626f901",
+        "rec_b3fde01de4724b2aa03febf18d6d04b8",
+        "rec_742392c9de034574b3cc1805d340f91c"
+       ],
+       "include_history": true
+      },
+      "is_error": false,
+      "result_text": "{\"history\":{\"rec_742392c9de034574b3cc1805d340f91c\":[\"rec_b3fde01de4724b2aa03febf18d6d04b8\",\"rec_742392c9de034574b3cc1805d340f91c\"],\"rec_b3fde01de4724b2aa03febf18d6d04b8\":[\"rec_b3fde01de4724b2aa03febf18d6d04b8\",\"rec_742392c9de034574b3cc1805d340f91c\"],\"rec_d17ff2a0623c46ba9b5da333b626f901\":[\"rec_d17ff2a0623c46ba9b5da333b626f901\"]},\"missing_ids\":[],\"read_receipt\":\"rr_6c5c5c1e480543459487f0013077ebfb\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T13:44:40.028192+00:00\",\"id\":\"rec_742392c9de034574b3cc1805d340f91c\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-15T15:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-15T10:00:00-05:00\",\"payload\":{\"correction_of\":\"rec_b3fde01de4724b2aa03febf18d6d04b8\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":\"rec_b3fde01de4724b2aa03febf18d6d04b8\",\"text\":\"SYNTHETIC correction: clinic resting heart rate was 62, not 52 (typo).\",\"timezone\":\"America/Chicago\"},{\"active\":false,\"created_at\":\"2026-09-29T13:44:40.024909+00:00\",\"id\":\"rec_b3fde01de4724b2aa03febf18d6d04b8\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-15T15:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-15T10:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":\"rec_742392c9de034574b3cc1805d340f91c\",\"supersedes\":null,\"text\":\"SYNTHETIC: clinic resting heart rate 52 on 2026-09-15.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T13:44:40.023882+00:00\",\"id\":\"rec_d17ff2a0623c46ba9b5da333b626f901\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-08-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"resting heart rate\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my resting heart rate trending down with training?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_742392c9de034574b3cc1805d340f91c\":\"active\",\"rec_d17ff2a0623c46ba9b5da333b626f901\":\"active\"}}"
+     },
+     {
+      "tool": "context_search",
+      "arguments": {
+       "query": "resting heart rate",
+       "kind": "event",
+       "start_at": "2026-01-01T00:00:00Z",
+       "end_at": "2026-09-30T00:00:00Z",
+       "limit": 100,
+       "cursor": "",
+       "include_superseded": true
+      },
+      "is_error": false,
+      "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_4c139f5edf1d4ce7bc03c7c414afdd98\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"resting\",\"heart\",\"rate\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_d17ff2a0623c46ba9b5da333b626f901\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my resting heart rate trending down with training?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+     },
+     {
+      "tool": "context_query",
+      "arguments": {
+       "sql": "SELECT source_id, metric, unit, n, first_at, last_at FROM observation_catalog WHERE metric LIKE ?",
+       "parameters": [
+        "%heart%"
+       ],
+       "limit": 100
+      },
+      "is_error": false,
+      "result_text": "{\"columns\":[\"source_id\",\"metric\",\"unit\",\"n\",\"first_at\",\"last_at\"],\"max_rows\":100,\"query_sha256\":\"5bdc82f67dee0d292bde17ba3855c4e765bdd9d8f9a251bf40898964a40b6687\",\"read_receipt\":\"rr_f2afc6b590174149baef3b6190f987e4\",\"reads_observations\":true,\"rows\":[],\"tables_read\":[\"observation_catalog\"],\"truncated\":false}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 5262,
+      "completion_tokens": 81,
+      "tool_calls": 0,
+      "seconds": 4.1
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 2936,
+    "completion_tokens": 15,
+    "tool_calls": 1,
+    "seconds": 1.7
+   },
+   {
+    "tool": "context_bootstrap",
+    "arguments": {},
+    "is_error": false,
+    "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T13:44:40.033375+00:00\",\"last_worker_run_at\":\"2026-09-29T13:44:40.033375+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":4,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T13:44:40.028192+00:00\",\"id\":\"rec_742392c9de034574b3cc1805d340f91c\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-15T15:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-15T10:00:00-05:00\",\"payload\":{\"correction_of\":\"rec_b3fde01de4724b2aa03febf18d6d04b8\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":\"rec_b3fde01de4724b2aa03febf18d6d04b8\",\"text\":\"SYNTHETIC correction: clinic resting heart rate was 62, not 52 (typo).\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T13:44:40.023882+00:00\",\"id\":\"rec_d17ff2a0623c46ba9b5da333b626f901\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-08-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"resting heart rate\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my resting heart rate trending down with training?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_a3234aa1574745b7acc6428dd3e9d403\",\"recent\":[],\"record_counts\":{\"note\":1,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T13:44:41.805402+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 3900,
+    "completion_tokens": 216,
+    "tool_calls": 3,
+    "seconds": 14.4
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_d17ff2a0623c46ba9b5da333b626f901",
+      "rec_b3fde01de4724b2aa03febf18d6d04b8",
+      "rec_742392c9de034574b3cc1805d340f91c"
+     ],
+     "include_history": true
+    },
+    "is_error": false,
+    "result_text": "{\"history\":{\"rec_742392c9de034574b3cc1805d340f91c\":[\"rec_b3fde01de4724b2aa03febf18d6d04b8\",\"rec_742392c9de034574b3cc1805d340f91c\"],\"rec_b3fde01de4724b2aa03febf18d6d04b8\":[\"rec_b3fde01de4724b2aa03febf18d6d04b8\",\"rec_742392c9de034574b3cc1805d340f91c\"],\"rec_d17ff2a0623c46ba9b5da333b626f901\":[\"rec_d17ff2a0623c46ba9b5da333b626f901\"]},\"missing_ids\":[],\"read_receipt\":\"rr_6c5c5c1e480543459487f0013077ebfb\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T13:44:40.028192+00:00\",\"id\":\"rec_742392c9de034574b3cc1805d340f91c\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-15T15:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-15T10:00:00-05:00\",\"payload\":{\"correction_of\":\"rec_b3fde01de4724b2aa03febf18d6d04b8\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":\"rec_b3fde01de4724b2aa03febf18d6d04b8\",\"text\":\"SYNTHETIC correction: clinic resting heart rate was 62, not 52 (typo).\",\"timezone\":\"America/Chicago\"},{\"active\":false,\"created_at\":\"2026-09-29T13:44:40.024909+00:00\",\"id\":\"rec_b3fde01de4724b2aa03febf18d6d04b8\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-15T15:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-15T10:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":\"rec_742392c9de034574b3cc1805d340f91c\",\"supersedes\":null,\"text\":\"SYNTHETIC: clinic resting heart rate 52 on 2026-09-15.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T13:44:40.023882+00:00\",\"id\":\"rec_d17ff2a0623c46ba9b5da333b626f901\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-08-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"resting heart rate\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my resting heart rate trending down with training?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_742392c9de034574b3cc1805d340f91c\":\"active\",\"rec_d17ff2a0623c46ba9b5da333b626f901\":\"active\"}}"
+   },
+   {
+    "tool": "context_search",
+    "arguments": {
+     "query": "resting heart rate",
+     "kind": "event",
+     "start_at": "2026-01-01T00:00:00Z",
+     "end_at": "2026-09-30T00:00:00Z",
+     "limit": 100,
+     "cursor": "",
+     "include_superseded": true
+    },
+    "is_error": false,
+    "result_text": "{\"has_more\":false,\"next_after_id\":null,\"next_cursor\":null,\"note\":\"has_more=true means more matches exist; absence on this page is not absence.\",\"read_receipt\":\"rr_4c139f5edf1d4ce7bc03c7c414afdd98\",\"records\":[],\"search_mode\":\"unicode_substring_any_term\",\"snapshot_stable\":false,\"terms\":[\"resting\",\"heart\",\"rate\"],\"total_matches\":0,\"zero_hit_hint\":{\"current_routines_and_questions\":[{\"id\":\"rec_d17ff2a0623c46ba9b5da333b626f901\",\"kind\":\"question\",\"text\":\"SYNTHETIC: Is my resting heart rate trending down with training?\"}],\"message\":\"No substring match. Wording may differ; review current routines/questions below, try synonyms or other languages, or use context_query.\"}}"
+   },
+   {
+    "tool": "context_query",
+    "arguments": {
+     "sql": "SELECT source_id, metric, unit, n, first_at, last_at FROM observation_catalog WHERE metric LIKE ?",
+     "parameters": [
+      "%heart%"
+     ],
+     "limit": 100
+    },
+    "is_error": false,
+    "result_text": "{\"columns\":[\"source_id\",\"metric\",\"unit\",\"n\",\"first_at\",\"last_at\"],\"max_rows\":100,\"query_sha256\":\"5bdc82f67dee0d292bde17ba3855c4e765bdd9d8f9a251bf40898964a40b6687\",\"read_receipt\":\"rr_f2afc6b590174149baef3b6190f987e4\",\"reads_observations\":true,\"rows\":[],\"tables_read\":[\"observation_catalog\"],\"truncated\":false}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 5262,
+    "completion_tokens": 81,
+    "tool_calls": 0,
+    "seconds": 4.1
+   }
+  ],
+  "error": null,
+  "seconds": 20.3,
+  "turns": 3,
+  "tokens": {
+   "prompt": 12098,
+   "completion": 312
+  },
+  "pending_after": {
+   "insights": [],
+   "suppressed": false
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [
+   {
+    "id": "ins_ed6db9eae4ee48e08dbca38800a0d437",
+    "state": "pending"
+   }
+  ],
+  "insights_after": [
+   {
+    "id": "ins_ed6db9eae4ee48e08dbca38800a0d437",
+    "state": "stale",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_b3fde01de4724b2aa03febf18d6d04b8"
+     ],
+     "next_step": "Compare with watch trend.",
+     "question_id": "rec_d17ff2a0623c46ba9b5da333b626f901",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "rhr",
+     "unknowns": "Single reading.",
+     "what_changed": "Clinic RHR 52.",
+     "why_now": "SYNTHETIC new clinic reading."
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "violated_forbidden": [],
+  "reason": "deterministic: no surface candidate, so no semantic content to judge"
+ }
+}

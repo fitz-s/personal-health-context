@@ -1,0 +1,239 @@
+{
+ "record": {
+  "case_id": "E035",
+  "run": 1,
+  "category": "silence",
+  "split": "dev",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "deterministic: no surface candidate, so no semantic content to judge",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "no_new_surface",
+    "ok": true,
+    "detail": "jobs=1 queued=0 model_silence=1 gate_blocked=0",
+    "hard": true,
+    "needs_turn": false
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-luna",
+  "judge_model": "cx/gpt-6-luna",
+  "seconds": 13.6,
+  "tool_calls": [
+   "context_bootstrap",
+   "context_read"
+  ],
+  "error": null,
+  "turns": 3,
+  "tokens": {
+   "prompt": 13686,
+   "completion": 167
+  },
+  "effort": "medium",
+  "decisions": [
+   "silence"
+  ],
+  "prompt_sha256": "40e567e66a68aaaf1f2172091b788d6ed8c326cdb15e83a86f7c6880aa5d6c06"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_5aa3254691604919ae62a32534ea0b30",
+   "extraction": 0,
+   "plan": {
+    "changes": 4,
+    "enqueued": [
+     "revisit:rec_68e75198f05d4c2fa8eea25a31233f44:46b1884167c4edd3"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_68e75198f05d4c2fa8eea25a31233f44:46b1884167c4edd3",
+     "outcome": "silence",
+     "gate": {
+      "queued": false,
+      "reason": "silence"
+     },
+     "tool_calls": 5
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_5aa3254691604919ae62a32534ea0b30\", \"extraction\": 0, \"plan\": {\"changes\": 4, \"enqueued\": [\"revisit:rec_68e75198f05d4c2fa8eea25a31233f44:46b1884167c4edd3\"]}, \"jobs\": [{\"job\": \"revisit:rec_68e75198f05d4c2fa8eea25a31233f44:46b1884167c4edd3\", \"outcome\": \"silence\", \"gate\": {\"queued\": false, \"reason\": \"silence\"}, \"tool_calls\": 5}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_68e75198f05d4c2fa8eea25a31233f44:46b1884167c4edd3",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by new data matching one open question. Decide whether it changes what the user should know about that question.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_68e75198f05d4c2fa8eea25a31233f44\",\"kind\":\"question\",\"occurred_at\":\"2026-06-10T14:00:00.000000+00:00\",\"payload\":{\"state\":\"open\",\"watch_terms\":[\"posture\",\"pelvic\"]},\"text\":\"SYNTHETIC: Is my posture correction improving?\"}\n\n## Prior analyses of this question (newest first)\n{\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_68e75198f05d4c2fa8eea25a31233f44\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_b7ab3b27ce9d472d85fd296aeadfa449\",\"occurred_at\":\"2026-06-11T14:00:00.000000+00:00\",\"revisit_when\":\"matched reassessment\",\"text\":\"SYNTHETIC analysis (June): baseline only; insufficient evidence to judge change. Revisit when a matched reassessment exists.\"}\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\n{\"created_at\":\"2026-09-29T14:02:23.401069+00:00\",\"delivered_at\":\"2026-09-29T14:02:23.401911+00:00\",\"evidence_ids\":[\"rec_9a9acf949c2f4b30a656505d3206263a\"],\"id\":\"ins_9fd77bdd580547e19d459948d80fed36\",\"next_step\":\"z\",\"question_id\":\"rec_8a97084edfb2479ea9f6e0e6a5473093\",\"state\":\"delivered (shown to the user)\",\"topic\":\"sleep\",\"what_changed\":\"x\"}\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 168 h (enforced by the gate)\",\"budget_available_now\":false,\"last_insight_queued_or_shown_at\":\"2026-09-29T14:02:23.401069+00:00\",\"meaning\":\"the user asked to be interrupted less: surface only a direct answer to their own question that the new evidence itself provides, a correction of something they were shown, or a measurement gap tied to a choice the user has said they are making within about two weeks (a revisit time an analysis set is not such a choice); everything else is silence\",\"proactivity\":\"quiet\"}\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n\n## Passive data available (observation catalog)\nNo observations stored.\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"record\":{\"id\":\"rec_86b5c61a03b04eb680448f08cc87096a\",\"kind\":\"note\",\"occurred_at\":\"2026-09-18T17:00:00.000000+00:00\",\"text\":\"SYNTHETIC physio reassessment 2026-09-18, same photo protocol P1: anterior pelvic tilt estimate 9 deg (June 14 deg). Therapist: visible improvement, same examiner.\"}}\n\nIf you surface, set question_id to rec_68e75198f05d4c2fa8eea25a31233f44.",
+    "candidate": {
+     "decision": "silence",
+     "question_id": "rec_68e75198f05d4c2fa8eea25a31233f44",
+     "topic": "虽有同协议复评显示改善，但quiet偏好下预算不可用，且不是已展示结论的更正"
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3220,
+      "completion_tokens": 15,
+      "tool_calls": 1,
+      "seconds": 1.9
+     },
+     {
+      "tool": "context_bootstrap",
+      "arguments": {},
+      "is_error": false,
+      "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T14:02:23.405521+00:00\",\"last_worker_run_at\":\"2026-09-29T14:02:23.405521+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":7,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T14:02:23.400037+00:00\",\"id\":\"rec_9a9acf949c2f4b30a656505d3206263a\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-19T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-19T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC sleep diary summary.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:02:23.397044+00:00\",\"id\":\"rec_86b5c61a03b04eb680448f08cc87096a\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-18T17:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-18T12:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio reassessment 2026-09-18, same photo protocol P1: anterior pelvic tilt estimate 9 deg (June 14 deg). Therapist: visible improvement, same examiner.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:02:23.399033+00:00\",\"id\":\"rec_8a97084edfb2479ea9f6e0e6a5473093\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-08-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my sleep regular?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:02:23.393827+00:00\",\"id\":\"rec_68e75198f05d4c2fa8eea25a31233f44\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"posture\",\"pelvic\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my posture correction improving?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"quiet\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_05b69606215440ebbed2bea82c82dc5d\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T14:02:23.395830+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_68e75198f05d4c2fa8eea25a31233f44\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_b7ab3b27ce9d472d85fd296aeadfa449\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-06-11T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-11T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_68e75198f05d4c2fa8eea25a31233f44\",\"revisit_when\":\"matched reassessment\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): baseline only; insufficient evidence to judge change. Revisit when a matched reassessment exists.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":2,\"question\":2},\"source_status\":{\"checked_at\":\"2026-09-29T14:02:25.338884+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4748,
+      "completion_tokens": 87,
+      "tool_calls": 1,
+      "seconds": 8.7
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_86b5c61a03b04eb680448f08cc87096a",
+        "rec_b7ab3b27ce9d472d85fd296aeadfa449",
+        "rec_68e75198f05d4c2fa8eea25a31233f44"
+       ],
+       "include_history": true
+      },
+      "is_error": false,
+      "result_text": "{\"history\":{\"rec_68e75198f05d4c2fa8eea25a31233f44\":[\"rec_68e75198f05d4c2fa8eea25a31233f44\"],\"rec_86b5c61a03b04eb680448f08cc87096a\":[\"rec_86b5c61a03b04eb680448f08cc87096a\"],\"rec_b7ab3b27ce9d472d85fd296aeadfa449\":[\"rec_b7ab3b27ce9d472d85fd296aeadfa449\"]},\"missing_ids\":[],\"read_receipt\":\"rr_4fa390b65869456db9c7f9bfde4e1e3d\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T14:02:23.393827+00:00\",\"id\":\"rec_68e75198f05d4c2fa8eea25a31233f44\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"posture\",\"pelvic\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my posture correction improving?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:02:23.397044+00:00\",\"id\":\"rec_86b5c61a03b04eb680448f08cc87096a\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-18T17:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-18T12:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio reassessment 2026-09-18, same photo protocol P1: anterior pelvic tilt estimate 9 deg (June 14 deg). Therapist: visible improvement, same examiner.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:02:23.395830+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_68e75198f05d4c2fa8eea25a31233f44\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_b7ab3b27ce9d472d85fd296aeadfa449\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-06-11T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-11T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_68e75198f05d4c2fa8eea25a31233f44\",\"revisit_when\":\"matched reassessment\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): baseline only; insufficient evidence to judge change. Revisit when a matched reassessment exists.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_68e75198f05d4c2fa8eea25a31233f44\":\"active\",\"rec_86b5c61a03b04eb680448f08cc87096a\":\"active\",\"rec_b7ab3b27ce9d472d85fd296aeadfa449\":\"active\"}}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 5718,
+      "completion_tokens": 65,
+      "tool_calls": 0,
+      "seconds": 3.0
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3220,
+    "completion_tokens": 15,
+    "tool_calls": 1,
+    "seconds": 1.9
+   },
+   {
+    "tool": "context_bootstrap",
+    "arguments": {},
+    "is_error": false,
+    "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T14:02:23.405521+00:00\",\"last_worker_run_at\":\"2026-09-29T14:02:23.405521+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":7,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T14:02:23.400037+00:00\",\"id\":\"rec_9a9acf949c2f4b30a656505d3206263a\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-19T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-19T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC sleep diary summary.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:02:23.397044+00:00\",\"id\":\"rec_86b5c61a03b04eb680448f08cc87096a\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-18T17:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-18T12:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio reassessment 2026-09-18, same photo protocol P1: anterior pelvic tilt estimate 9 deg (June 14 deg). Therapist: visible improvement, same examiner.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:02:23.399033+00:00\",\"id\":\"rec_8a97084edfb2479ea9f6e0e6a5473093\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-08-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my sleep regular?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:02:23.393827+00:00\",\"id\":\"rec_68e75198f05d4c2fa8eea25a31233f44\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"posture\",\"pelvic\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my posture correction improving?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"quiet\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_05b69606215440ebbed2bea82c82dc5d\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T14:02:23.395830+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_68e75198f05d4c2fa8eea25a31233f44\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_b7ab3b27ce9d472d85fd296aeadfa449\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-06-11T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-11T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_68e75198f05d4c2fa8eea25a31233f44\",\"revisit_when\":\"matched reassessment\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): baseline only; insufficient evidence to judge change. Revisit when a matched reassessment exists.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":2,\"question\":2},\"source_status\":{\"checked_at\":\"2026-09-29T14:02:25.338884+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4748,
+    "completion_tokens": 87,
+    "tool_calls": 1,
+    "seconds": 8.7
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_86b5c61a03b04eb680448f08cc87096a",
+      "rec_b7ab3b27ce9d472d85fd296aeadfa449",
+      "rec_68e75198f05d4c2fa8eea25a31233f44"
+     ],
+     "include_history": true
+    },
+    "is_error": false,
+    "result_text": "{\"history\":{\"rec_68e75198f05d4c2fa8eea25a31233f44\":[\"rec_68e75198f05d4c2fa8eea25a31233f44\"],\"rec_86b5c61a03b04eb680448f08cc87096a\":[\"rec_86b5c61a03b04eb680448f08cc87096a\"],\"rec_b7ab3b27ce9d472d85fd296aeadfa449\":[\"rec_b7ab3b27ce9d472d85fd296aeadfa449\"]},\"missing_ids\":[],\"read_receipt\":\"rr_4fa390b65869456db9c7f9bfde4e1e3d\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T14:02:23.393827+00:00\",\"id\":\"rec_68e75198f05d4c2fa8eea25a31233f44\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-06-10T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-10T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"posture\",\"pelvic\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my posture correction improving?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:02:23.397044+00:00\",\"id\":\"rec_86b5c61a03b04eb680448f08cc87096a\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-18T17:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-18T12:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio reassessment 2026-09-18, same photo protocol P1: anterior pelvic tilt estimate 9 deg (June 14 deg). Therapist: visible improvement, same examiner.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T14:02:23.395830+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_68e75198f05d4c2fa8eea25a31233f44\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_b7ab3b27ce9d472d85fd296aeadfa449\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-06-11T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-11T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_68e75198f05d4c2fa8eea25a31233f44\",\"revisit_when\":\"matched reassessment\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): baseline only; insufficient evidence to judge change. Revisit when a matched reassessment exists.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_68e75198f05d4c2fa8eea25a31233f44\":\"active\",\"rec_86b5c61a03b04eb680448f08cc87096a\":\"active\",\"rec_b7ab3b27ce9d472d85fd296aeadfa449\":\"active\"}}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 5718,
+    "completion_tokens": 65,
+    "tool_calls": 0,
+    "seconds": 3.0
+   }
+  ],
+  "error": null,
+  "seconds": 13.6,
+  "turns": 3,
+  "tokens": {
+   "prompt": 13686,
+   "completion": 167
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [
+   {
+    "id": "ins_9fd77bdd580547e19d459948d80fed36",
+    "state": "delivered"
+   }
+  ],
+  "insights_after": [
+   {
+    "id": "ins_9fd77bdd580547e19d459948d80fed36",
+    "state": "delivered",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_9a9acf949c2f4b30a656505d3206263a"
+     ],
+     "next_step": "z",
+     "question_id": "rec_8a97084edfb2479ea9f6e0e6a5473093",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "sleep",
+     "unknowns": "y",
+     "what_changed": "x",
+     "why_now": "SYNTHETIC."
+    }
+   }
+  ],
+  "preferences_before": {
+   "proactivity": "quiet"
+  },
+  "preferences_after": {
+   "proactivity": "quiet"
+  },
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "violated_forbidden": [],
+  "reason": "deterministic: no surface candidate, so no semantic content to judge"
+ }
+}

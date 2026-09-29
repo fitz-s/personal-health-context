@@ -1,0 +1,121 @@
+{
+ "record": {
+  "case_id": "B09",
+  "run": 2,
+  "category": "revisit",
+  "split": "dev",
+  "severity": "normal",
+  "status": "NOT_RUN",
+  "hard_failure": false,
+  "reason": "deterministic: no surface candidate, so no semantic content to judge",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": false,
+    "detail": "jobs=1 queued=0 model_silence=0 gate_blocked=0 [{\"outcome\": \"deferred\", \"gate\": null}]",
+    "hard": true,
+    "needs_turn": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-luna",
+  "judge_model": "cx/gpt-6-luna",
+  "seconds": 120.3,
+  "tool_calls": [],
+  "error": "model_call_failed",
+  "turns": 0,
+  "tokens": {
+   "prompt": 0,
+   "completion": 0
+  },
+  "effort": "medium",
+  "decisions": [
+   "model_call_failed"
+  ],
+  "prompt_sha256": "40e567e66a68aaaf1f2172091b788d6ed8c326cdb15e83a86f7c6880aa5d6c06"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_d02f1a966ca04ce1920b66466ee3e267",
+   "extraction": 0,
+   "plan": {
+    "changes": 2,
+    "enqueued": [
+     "revisit:rec_8b0b85f8b2a54892bbf25623bd3189da:1ae3592f8248c3f8"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_8b0b85f8b2a54892bbf25623bd3189da:1ae3592f8248c3f8",
+     "outcome": "deferred",
+     "error": "model_call_failed"
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_d02f1a966ca04ce1920b66466ee3e267\", \"extraction\": 0, \"plan\": {\"changes\": 2, \"enqueued\": [\"revisit:rec_8b0b85f8b2a54892bbf25623bd3189da:1ae3592f8248c3f8\"]}, \"jobs\": [{\"job\": \"revisit:rec_8b0b85f8b2a54892bbf25623bd3189da:1ae3592f8248c3f8\", \"outcome\": \"deferred\", \"error\": \"model_call_failed\"}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_8b0b85f8b2a54892bbf25623bd3189da:1ae3592f8248c3f8",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by new data matching one open question. Decide whether it changes what the user should know about that question.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_8b0b85f8b2a54892bbf25623bd3189da\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"state\":\"open\",\"watch_terms\":[\"5 km\",\"time trial\"]},\"text\":\"SYNTHETIC: Is my 5 km time improving with the new running plan?\"}\n\n## Prior analyses of this question (newest first)\n{\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_5e0cb5c652664f76a8d5b76e48cf5789\",\"rec_8b0b85f8b2a54892bbf25623bd3189da\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_0be6f7560f8340e5b71e47b6ec9be0d1\",\"occurred_at\":\"2026-07-06T14:00:00.000000+00:00\",\"revisit_when\":\"second trial on the same course\",\"text\":\"SYNTHETIC analysis (July): one baseline trial (27:40) only; a second trial on the same course in similar conditions is needed to judge change.\"}\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 168 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user asked to be interrupted less: surface only a direct answer to their own question that the new evidence itself provides, a correction of something they were shown, or a measurement gap tied to a choice the user has said they are making within about two weeks (a revisit time an analysis set is not such a choice); everything else is silence\",\"proactivity\":\"quiet\"}\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n\n## Passive data available (observation catalog)\nNo observations stored.\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"record\":{\"id\":\"rec_e00516e580d3436caff68cf39e4d7bbc\",\"kind\":\"event\",\"occurred_at\":\"2026-09-20T12:30:00.000000+00:00\",\"text\":\"SYNTHETIC 5 km time trial, same riverside course, cool morning: 26:10.\"}}\n\nIf you surface, set question_id to rec_8b0b85f8b2a54892bbf25623bd3189da.",
+    "error": "model_call_failed",
+    "trace": []
+   }
+  ],
+  "trace": [],
+  "error": "model_call_failed",
+  "seconds": 120.3,
+  "turns": 0,
+  "tokens": {
+   "prompt": 0,
+   "completion": 0
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [],
+  "preferences_before": {
+   "proactivity": "quiet"
+  },
+  "preferences_after": {
+   "proactivity": "quiet"
+  },
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "queued",
+    "last_error_code": "model_call_failed"
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "failed",
+    "error_code": "model_call_failed"
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "violated_forbidden": [],
+  "reason": "deterministic: no surface candidate, so no semantic content to judge"
+ }
+}
