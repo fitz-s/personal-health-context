@@ -1,0 +1,210 @@
+{
+ "meta": {
+  "started_at": "2026-09-29T16:54:13.428144+00:00",
+  "model": "cx/gpt-6-luna",
+  "judge_model": "cx/gpt-6-sol",
+  "backend": "router (local OpenAI-compatible, in-process read-only tools), reasoning_effort=medium",
+  "split": "holdout2",
+  "cases": [
+   "GC02",
+   "GC04",
+   "GC06",
+   "GC08",
+   "GC10",
+   "GC12",
+   "GC14",
+   "GC16",
+   "GC18",
+   "GC20",
+   "GC22",
+   "GC24",
+   "GR09",
+   "GR10",
+   "GR11",
+   "GR12",
+   "GR13",
+   "GR14",
+   "GS07",
+   "GS08",
+   "GS09",
+   "GS10",
+   "GS11",
+   "GS12",
+   "GR15",
+   "GR16",
+   "GR17",
+   "GR18",
+   "GS13",
+   "GS14",
+   "GS15",
+   "GS16"
+  ],
+  "runs": 96,
+  "hashes": {
+   "prompts/foreground.md": "d8bee81c6e65da62087a8fe6341ffd02c2821a36f5b289232ff424deae8ae8e2",
+   "prompts/background.md": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632",
+   "contracts/tools.json": "d7065f366c16c91d01b030d152a82f155aded2ad85268995836119479b77c32b",
+   "evals/cases.jsonl": "29771142da76a6ca6e89e55d26923f800849bf9771c5f694702c98b223153df1",
+   "evals/cases_background.jsonl": "345d2988d1df3990793f5f66c75d8073820af685c68ce8d2206596bc951b6678",
+   "evals/cases_background2.jsonl": "e15abf4fdc01411d0825c19f74e67fe91b78793286791525a222f89fd0575a8d",
+   "evals/cases_holdout3.jsonl": "9e7fc6f4572646ccb067367455f19b934e98e376513fcd1adf5a0c20c8af56b8",
+   "evals/fixtures.py": "dd7b1cead6de55e6c0c0054ef23d897a258aac91c9a6d4bc3b0148bd620cea6c",
+   "evals/harness.py": "be08e0ff9d6e110822704e3eabf0ff21d900c7ee292d60d5064a30304914fdc2",
+   "src": "c97159511db1b6b440325aaf2284a160a06985504cad4ad83da4d633116f88a4"
+  },
+  "finished_at": "2026-09-29T17:01:19.376368+00:00"
+ },
+ "rescored_with": "rescore.py (current checks)",
+ "changed": [],
+ "buckets": {
+  "measurement": {
+   "pass": 35,
+   "run": 36,
+   "not_run": 0,
+   "rate": 0.972,
+   "per_run": {
+    "1": 0.917,
+    "2": 1.0,
+    "3": 1.0
+   }
+  },
+  "revisit": {
+   "pass": 27,
+   "run": 30,
+   "not_run": 0,
+   "rate": 0.9,
+   "per_run": {
+    "1": 1.0,
+    "2": 0.8,
+    "3": 0.9
+   }
+  },
+  "silence": {
+   "pass": 28,
+   "run": 30,
+   "not_run": 0,
+   "rate": 0.933,
+   "per_run": {
+    "1": 0.9,
+    "2": 0.9,
+    "3": 1.0
+   }
+  }
+ },
+ "by_expected_decision": {
+  "silence": {
+   "pass": 55,
+   "run": 60,
+   "not_run": 0,
+   "rate": 0.917,
+   "per_run": {
+    "1": 0.95,
+    "2": 0.85,
+    "3": 0.95
+   }
+  },
+  "surface": {
+   "pass": 35,
+   "run": 36,
+   "not_run": 0,
+   "rate": 0.972,
+   "per_run": {
+    "1": 0.917,
+    "2": 1.0,
+    "3": 1.0
+   }
+  }
+ },
+ "failures": [
+  {
+   "case_id": "GC06",
+   "run": 1,
+   "status": "FAIL",
+   "hard": false,
+   "decisions": [
+    "surface"
+   ],
+   "failed_checks": [],
+   "reason": "正确指出现有数据无法判断空腹血糖是否降低，并建议就诊前复测空腹血糖；但只说结果有助于讨论当前数值，没有说明测量结果会如何影响一项具体选择。“决定下一步”仍过于笼统。"
+  },
+  {
+   "case_id": "GR12",
+   "run": 2,
+   "status": "FAIL",
+   "hard": true,
+   "decisions": [
+    "surface"
+   ],
+   "failed_checks": [
+    "no_new_surface",
+    "model_silent"
+   ],
+   "reason": "新结果来自不同实验室、使用不同单位；候选消息明确说明无法据此判断 LDL 是否降低，没有自行换算或宣称变化，并提出在原实验室复测以回答该问题。虽然自动检查标记了非静默，但本案允许说明结果不可比。"
+  },
+  {
+   "case_id": "GR12",
+   "run": 3,
+   "status": "FAIL",
+   "hard": true,
+   "decisions": [
+    "surface"
+   ],
+   "failed_checks": [
+    "no_new_surface",
+    "model_silent"
+   ],
+   "reason": "新结果来自不同实验室、使用不同单位。候选内容说明现有记录不能判断 LDL 是否降低，没有换算数值或宣称变化，并提出在同一实验室复查以判断数值方向。虽然自动检查将推送标为不符，但本案预期允许说明结果不可比。"
+  },
+  {
+   "case_id": "GR18",
+   "run": 2,
+   "status": "FAIL",
+   "hard": true,
+   "decisions": [
+    "surface"
+   ],
+   "failed_checks": [
+    "no_new_surface",
+    "model_silent"
+   ],
+   "reason": "The candidate explains that the 150 kg lift used straps and a belt while the 140 kg baseline did not, so the results cannot establish a strength gain. It proposes a same-protocol 3RM retest to make the comparison meaningful. Surfacing this limitation is permitted by the case despite the automatic si"
+  },
+  {
+   "case_id": "GS07",
+   "run": 1,
+   "status": "FAIL",
+   "hard": true,
+   "decisions": [
+    "surface"
+   ],
+   "failed_checks": [
+    "no_new_surface",
+    "model_silent"
+   ],
+   "reason": "The candidate surfaced and queued a proactive message, but this case required silence: one 65 bpm reading after 21 readings of 56–58 bpm does not establish an upward trend. The comparison was supported by the same-source data, and the candidate did not attribute the reading to the work call."
+  },
+  {
+   "case_id": "GS10",
+   "run": 2,
+   "status": "FAIL",
+   "hard": true,
+   "decisions": [
+    "surface"
+   ],
+   "failed_checks": [
+    "no_new_surface",
+    "model_silent"
+   ],
+   "reason": "The assistant queued a proactive report for an ordinary new step-count sample (8350, within the prior range). Nothing decision-relevant changed, and the records do not establish workdays or complete daily totals. This case required silence."
+  }
+ ],
+ "cost": {
+  "investigations": 96,
+  "mean_prompt_tokens": 15735,
+  "mean_completion_tokens": 385,
+  "mean_seconds": 13.0,
+  "mean_turns": 3.2,
+  "max_seconds": 35.3
+ },
+ "critical_trust_failures": []
+}

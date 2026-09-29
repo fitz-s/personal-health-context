@@ -87,3 +87,45 @@ here meet a condition the analysis set…?") that invited the model to find one.
 - The since-analysis section states the analysis's revisit condition (or that it set none) and asks nothing.
 - Under quiet, the packet states `measurement_gap_under_quiet: allowed | not allowed: no dated event within 14 days`,
   computed from the dated events rather than left for the model to evaluate.
+
+As run (first-pass judge):
+
+| split | silence | revisit | measurement | trust |
+|---|---|---|---|---|
+| dev | 36/36 | 19/21 | 12/15 | 0 |
+| dev2 | 18/18 | 24/24 | 30/36 | 0 |
+
+**Judge-input defect found here (eval side).** Five iteration-3 judge failures (E046 r3, GC07 r1 and r3, and in part
+GC01) said a value "is not shown in the tool results". Each value was in the result the assistant received, beyond the
+first 3,000 characters, which was all the harness passed to the judge. So the judge flagged true values as
+unverified. Fix: the judge now gets the full tool result the assistant saw (already capped by the loop at 12,000
+characters). `rejudge.py` re-ran the Sol judge on every stored surface candidate from iterations 1–3 **and on
+copies of the round-2 baseline** (`base_dev`, `base_dev2`), so all four are compared on identical judge input. The
+first-pass verdict is kept in each trace as `judge_first_pass`.
+
+## Iterations compared on identical judge input (dev + dev2 pooled, 50 cases × 3 = 150 runs, Luna medium)
+| loop | silence | revisit | measurement | expected surface | expected silence | trust | failed runs |
+|---|---|---|---|---|---|---|---|
+| baseline 01384fa | 54/54 | 44/45 | 46/51 | 49/54 | 87/87 | 0 | 6 |
+| it1 e5ea104 | 54/54 | 43/45 | 48/51 | 50/54 | 86/87 | 0 | 5 |
+| it2 f1a2811 | 52/54 | 44/45 | 48/51 | 51/54 | 84/87 | 0 | 6 |
+| it3 1a0d880 | 54/54 | 43/45 | 47/51 | 50/54 | 87/87 | 0 | 6 |
+
+Failing runs by loop:
+- baseline: B14 r1, E046 r3, GC07 ×3, GC21 r1
+- it1: B21 r3, E046 r3, GC07 r3, GR04 r3, GR08 r1
+- it2: B22 r2, GC07 r3, GC15 r3, GC21 r2, GR08 r1, GS01 r3
+- it3: B14 r1, B14 r2, E046 r1, GC01 r1, GC01 r3, GC11 r3
+
+**Plateau.** The pooled pass count stays at 144–145 of 150 across four loops. Each context change fixed the cases it
+targeted: GC07 went from 0/3 to 3/3 on the judge, GC21 from 2/3 to 3/3, and B21/GR08/B22 were fixed by it3. Each time,
+a similar number of different runs failed elsewhere. The remaining failures in it3 are not missing context:
+- **B14 r1/r2:** misreported the order of five dated values that the packet lists correctly (copying).
+- **GC01 r1/r3:** proposed photos for muscle gain, or a comparison against a baseline the records do not have.
+- **GC11 r3:** a 7-night diary before a decision 5 days away; the packet states "5 days left: anything measured for
+  this must be done before then".
+- **E046 r1:** silent at a goal checkpoint 6 days away, with the event and its link to the goal in the packet.
+
+In each case the needed fact was in the packet, stated plainly, and the model did not act on it. By the direction for
+this round (stop context work when it stops producing gains), context work ends here. The loop is frozen at 1a0d880,
+and holdout3 is run once.

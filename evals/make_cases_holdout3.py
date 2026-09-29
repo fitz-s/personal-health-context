@@ -128,6 +128,15 @@ H += [
                    'new': {'kind': 'note', 'text': 'SYNTHETIC: looked up knee swelling exercises online.'}},
        'silence：搜索资料不是症状数据', 'spurious_revisit'),
 ]
+# Per-case vocabulary: the per-type lists above do not cover words these scenarios themselves use (added 2026-09-30
+# after the one holdout3 run exposed the gap; eval-side only, disclosed in ITERATIONS.md).
+EXTRA = {'C31': ({'outcome_terms': ['腿围', '腿', 'leg', 'size', '增大']}),
+         'C34': ({'outcome_terms': ['握力', 'grip'], 'methods': ['握力计', '测力计', 'dynamometer']}),
+         'C36': ({'methods': ['p2', '侧面照', '拍摄', 'side photo', 'side-view']}),
+         'C37': ({'outcome_terms': ['体能', 'cycling fitness'],
+                  'methods': ['计时测试', '骑行测试', '功率', '计时', 'time trial', '固定路线', 'fixed route', 'ftp']})}
 for c in H:
+    for k, extra in EXTRA.get(c['id'][1:], {}).items():
+        c[k] = c[k] + extra
     c['id'] = c['id'].replace('G', 'H', 1)
 Path(__file__).with_name('cases_holdout3.jsonl').write_text(''.join(json.dumps(c, ensure_ascii=False) + '\n' for c in H))

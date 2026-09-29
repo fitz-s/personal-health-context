@@ -1,0 +1,277 @@
+{
+ "record": {
+  "case_id": "GR15",
+  "run": 2,
+  "category": "revisit",
+  "split": "holdout2",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "应当提示这次新复查结果：候选内容核对了同一实验室、同一单位的铁蛋白记录（12→31 ug/L），说明数值上升，同时明确未将上升归因于补铁，也未声称一次复查能证明持续恢复。未重复已提示内容。",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_f83583a04ca244ed94378d423e3ac6b3\", \"request_id\": \"worker:job_2fdef329d9194d7fa2fbbfc3833e8281:0:w_ec5142a465de42f78d550c4ee61473c7\", \"status\": \"committed\", \"request_hash\": \"431bb3a6914d6366f2de566062440b62f198339fabe58ffd78b80609a0037e0f\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_cbfbd7b755c74ceb8557aa0b152b8ce2",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-luna",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 13.5,
+  "tool_calls": [
+   "context_bootstrap",
+   "context_read"
+  ],
+  "error": null,
+  "turns": 3,
+  "tokens": {
+   "prompt": 13556,
+   "completion": 507
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_0bdb030e6be548c398c6c72ff1b7b4fc",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_cbfbd7b755c74ceb8557aa0b152b8ce2:1ae3592f8248c3f8"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_cbfbd7b755c74ceb8557aa0b152b8ce2:1ae3592f8248c3f8",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_f83583a04ca244ed94378d423e3ac6b3",
+      "request_id": "worker:job_2fdef329d9194d7fa2fbbfc3833e8281:0:w_ec5142a465de42f78d550c4ee61473c7",
+      "status": "committed",
+      "request_hash": "431bb3a6914d6366f2de566062440b62f198339fabe58ffd78b80609a0037e0f"
+     },
+     "tool_calls": 5
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_0bdb030e6be548c398c6c72ff1b7b4fc\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_cbfbd7b755c74ceb8557aa0b152b8ce2:1ae3592f8248c3f8\"]}, \"jobs\": [{\"job\": \"revisit:rec_cbfbd7b755c74ceb8557aa0b152b8ce2:1ae3592f8248c3f8\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_f83583a04ca244ed94378d423e3ac6b3\", \"request_id\": \"worker:job_2fdef329d9194d7fa2fbbfc3833e8281:0:w_ec5142a465de42f78d550c4ee61473c7\", \"status\": \"committed\", \"request_hash\": \"431bb3a6914d6366f2de566062440b62f198339fabe58ffd78b80609a0037e0f\"}, \"tool_calls\": 5}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_cbfbd7b755c74ceb8557aa0b152b8ce2:1ae3592f8248c3f8",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by a change matching one open question. The change is either new data about the question or a dated event the user recorded (then the trigger carries `dated_event`). Decide whether the user should hear something about this question now: a new answer, a correction, or, when a dated event on this question is near and the data on record cannot answer it, which measurement would. Otherwise stay silent.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_cbfbd7b755c74ceb8557aa0b152b8ce2\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"state\":\"open\",\"watch_terms\":[\"ferritin\"]},\"text\":\"SYNTHETIC: Is my ferritin recovering on iron?\"}\n\n## Prior analyses of this question (newest first)\n{\"days_ago\":52,\"evidence_status\":\"not verifiable (written without read receipts); not known to be stale\",\"id\":\"rec_61911b06d1fc4af4bdad6fd28185e259\",\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis: baseline 12 ug/L; retest at the same lab after 3 months.\"}\n\n## Since the newest analysis (2026-08-02): records written\n{\"id\":\"rec_520b067219284c1cb18506a61debebce\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC lab (Lab A, same lab): ferritin 31 ug/L.\"}\n## Since the newest analysis: passive samples added\nNone.\nThe newest analysis set no revisit condition field; read its text for one before assuming there is none.\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\nNone: no record names a date in the next 21 days.\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n\n## Passive data available (observation catalog)\nNo observations stored.\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"record\":{\"id\":\"rec_520b067219284c1cb18506a61debebce\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC lab (Lab A, same lab): ferritin 31 ug/L.\"}}\n\nIf you surface, set question_id to rec_cbfbd7b755c74ceb8557aa0b152b8ce2.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_cbfbd7b755c74ceb8557aa0b152b8ce2",
+     "topic": "同一实验室铁蛋白复测升高",
+     "why_now": "新结果提供了与此前基线同实验室、同单位的直接比较；此前分析建议约三个月后复测，现在可以判断记录中的铁蛋白是否较基线上升。",
+     "what_changed": "记录显示，Lab A 的铁蛋白从 2026-06-20 的 12 ug/L 变为 2026-09-22 的 31 ug/L。",
+     "unknowns": "这两次记录显示数值上升，但不能单凭这组结果确认变化是否由补铁造成，也不能判断铁蛋白是否持续恢复。",
+     "next_step": "把这次结果与医生原先设定的目标一起复核；若是否持续上升会影响继续当前补铁计划还是调整计划，请按医生建议在同一实验室复测后再作比较。这些结果本身不能证明补铁是上升原因。",
+     "evidence_ids": [
+      "rec_520b067219284c1cb18506a61debebce",
+      "rec_a0ae87ffdf7b4c53818f9baf58d3dd3a",
+      "rec_61911b06d1fc4af4bdad6fd28185e259"
+     ],
+     "evidence_versions": {
+      "rec_520b067219284c1cb18506a61debebce": "active",
+      "rec_a0ae87ffdf7b4c53818f9baf58d3dd3a": "active",
+      "rec_61911b06d1fc4af4bdad6fd28185e259": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3213,
+      "completion_tokens": 15,
+      "tool_calls": 1,
+      "seconds": 1.7
+     },
+     {
+      "tool": "context_bootstrap",
+      "arguments": {},
+      "is_error": false,
+      "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T16:59:43.314254+00:00\",\"last_worker_run_at\":\"2026-09-29T16:59:43.314254+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":5,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T16:59:43.308086+00:00\",\"id\":\"rec_520b067219284c1cb18506a61debebce\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab A, same lab): ferritin 31 ug/L.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:59:43.301202+00:00\",\"id\":\"rec_cbfbd7b755c74ceb8557aa0b152b8ce2\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"ferritin\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my ferritin recovering on iron?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:59:43.303383+00:00\",\"id\":\"rec_a0ae87ffdf7b4c53818f9baf58d3dd3a\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-06-20T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-20T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab A): ferritin 12 ug/L.\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_e0c1ad7a41734aa39d011c58a8dbf046\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T16:59:43.305609+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_a0ae87ffdf7b4c53818f9baf58d3dd3a\",\"rec_cbfbd7b755c74ceb8557aa0b152b8ce2\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_61911b06d1fc4af4bdad6fd28185e259\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_cbfbd7b755c74ceb8557aa0b152b8ce2\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: baseline 12 ug/L; retest at the same lab after 3 months.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":2,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T16:59:45.073348+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4574,
+      "completion_tokens": 107,
+      "tool_calls": 1,
+      "seconds": 3.2
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_520b067219284c1cb18506a61debebce",
+        "rec_a0ae87ffdf7b4c53818f9baf58d3dd3a",
+        "rec_61911b06d1fc4af4bdad6fd28185e259",
+        "rec_cbfbd7b755c74ceb8557aa0b152b8ce2"
+       ],
+       "include_history": true
+      },
+      "is_error": false,
+      "result_text": "{\"history\":{\"rec_520b067219284c1cb18506a61debebce\":[\"rec_520b067219284c1cb18506a61debebce\"],\"rec_61911b06d1fc4af4bdad6fd28185e259\":[\"rec_61911b06d1fc4af4bdad6fd28185e259\"],\"rec_a0ae87ffdf7b4c53818f9baf58d3dd3a\":[\"rec_a0ae87ffdf7b4c53818f9baf58d3dd3a\"],\"rec_cbfbd7b755c74ceb8557aa0b152b8ce2\":[\"rec_cbfbd7b755c74ceb8557aa0b152b8ce2\"]},\"missing_ids\":[],\"read_receipt\":\"rr_7e2f25bd8849496c98166e3b3716caf4\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T16:59:43.308086+00:00\",\"id\":\"rec_520b067219284c1cb18506a61debebce\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab A, same lab): ferritin 31 ug/L.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:59:43.305609+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_a0ae87ffdf7b4c53818f9baf58d3dd3a\",\"rec_cbfbd7b755c74ceb8557aa0b152b8ce2\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_61911b06d1fc4af4bdad6fd28185e259\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_cbfbd7b755c74ceb8557aa0b152b8ce2\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: baseline 12 ug/L; retest at the same lab after 3 months.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:59:43.303383+00:00\",\"id\":\"rec_a0ae87ffdf7b4c53818f9baf58d3dd3a\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-06-20T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-20T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab A): ferritin 12 ug/L.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:59:43.301202+00:00\",\"id\":\"rec_cbfbd7b755c74ceb8557aa0b152b8ce2\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"ferritin\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my ferritin recovering on iron?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_520b067219284c1cb18506a61debebce\":\"active\",\"rec_61911b06d1fc4af4bdad6fd28185e259\":\"active\",\"rec_a0ae87ffdf7b4c53818f9baf58d3dd3a\":\"active\",\"rec_cbfbd7b755c74ceb8557aa0b152b8ce2\":\"active\"}}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 5769,
+      "completion_tokens": 385,
+      "tool_calls": 0,
+      "seconds": 8.5
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3213,
+    "completion_tokens": 15,
+    "tool_calls": 1,
+    "seconds": 1.7
+   },
+   {
+    "tool": "context_bootstrap",
+    "arguments": {},
+    "is_error": false,
+    "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T16:59:43.314254+00:00\",\"last_worker_run_at\":\"2026-09-29T16:59:43.314254+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":5,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T16:59:43.308086+00:00\",\"id\":\"rec_520b067219284c1cb18506a61debebce\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab A, same lab): ferritin 31 ug/L.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:59:43.301202+00:00\",\"id\":\"rec_cbfbd7b755c74ceb8557aa0b152b8ce2\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"ferritin\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my ferritin recovering on iron?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:59:43.303383+00:00\",\"id\":\"rec_a0ae87ffdf7b4c53818f9baf58d3dd3a\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-06-20T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-20T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab A): ferritin 12 ug/L.\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_e0c1ad7a41734aa39d011c58a8dbf046\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T16:59:43.305609+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_a0ae87ffdf7b4c53818f9baf58d3dd3a\",\"rec_cbfbd7b755c74ceb8557aa0b152b8ce2\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_61911b06d1fc4af4bdad6fd28185e259\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_cbfbd7b755c74ceb8557aa0b152b8ce2\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: baseline 12 ug/L; retest at the same lab after 3 months.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":2,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T16:59:45.073348+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4574,
+    "completion_tokens": 107,
+    "tool_calls": 1,
+    "seconds": 3.2
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_520b067219284c1cb18506a61debebce",
+      "rec_a0ae87ffdf7b4c53818f9baf58d3dd3a",
+      "rec_61911b06d1fc4af4bdad6fd28185e259",
+      "rec_cbfbd7b755c74ceb8557aa0b152b8ce2"
+     ],
+     "include_history": true
+    },
+    "is_error": false,
+    "result_text": "{\"history\":{\"rec_520b067219284c1cb18506a61debebce\":[\"rec_520b067219284c1cb18506a61debebce\"],\"rec_61911b06d1fc4af4bdad6fd28185e259\":[\"rec_61911b06d1fc4af4bdad6fd28185e259\"],\"rec_a0ae87ffdf7b4c53818f9baf58d3dd3a\":[\"rec_a0ae87ffdf7b4c53818f9baf58d3dd3a\"],\"rec_cbfbd7b755c74ceb8557aa0b152b8ce2\":[\"rec_cbfbd7b755c74ceb8557aa0b152b8ce2\"]},\"missing_ids\":[],\"read_receipt\":\"rr_7e2f25bd8849496c98166e3b3716caf4\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T16:59:43.308086+00:00\",\"id\":\"rec_520b067219284c1cb18506a61debebce\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab A, same lab): ferritin 31 ug/L.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:59:43.305609+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_a0ae87ffdf7b4c53818f9baf58d3dd3a\",\"rec_cbfbd7b755c74ceb8557aa0b152b8ce2\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_61911b06d1fc4af4bdad6fd28185e259\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_cbfbd7b755c74ceb8557aa0b152b8ce2\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: baseline 12 ug/L; retest at the same lab after 3 months.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:59:43.303383+00:00\",\"id\":\"rec_a0ae87ffdf7b4c53818f9baf58d3dd3a\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-06-20T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-06-20T09:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC lab (Lab A): ferritin 12 ug/L.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:59:43.301202+00:00\",\"id\":\"rec_cbfbd7b755c74ceb8557aa0b152b8ce2\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"ferritin\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my ferritin recovering on iron?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_520b067219284c1cb18506a61debebce\":\"active\",\"rec_61911b06d1fc4af4bdad6fd28185e259\":\"active\",\"rec_a0ae87ffdf7b4c53818f9baf58d3dd3a\":\"active\",\"rec_cbfbd7b755c74ceb8557aa0b152b8ce2\":\"active\"}}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 5769,
+    "completion_tokens": 385,
+    "tool_calls": 0,
+    "seconds": 8.5
+   }
+  ],
+  "error": null,
+  "seconds": 13.5,
+  "turns": 3,
+  "tokens": {
+   "prompt": 13556,
+   "completion": 507
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_f83583a04ca244ed94378d423e3ac6b3",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_520b067219284c1cb18506a61debebce",
+      "rec_a0ae87ffdf7b4c53818f9baf58d3dd3a",
+      "rec_61911b06d1fc4af4bdad6fd28185e259"
+     ],
+     "evidence_versions": {
+      "rec_520b067219284c1cb18506a61debebce": "active",
+      "rec_61911b06d1fc4af4bdad6fd28185e259": "active",
+      "rec_a0ae87ffdf7b4c53818f9baf58d3dd3a": "active"
+     },
+     "next_step": "把这次结果与医生原先设定的目标一起复核；若是否持续上升会影响继续当前补铁计划还是调整计划，请按医生建议在同一实验室复测后再作比较。这些结果本身不能证明补铁是上升原因。",
+     "question_id": "rec_cbfbd7b755c74ceb8557aa0b152b8ce2",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "同一实验室铁蛋白复测升高",
+     "unknowns": "这两次记录显示数值上升，但不能单凭这组结果确认变化是否由补铁造成，也不能判断铁蛋白是否持续恢复。",
+     "what_changed": "记录显示，Lab A 的铁蛋白从 2026-06-20 的 12 ug/L 变为 2026-09-22 的 31 ug/L。",
+     "why_now": "新结果提供了与此前基线同实验室、同单位的直接比较；此前分析建议约三个月后复测，现在可以判断记录中的铁蛋白是否较基线上升。"
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "应当提示这次新复查结果：候选内容核对了同一实验室、同一单位的铁蛋白记录（12→31 ug/L），说明数值上升，同时明确未将上升归因于补铁，也未声称一次复查能证明持续恢复。未重复已提示内容。",
+  "violated_forbidden": []
+ }
+}

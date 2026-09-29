@@ -1,0 +1,318 @@
+{
+ "record": {
+  "case_id": "GC08",
+  "run": 3,
+  "category": "measurement",
+  "split": "holdout2",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "临近他汀决策的复诊，候选内容正确指出现有记录无法判断 LDL 是否下降，建议复诊前做血脂检验并与既往 LDL 结果核对，以供复诊讨论。既往数值明确归因于此前分析，未将饮食变化断言为原因，也未重复已推送内容。",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_0601bde6c88f4b8f92f4e401e5173dce\", \"request_id\": \"worker:job_09afeef8539640a7950fda4770acf0bb:0:w_96194d470ee34d659760f3f3ee7556ca\", \"status\": \"committed\", \"request_hash\": \"f74dd69a5ac6f3243fc39a466bffe42287baf116de9d9c43dc3622a71fe6ee1f\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_b56c8da3d6f641ee93785b8d2ab4c1fb",
+    "hard": true
+   },
+   {
+    "check": "next_step_names_a_method",
+    "ok": true,
+    "detail": "血脂,ldl",
+    "hard": true
+   },
+   {
+    "check": "gap_names_outcome_and_decision",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-luna",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 17.5,
+  "tool_calls": [
+   "context_bootstrap",
+   "context_read",
+   "context_query"
+  ],
+  "error": null,
+  "turns": 4,
+  "tokens": {
+   "prompt": 21635,
+   "completion": 524
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_c11130c5104049f9bf01695f331b04ee",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_b56c8da3d6f641ee93785b8d2ab4c1fb:fe94b827f0455bee"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_b56c8da3d6f641ee93785b8d2ab4c1fb:fe94b827f0455bee",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_0601bde6c88f4b8f92f4e401e5173dce",
+      "request_id": "worker:job_09afeef8539640a7950fda4770acf0bb:0:w_96194d470ee34d659760f3f3ee7556ca",
+      "status": "committed",
+      "request_hash": "f74dd69a5ac6f3243fc39a466bffe42287baf116de9d9c43dc3622a71fe6ee1f"
+     },
+     "tool_calls": 7
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_c11130c5104049f9bf01695f331b04ee\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_b56c8da3d6f641ee93785b8d2ab4c1fb:fe94b827f0455bee\"]}, \"jobs\": [{\"job\": \"revisit:rec_b56c8da3d6f641ee93785b8d2ab4c1fb:fe94b827f0455bee\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_0601bde6c88f4b8f92f4e401e5173dce\", \"request_id\": \"worker:job_09afeef8539640a7950fda4770acf0bb:0:w_96194d470ee34d659760f3f3ee7556ca\", \"status\": \"committed\", \"request_hash\": \"f74dd69a5ac6f3243fc39a466bffe42287baf116de9d9c43dc3622a71fe6ee1f\"}, \"tool_calls\": 7}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_b56c8da3d6f641ee93785b8d2ab4c1fb:fe94b827f0455bee",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by a change matching one open question. The change is either new data about the question or a dated event the user recorded (then the trigger carries `dated_event`). Decide whether the user should hear something about this question now: a new answer, a correction, or, when a dated event on this question is near and the data on record cannot answer it, which measurement would. Otherwise stay silent.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_b56c8da3d6f641ee93785b8d2ab4c1fb\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"outcome\":\"lipids\",\"state\":\"open\",\"watch_metrics\":[\"LDL\",\"cardiology\"],\"watch_terms\":[\"LDL\",\"cardiology\"]},\"text\":\"SYNTHETIC: Has my LDL dropped since the diet change?\"}\n\n## Prior analyses of this question (newest first)\n{\"days_ago\":83,\"evidence_status\":\"not verifiable (written without read receipts); not known to be stale\",\"id\":\"rec_8310db5f8d5d4e2bbce8108d1add742f\",\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis (June): LDL 4.1 mmol/L (Lab B); no repeat since. Wearables do not measure lipids.\"}\n\n## Since the newest analysis (2026-07-02): records written\n{\"id\":\"rec_8bf8573063f34deead1e41401fe04f7c\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: cardiology follow-up on 2026-10-02 to decide about statins.\"}\n## Since the newest analysis: passive samples added\n{\"first\":\"2026-09-01T12:00:00.000000+00:00\",\"last\":\"2026-09-22T12:00:00.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierHeartRateVariabilitySDNN\",\"n\":22,\"source_id\":\"synthetic:watch\"}\n{\"first\":\"2026-09-02T02:00:00.000000+00:00\",\"last\":\"2026-09-23T02:00:00.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\"}\nThe newest analysis set no revisit condition field; read its text for one before assuming there is none.\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\n{\"date\":\"2026-10-02\",\"days_until\":9,\"kind\":\"note\",\"mentions_questions\":[\"rec_b56c8da3d6f641ee93785b8d2ab4c1fb\"],\"note\":\"9 days left: anything measured for this must be done before then\",\"read_as\":\"explicit date\",\"record_id\":\"rec_8bf8573063f34deead1e41401fe04f7c\",\"text\":\"SYNTHETIC: cardiology follow-up on 2026-10-02 to decide about statins.\"}\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"days_since_latest_sample\":0.5,\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_success_at\":\"2026-09-29T16:55:22.796458+00:00\",\"latest_sample_at\":\"2026-09-23T02:00:30.000000+00:00\",\"state\":\"ready\"}\n\n## Passive data available (observation catalog)\n{\"first_at\":\"2026-09-02T02:00:00.000000+00:00\",\"last_at\":\"2026-09-23T02:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count\"}\n{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierHeartRateVariabilitySDNN\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"ms\"}\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"dated_event\":{\"date\":\"2026-10-02\",\"days_until\":9,\"meaning\":\"this record is a dated event the user recorded, not a measurement\"},\"record\":{\"id\":\"rec_8bf8573063f34deead1e41401fe04f7c\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC: cardiology follow-up on 2026-10-02 to decide about statins.\"}}\n\nIf you surface, set question_id to rec_b56c8da3d6f641ee93785b8d2ab4c1fb.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_b56c8da3d6f641ee93785b8d2ab4c1fb",
+     "topic": "复诊前无法判断 LDL 是否下降",
+     "why_now": "10月2日的心脏科复诊将在9天后讨论是否使用他汀；目前记录没有能回答 LDL 是否下降的复测结果。",
+     "what_changed": "记录新增了10月2日复诊安排。此前分析提到 LDL 为4.1 mmol/L（Lab B）且当时没有复测；查询到的观察数据中没有 LDL 或胆固醇结果。",
+     "unknowns": "现有记录不能确认这次复诊前是否会有新的血脂结果，也无法据此判断饮食改变后 LDL 是否下降。",
+     "next_step": "若要在复诊讨论中判断变化，可在复诊前取得一次血脂检验，并与此前 Lab B 的 LDL 结果核对；这能帮助讨论当前 LDL 与之前的差异，但单次复测不能单独证明饮食改变造成了变化。",
+     "evidence_ids": [
+      "rec_8bf8573063f34deead1e41401fe04f7c",
+      "rec_8310db5f8d5d4e2bbce8108d1add742f"
+     ],
+     "evidence_versions": {
+      "rec_8bf8573063f34deead1e41401fe04f7c": "active",
+      "rec_8310db5f8d5d4e2bbce8108d1add742f": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3755,
+      "completion_tokens": 15,
+      "tool_calls": 1,
+      "seconds": 2.4
+     },
+     {
+      "tool": "context_bootstrap",
+      "arguments": {},
+      "is_error": false,
+      "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T16:55:22.803305+00:00\",\"last_worker_run_at\":\"2026-09-29T16:55:22.803305+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":6,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T16:55:22.798371+00:00\",\"id\":\"rec_8bf8573063f34deead1e41401fe04f7c\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: cardiology follow-up on 2026-10-02 to decide about statins.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:55:22.790362+00:00\",\"id\":\"rec_b56c8da3d6f641ee93785b8d2ab4c1fb\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"lipids\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"LDL\",\"cardiology\"],\"watch_terms\":[\"LDL\",\"cardiology\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Has my LDL dropped since the diet change?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierHeartRateVariabilitySDNN\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"ms\"},{\"first_at\":\"2026-09-02T02:00:00.000000+00:00\",\"last_at\":\"2026-09-23T02:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count\"}],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_28a39d5b86eb455aad330fad874fe649\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T16:55:22.791672+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_b56c8da3d6f641ee93785b8d2ab4c1fb\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_8310db5f8d5d4e2bbce8108d1add742f\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_b56c8da3d6f641ee93785b8d2ab4c1fb\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): LDL 4.1 mmol/L (Lab B); no repeat since. Wearables do not measure lipids.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":1,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T16:55:25.272729+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":44,\"coverage\":{},\"cursor\":\"fixture-86\",\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_attempt_at\":\"2026-09-29T16:55:22.796458+00:00\",\"last_success_at\":\"2026-09-29T16:55:22.796458+00:00\",\"latest_sample_at\":\"2026-09-23T02:00:30.000000+00:00\",\"policy\":\"durable\",\"state\":\"ready\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 5228,
+      "completion_tokens": 92,
+      "tool_calls": 1,
+      "seconds": 4.9
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_b56c8da3d6f641ee93785b8d2ab4c1fb",
+        "rec_8310db5f8d5d4e2bbce8108d1add742f",
+        "rec_8bf8573063f34deead1e41401fe04f7c"
+       ],
+       "include_history": true
+      },
+      "is_error": false,
+      "result_text": "{\"history\":{\"rec_8310db5f8d5d4e2bbce8108d1add742f\":[\"rec_8310db5f8d5d4e2bbce8108d1add742f\"],\"rec_8bf8573063f34deead1e41401fe04f7c\":[\"rec_8bf8573063f34deead1e41401fe04f7c\"],\"rec_b56c8da3d6f641ee93785b8d2ab4c1fb\":[\"rec_b56c8da3d6f641ee93785b8d2ab4c1fb\"]},\"missing_ids\":[],\"read_receipt\":\"rr_f8f1a17cc8c34ad3b405e301ac02f194\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T16:55:22.791672+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_b56c8da3d6f641ee93785b8d2ab4c1fb\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_8310db5f8d5d4e2bbce8108d1add742f\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_b56c8da3d6f641ee93785b8d2ab4c1fb\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): LDL 4.1 mmol/L (Lab B); no repeat since. Wearables do not measure lipids.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:55:22.798371+00:00\",\"id\":\"rec_8bf8573063f34deead1e41401fe04f7c\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: cardiology follow-up on 2026-10-02 to decide about statins.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:55:22.790362+00:00\",\"id\":\"rec_b56c8da3d6f641ee93785b8d2ab4c1fb\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"lipids\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"LDL\",\"cardiology\"],\"watch_terms\":[\"LDL\",\"cardiology\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Has my LDL dropped since the diet change?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_8310db5f8d5d4e2bbce8108d1add742f\":\"active\",\"rec_8bf8573063f34deead1e41401fe04f7c\":\"active\",\"rec_b56c8da3d6f641ee93785b8d2ab4c1fb\":\"active\"}}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 6219,
+      "completion_tokens": 70,
+      "tool_calls": 1,
+      "seconds": 2.6
+     },
+     {
+      "tool": "context_query",
+      "arguments": {
+       "sql": "SELECT id,source_id,metric,start_at,end_at,timezone,value_num,value_text,unit,source_name FROM canonical_observations WHERE metric LIKE '%LDL%' OR metric LIKE '%cholesterol%' ORDER BY start_at DESC",
+       "parameters": [],
+       "limit": 100
+      },
+      "is_error": false,
+      "result_text": "{\"columns\":[\"id\",\"source_id\",\"metric\",\"start_at\",\"end_at\",\"timezone\",\"value_num\",\"value_text\",\"unit\",\"source_name\"],\"max_rows\":100,\"query_sha256\":\"66b0bbb2759ee09653e89b88418dc02ba526c733dadb60696a33c732f694ef4d\",\"read_receipt\":\"rr_e438cf432a8d44219537fd0bbf036eab\",\"reads_observations\":true,\"rows\":[],\"tables_read\":[\"canonical_observations\",\"canonical_observations_raw\",\"observations\",\"supersessions\"],\"truncated\":false}"
+     },
+     {
+      "turn": 3,
+      "prompt_tokens": 6433,
+      "completion_tokens": 347,
+      "tool_calls": 0,
+      "seconds": 7.5
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3755,
+    "completion_tokens": 15,
+    "tool_calls": 1,
+    "seconds": 2.4
+   },
+   {
+    "tool": "context_bootstrap",
+    "arguments": {},
+    "is_error": false,
+    "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T16:55:22.803305+00:00\",\"last_worker_run_at\":\"2026-09-29T16:55:22.803305+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":6,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T16:55:22.798371+00:00\",\"id\":\"rec_8bf8573063f34deead1e41401fe04f7c\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: cardiology follow-up on 2026-10-02 to decide about statins.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:55:22.790362+00:00\",\"id\":\"rec_b56c8da3d6f641ee93785b8d2ab4c1fb\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"lipids\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"LDL\",\"cardiology\"],\"watch_terms\":[\"LDL\",\"cardiology\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Has my LDL dropped since the diet change?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierHeartRateVariabilitySDNN\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"ms\"},{\"first_at\":\"2026-09-02T02:00:00.000000+00:00\",\"last_at\":\"2026-09-23T02:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierStepCount\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"count\"}],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_28a39d5b86eb455aad330fad874fe649\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T16:55:22.791672+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_b56c8da3d6f641ee93785b8d2ab4c1fb\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_8310db5f8d5d4e2bbce8108d1add742f\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_b56c8da3d6f641ee93785b8d2ab4c1fb\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): LDL 4.1 mmol/L (Lab B); no repeat since. Wearables do not measure lipids.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":1,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T16:55:25.272729+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":44,\"coverage\":{},\"cursor\":\"fixture-86\",\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_attempt_at\":\"2026-09-29T16:55:22.796458+00:00\",\"last_success_at\":\"2026-09-29T16:55:22.796458+00:00\",\"latest_sample_at\":\"2026-09-23T02:00:30.000000+00:00\",\"policy\":\"durable\",\"state\":\"ready\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 5228,
+    "completion_tokens": 92,
+    "tool_calls": 1,
+    "seconds": 4.9
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_b56c8da3d6f641ee93785b8d2ab4c1fb",
+      "rec_8310db5f8d5d4e2bbce8108d1add742f",
+      "rec_8bf8573063f34deead1e41401fe04f7c"
+     ],
+     "include_history": true
+    },
+    "is_error": false,
+    "result_text": "{\"history\":{\"rec_8310db5f8d5d4e2bbce8108d1add742f\":[\"rec_8310db5f8d5d4e2bbce8108d1add742f\"],\"rec_8bf8573063f34deead1e41401fe04f7c\":[\"rec_8bf8573063f34deead1e41401fe04f7c\"],\"rec_b56c8da3d6f641ee93785b8d2ab4c1fb\":[\"rec_b56c8da3d6f641ee93785b8d2ab4c1fb\"]},\"missing_ids\":[],\"read_receipt\":\"rr_f8f1a17cc8c34ad3b405e301ac02f194\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T16:55:22.791672+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_b56c8da3d6f641ee93785b8d2ab4c1fb\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_8310db5f8d5d4e2bbce8108d1add742f\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-07-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_b56c8da3d6f641ee93785b8d2ab4c1fb\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis (June): LDL 4.1 mmol/L (Lab B); no repeat since. Wearables do not measure lipids.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:55:22.798371+00:00\",\"id\":\"rec_8bf8573063f34deead1e41401fe04f7c\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: cardiology follow-up on 2026-10-02 to decide about statins.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:55:22.790362+00:00\",\"id\":\"rec_b56c8da3d6f641ee93785b8d2ab4c1fb\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"outcome\":\"lipids\",\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"LDL\",\"cardiology\"],\"watch_terms\":[\"LDL\",\"cardiology\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Has my LDL dropped since the diet change?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_8310db5f8d5d4e2bbce8108d1add742f\":\"active\",\"rec_8bf8573063f34deead1e41401fe04f7c\":\"active\",\"rec_b56c8da3d6f641ee93785b8d2ab4c1fb\":\"active\"}}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 6219,
+    "completion_tokens": 70,
+    "tool_calls": 1,
+    "seconds": 2.6
+   },
+   {
+    "tool": "context_query",
+    "arguments": {
+     "sql": "SELECT id,source_id,metric,start_at,end_at,timezone,value_num,value_text,unit,source_name FROM canonical_observations WHERE metric LIKE '%LDL%' OR metric LIKE '%cholesterol%' ORDER BY start_at DESC",
+     "parameters": [],
+     "limit": 100
+    },
+    "is_error": false,
+    "result_text": "{\"columns\":[\"id\",\"source_id\",\"metric\",\"start_at\",\"end_at\",\"timezone\",\"value_num\",\"value_text\",\"unit\",\"source_name\"],\"max_rows\":100,\"query_sha256\":\"66b0bbb2759ee09653e89b88418dc02ba526c733dadb60696a33c732f694ef4d\",\"read_receipt\":\"rr_e438cf432a8d44219537fd0bbf036eab\",\"reads_observations\":true,\"rows\":[],\"tables_read\":[\"canonical_observations\",\"canonical_observations_raw\",\"observations\",\"supersessions\"],\"truncated\":false}"
+   },
+   {
+    "turn": 3,
+    "prompt_tokens": 6433,
+    "completion_tokens": 347,
+    "tool_calls": 0,
+    "seconds": 7.5
+   }
+  ],
+  "error": null,
+  "seconds": 17.5,
+  "turns": 4,
+  "tokens": {
+   "prompt": 21635,
+   "completion": 524
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_0601bde6c88f4b8f92f4e401e5173dce",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_8bf8573063f34deead1e41401fe04f7c",
+      "rec_8310db5f8d5d4e2bbce8108d1add742f"
+     ],
+     "evidence_versions": {
+      "rec_8310db5f8d5d4e2bbce8108d1add742f": "active",
+      "rec_8bf8573063f34deead1e41401fe04f7c": "active"
+     },
+     "next_step": "若要在复诊讨论中判断变化，可在复诊前取得一次血脂检验，并与此前 Lab B 的 LDL 结果核对；这能帮助讨论当前 LDL 与之前的差异，但单次复测不能单独证明饮食改变造成了变化。",
+     "question_id": "rec_b56c8da3d6f641ee93785b8d2ab4c1fb",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "复诊前无法判断 LDL 是否下降",
+     "unknowns": "现有记录不能确认这次复诊前是否会有新的血脂结果，也无法据此判断饮食改变后 LDL 是否下降。",
+     "what_changed": "记录新增了10月2日复诊安排。此前分析提到 LDL 为4.1 mmol/L（Lab B）且当时没有复测；查询到的观察数据中没有 LDL 或胆固醇结果。",
+     "why_now": "10月2日的心脏科复诊将在9天后讨论是否使用他汀；目前记录没有能回答 LDL 是否下降的复测结果。"
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "临近他汀决策的复诊，候选内容正确指出现有记录无法判断 LDL 是否下降，建议复诊前做血脂检验并与既往 LDL 结果核对，以供复诊讨论。既往数值明确归因于此前分析，未将饮食变化断言为原因，也未重复已推送内容。",
+  "violated_forbidden": []
+ }
+}

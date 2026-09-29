@@ -1,0 +1,308 @@
+{
+ "record": {
+  "case_id": "HR37",
+  "run": 1,
+  "category": "revisit",
+  "split": "holdout3",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "新记录直接回应了用户的问题，主动推送有依据。候选内容核对了两次均为同一治疗师用量角器测得的肩屈曲角度，140°至165°、增加25°的比较得到记录支持；也明确未将变化归因于理疗，且未重复已推送内容。",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_8a7bcd480d21408cae959310a39c090a\", \"request_id\": \"worker:job_f13ffa449f5b4a07955825bccccef4e1:0:w_903a9a196ad34e6db90e53636e78beda\", \"status\": \"committed\", \"request_hash\": \"bd8d8b04021a8f7e0c34f9ad878db85e1294715e511efedaa6aac41638578063\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_406cde929fde4780bf957487d3f63cc7",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-luna",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 15.2,
+  "tool_calls": [
+   "context_bootstrap",
+   "context_read",
+   "context_query"
+  ],
+  "error": null,
+  "turns": 3,
+  "tokens": {
+   "prompt": 14349,
+   "completion": 573
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_290500fd37be4f76af1529e1fc723cb5",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_406cde929fde4780bf957487d3f63cc7:fe94b827f0455bee"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_406cde929fde4780bf957487d3f63cc7:fe94b827f0455bee",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_8a7bcd480d21408cae959310a39c090a",
+      "request_id": "worker:job_f13ffa449f5b4a07955825bccccef4e1:0:w_903a9a196ad34e6db90e53636e78beda",
+      "status": "committed",
+      "request_hash": "bd8d8b04021a8f7e0c34f9ad878db85e1294715e511efedaa6aac41638578063"
+     },
+     "tool_calls": 6
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_290500fd37be4f76af1529e1fc723cb5\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_406cde929fde4780bf957487d3f63cc7:fe94b827f0455bee\"]}, \"jobs\": [{\"job\": \"revisit:rec_406cde929fde4780bf957487d3f63cc7:fe94b827f0455bee\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_8a7bcd480d21408cae959310a39c090a\", \"request_id\": \"worker:job_f13ffa449f5b4a07955825bccccef4e1:0:w_903a9a196ad34e6db90e53636e78beda\", \"status\": \"committed\", \"request_hash\": \"bd8d8b04021a8f7e0c34f9ad878db85e1294715e511efedaa6aac41638578063\"}, \"tool_calls\": 6}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_406cde929fde4780bf957487d3f63cc7:fe94b827f0455bee",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by a change matching one open question. The change is either new data about the question or a dated event the user recorded (then the trigger carries `dated_event`). Decide whether the user should hear something about this question now: a new answer, a correction, or, when a dated event on this question is near and the data on record cannot answer it, which measurement would. Otherwise stay silent.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_406cde929fde4780bf957487d3f63cc7\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"state\":\"open\",\"watch_terms\":[\"shoulder\"]},\"text\":\"SYNTHETIC: Is my shoulder mobility improving with physio?\"}\n\n## Prior analyses of this question (newest first)\n{\"days_ago\":52,\"evidence_status\":\"not verifiable (written without read receipts); not known to be stale\",\"id\":\"rec_94f420aafc67404bb979c5eb54fbf72a\",\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis: baseline 140 deg; reassess with the same method.\"}\n\n## Since the newest analysis (2026-08-02): records written\n{\"id\":\"rec_6042241636704147a0d6cfc36b543d2b\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC physio: shoulder flexion 165 deg (goniometer, same therapist).\"}\n## Since the newest analysis: passive samples added\nNone.\nThe newest analysis set no revisit condition field; read its text for one before assuming there is none.\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 168 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user asked to be interrupted less: surface only a direct answer to their own question that the new evidence itself provides, a correction of something they were shown, or a measurement gap tied to an entry in \\\"Upcoming dated events\\\" with days_until <= 14 that bears on the same outcome; with no such entry a measurement gap is silence\",\"measurement_gap_under_quiet\":\"not allowed: no dated event within 14 days in the user's records\",\"proactivity\":\"quiet\"}\n\n## Upcoming dated events in the user's records (next 21 days)\nNone: no record names a date in the next 21 days.\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n\n## Passive data available (observation catalog)\nNo observations stored.\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"record\":{\"id\":\"rec_6042241636704147a0d6cfc36b543d2b\",\"kind\":\"note\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC physio: shoulder flexion 165 deg (goniometer, same therapist).\"}}\n\nIf you surface, set question_id to rec_406cde929fde4780bf957487d3f63cc7.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_406cde929fde4780bf957487d3f63cc7",
+     "topic": "肩部活动度变化",
+     "why_now": "新记录提供了与此前基线同方法、同一治疗师的复测，直接回答了你关于活动度是否改善的问题。",
+     "what_changed": "7月15日记录肩屈曲为140°；9月22日记录为165°，均注明使用量角器、同一治疗师。记录值增加了25°。",
+     "unknowns": "这两次记录显示肩屈曲角度上升，但仅凭记录不能确定变化是否由理疗造成，也不能说明其他方向的活动度或日常功能是否改善。",
+     "next_step": "继续按相同方法记录后续肩屈曲角度，并结合你关心的功能变化，帮助判断改善是否持续；单凭角度不能确定理疗是变化原因。",
+     "evidence_ids": [
+      "rec_ec6a32ce7533401f9184e955f2a60a92",
+      "rec_6042241636704147a0d6cfc36b543d2b"
+     ],
+     "evidence_versions": {
+      "rec_ec6a32ce7533401f9184e955f2a60a92": "active",
+      "rec_6042241636704147a0d6cfc36b543d2b": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3298,
+      "completion_tokens": 15,
+      "tool_calls": 1,
+      "seconds": 1.5
+     },
+     {
+      "tool": "context_bootstrap",
+      "arguments": {},
+      "is_error": false,
+      "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T16:59:23.886487+00:00\",\"last_worker_run_at\":\"2026-09-29T16:59:23.886487+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":6,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T16:59:23.882586+00:00\",\"id\":\"rec_6042241636704147a0d6cfc36b543d2b\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio: shoulder flexion 165 deg (goniometer, same therapist).\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:59:23.880673+00:00\",\"id\":\"rec_ec6a32ce7533401f9184e955f2a60a92\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-07-15T15:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-15T10:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio: shoulder flexion 140 deg (goniometer, same therapist).\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:59:23.878000+00:00\",\"id\":\"rec_406cde929fde4780bf957487d3f63cc7\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"shoulder\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my shoulder mobility improving with physio?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"quiet\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_106a643ca4af4dbd918c86713be76497\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T16:59:23.881549+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_406cde929fde4780bf957487d3f63cc7\",\"rec_ec6a32ce7533401f9184e955f2a60a92\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_94f420aafc67404bb979c5eb54fbf72a\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_406cde929fde4780bf957487d3f63cc7\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: baseline 140 deg; reassess with the same method.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":2,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T16:59:25.427892+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4651,
+      "completion_tokens": 245,
+      "tool_calls": 2,
+      "seconds": 6.1
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_406cde929fde4780bf957487d3f63cc7",
+        "rec_ec6a32ce7533401f9184e955f2a60a92",
+        "rec_94f420aafc67404bb979c5eb54fbf72a",
+        "rec_6042241636704147a0d6cfc36b543d2b"
+       ],
+       "include_history": true
+      },
+      "is_error": false,
+      "result_text": "{\"history\":{\"rec_406cde929fde4780bf957487d3f63cc7\":[\"rec_406cde929fde4780bf957487d3f63cc7\"],\"rec_6042241636704147a0d6cfc36b543d2b\":[\"rec_6042241636704147a0d6cfc36b543d2b\"],\"rec_94f420aafc67404bb979c5eb54fbf72a\":[\"rec_94f420aafc67404bb979c5eb54fbf72a\"],\"rec_ec6a32ce7533401f9184e955f2a60a92\":[\"rec_ec6a32ce7533401f9184e955f2a60a92\"]},\"missing_ids\":[],\"read_receipt\":\"rr_284331b21336416cac70498ae3e50de6\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T16:59:23.878000+00:00\",\"id\":\"rec_406cde929fde4780bf957487d3f63cc7\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"shoulder\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my shoulder mobility improving with physio?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:59:23.882586+00:00\",\"id\":\"rec_6042241636704147a0d6cfc36b543d2b\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio: shoulder flexion 165 deg (goniometer, same therapist).\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:59:23.881549+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_406cde929fde4780bf957487d3f63cc7\",\"rec_ec6a32ce7533401f9184e955f2a60a92\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_94f420aafc67404bb979c5eb54fbf72a\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_406cde929fde4780bf957487d3f63cc7\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: baseline 140 deg; reassess with the same method.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:59:23.880673+00:00\",\"id\":\"rec_ec6a32ce7533401f9184e955f2a60a92\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-07-15T15:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-15T10:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio: shoulder flexion 140 deg (goniometer, same therapist).\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_406cde929fde4780bf957487d3f63cc7\":\"active\",\"rec_6042241636704147a0d6cfc36b543d2b\":\"active\",\"rec_94f420aafc67404bb979c5eb54fbf72a\":\"active\",\"rec_ec6a32ce7533401f9184e955f2a60a92\":\"active\"}}"
+     },
+     {
+      "tool": "context_query",
+      "arguments": {
+       "sql": "SELECT id, kind, occurred_at, text, payload_json FROM active_records WHERE id IN (?, ?, ?, ?)",
+       "parameters": [
+        "rec_406cde929fde4780bf957487d3f63cc7",
+        "rec_ec6a32ce7533401f9184e955f2a60a92",
+        "rec_94f420aafc67404bb979c5eb54fbf72a",
+        "rec_6042241636704147a0d6cfc36b543d2b"
+       ],
+       "limit": 20
+      },
+      "is_error": false,
+      "result_text": "{\"columns\":[\"id\",\"kind\",\"occurred_at\",\"text\",\"payload_json\"],\"max_rows\":20,\"query_sha256\":\"002597ce62d63a974ff5a158011ad5537601ab515ccfe81dbcc2549479fd9447\",\"read_receipt\":\"rr_b60fabf6d1314170b0d992442cf55078\",\"reads_observations\":false,\"rows\":[[\"rec_406cde929fde4780bf957487d3f63cc7\",\"question\",\"2026-07-01T14:00:00.000000+00:00\",\"SYNTHETIC: Is my shoulder mobility improving with physio?\",\"{\\\"state\\\":\\\"open\\\",\\\"synthetic\\\":true,\\\"watch_terms\\\":[\\\"shoulder\\\"]}\"],[\"rec_6042241636704147a0d6cfc36b543d2b\",\"note\",\"2026-09-22T01:00:00.000000+00:00\",\"SYNTHETIC physio: shoulder flexion 165 deg (goniometer, same therapist).\",\"{\\\"synthetic\\\":true}\"],[\"rec_94f420aafc67404bb979c5eb54fbf72a\",\"analysis\",\"2026-08-02T14:00:00.000000+00:00\",\"SYNTHETIC analysis: baseline 140 deg; reassess with the same method.\",\"{\\\"question_id\\\":\\\"rec_406cde929fde4780bf957487d3f63cc7\\\",\\\"synthetic\\\":true}\"],[\"rec_ec6a32ce7533401f9184e955f2a60a92\",\"note\",\"2026-07-15T15:00:00.000000+00:00\",\"SYNTHETIC physio: shoulder flexion 140 deg (goniometer, same therapist).\",\"{\\\"synthetic\\\":true}\"]],\"tables_read\":[\"active_records\",\"records\"],\"truncated\":false}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 6400,
+      "completion_tokens": 313,
+      "tool_calls": 0,
+      "seconds": 7.6
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3298,
+    "completion_tokens": 15,
+    "tool_calls": 1,
+    "seconds": 1.5
+   },
+   {
+    "tool": "context_bootstrap",
+    "arguments": {},
+    "is_error": false,
+    "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T16:59:23.886487+00:00\",\"last_worker_run_at\":\"2026-09-29T16:59:23.886487+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":6,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T16:59:23.882586+00:00\",\"id\":\"rec_6042241636704147a0d6cfc36b543d2b\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio: shoulder flexion 165 deg (goniometer, same therapist).\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:59:23.880673+00:00\",\"id\":\"rec_ec6a32ce7533401f9184e955f2a60a92\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-07-15T15:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-15T10:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio: shoulder flexion 140 deg (goniometer, same therapist).\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:59:23.878000+00:00\",\"id\":\"rec_406cde929fde4780bf957487d3f63cc7\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"shoulder\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my shoulder mobility improving with physio?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"quiet\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_106a643ca4af4dbd918c86713be76497\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T16:59:23.881549+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_406cde929fde4780bf957487d3f63cc7\",\"rec_ec6a32ce7533401f9184e955f2a60a92\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_94f420aafc67404bb979c5eb54fbf72a\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_406cde929fde4780bf957487d3f63cc7\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: baseline 140 deg; reassess with the same method.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"note\":2,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T16:59:25.427892+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4651,
+    "completion_tokens": 245,
+    "tool_calls": 2,
+    "seconds": 6.1
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_406cde929fde4780bf957487d3f63cc7",
+      "rec_ec6a32ce7533401f9184e955f2a60a92",
+      "rec_94f420aafc67404bb979c5eb54fbf72a",
+      "rec_6042241636704147a0d6cfc36b543d2b"
+     ],
+     "include_history": true
+    },
+    "is_error": false,
+    "result_text": "{\"history\":{\"rec_406cde929fde4780bf957487d3f63cc7\":[\"rec_406cde929fde4780bf957487d3f63cc7\"],\"rec_6042241636704147a0d6cfc36b543d2b\":[\"rec_6042241636704147a0d6cfc36b543d2b\"],\"rec_94f420aafc67404bb979c5eb54fbf72a\":[\"rec_94f420aafc67404bb979c5eb54fbf72a\"],\"rec_ec6a32ce7533401f9184e955f2a60a92\":[\"rec_ec6a32ce7533401f9184e955f2a60a92\"]},\"missing_ids\":[],\"read_receipt\":\"rr_284331b21336416cac70498ae3e50de6\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T16:59:23.878000+00:00\",\"id\":\"rec_406cde929fde4780bf957487d3f63cc7\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"shoulder\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my shoulder mobility improving with physio?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:59:23.882586+00:00\",\"id\":\"rec_6042241636704147a0d6cfc36b543d2b\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio: shoulder flexion 165 deg (goniometer, same therapist).\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:59:23.881549+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_406cde929fde4780bf957487d3f63cc7\",\"rec_ec6a32ce7533401f9184e955f2a60a92\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_94f420aafc67404bb979c5eb54fbf72a\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_406cde929fde4780bf957487d3f63cc7\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: baseline 140 deg; reassess with the same method.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:59:23.880673+00:00\",\"id\":\"rec_ec6a32ce7533401f9184e955f2a60a92\",\"kind\":\"note\",\"object_sha\":null,\"occurred_at\":\"2026-07-15T15:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-15T10:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC physio: shoulder flexion 140 deg (goniometer, same therapist).\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_406cde929fde4780bf957487d3f63cc7\":\"active\",\"rec_6042241636704147a0d6cfc36b543d2b\":\"active\",\"rec_94f420aafc67404bb979c5eb54fbf72a\":\"active\",\"rec_ec6a32ce7533401f9184e955f2a60a92\":\"active\"}}"
+   },
+   {
+    "tool": "context_query",
+    "arguments": {
+     "sql": "SELECT id, kind, occurred_at, text, payload_json FROM active_records WHERE id IN (?, ?, ?, ?)",
+     "parameters": [
+      "rec_406cde929fde4780bf957487d3f63cc7",
+      "rec_ec6a32ce7533401f9184e955f2a60a92",
+      "rec_94f420aafc67404bb979c5eb54fbf72a",
+      "rec_6042241636704147a0d6cfc36b543d2b"
+     ],
+     "limit": 20
+    },
+    "is_error": false,
+    "result_text": "{\"columns\":[\"id\",\"kind\",\"occurred_at\",\"text\",\"payload_json\"],\"max_rows\":20,\"query_sha256\":\"002597ce62d63a974ff5a158011ad5537601ab515ccfe81dbcc2549479fd9447\",\"read_receipt\":\"rr_b60fabf6d1314170b0d992442cf55078\",\"reads_observations\":false,\"rows\":[[\"rec_406cde929fde4780bf957487d3f63cc7\",\"question\",\"2026-07-01T14:00:00.000000+00:00\",\"SYNTHETIC: Is my shoulder mobility improving with physio?\",\"{\\\"state\\\":\\\"open\\\",\\\"synthetic\\\":true,\\\"watch_terms\\\":[\\\"shoulder\\\"]}\"],[\"rec_6042241636704147a0d6cfc36b543d2b\",\"note\",\"2026-09-22T01:00:00.000000+00:00\",\"SYNTHETIC physio: shoulder flexion 165 deg (goniometer, same therapist).\",\"{\\\"synthetic\\\":true}\"],[\"rec_94f420aafc67404bb979c5eb54fbf72a\",\"analysis\",\"2026-08-02T14:00:00.000000+00:00\",\"SYNTHETIC analysis: baseline 140 deg; reassess with the same method.\",\"{\\\"question_id\\\":\\\"rec_406cde929fde4780bf957487d3f63cc7\\\",\\\"synthetic\\\":true}\"],[\"rec_ec6a32ce7533401f9184e955f2a60a92\",\"note\",\"2026-07-15T15:00:00.000000+00:00\",\"SYNTHETIC physio: shoulder flexion 140 deg (goniometer, same therapist).\",\"{\\\"synthetic\\\":true}\"]],\"tables_read\":[\"active_records\",\"records\"],\"truncated\":false}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 6400,
+    "completion_tokens": 313,
+    "tool_calls": 0,
+    "seconds": 7.6
+   }
+  ],
+  "error": null,
+  "seconds": 15.2,
+  "turns": 3,
+  "tokens": {
+   "prompt": 14349,
+   "completion": 573
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_8a7bcd480d21408cae959310a39c090a",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_ec6a32ce7533401f9184e955f2a60a92",
+      "rec_6042241636704147a0d6cfc36b543d2b"
+     ],
+     "evidence_versions": {
+      "rec_6042241636704147a0d6cfc36b543d2b": "active",
+      "rec_ec6a32ce7533401f9184e955f2a60a92": "active"
+     },
+     "next_step": "继续按相同方法记录后续肩屈曲角度，并结合你关心的功能变化，帮助判断改善是否持续；单凭角度不能确定理疗是变化原因。",
+     "question_id": "rec_406cde929fde4780bf957487d3f63cc7",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "肩部活动度变化",
+     "unknowns": "这两次记录显示肩屈曲角度上升，但仅凭记录不能确定变化是否由理疗造成，也不能说明其他方向的活动度或日常功能是否改善。",
+     "what_changed": "7月15日记录肩屈曲为140°；9月22日记录为165°，均注明使用量角器、同一治疗师。记录值增加了25°。",
+     "why_now": "新记录提供了与此前基线同方法、同一治疗师的复测，直接回答了你关于活动度是否改善的问题。"
+    }
+   }
+  ],
+  "preferences_before": {
+   "proactivity": "quiet"
+  },
+  "preferences_after": {
+   "proactivity": "quiet"
+  },
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "新记录直接回应了用户的问题，主动推送有依据。候选内容核对了两次均为同一治疗师用量角器测得的肩屈曲角度，140°至165°、增加25°的比较得到记录支持；也明确未将变化归因于理疗，且未重复已推送内容。",
+  "violated_forbidden": []
+ }
+}

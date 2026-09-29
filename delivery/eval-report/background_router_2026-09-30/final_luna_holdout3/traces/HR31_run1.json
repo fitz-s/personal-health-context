@@ -1,0 +1,277 @@
+{
+ "record": {
+  "case_id": "HR31",
+  "run": 1,
+  "category": "revisit",
+  "split": "holdout3",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "The assistant surfaced a relevant same-pool 400 m retest, correctly calculated the 35-second difference, and distinguished a faster single result from sustained improvement. It recommended another comparable timed swim to assess that trend and made no causal claim or repeated insight.",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "surfaced",
+    "ok": true,
+    "detail": "jobs=1 queued=1 model_silence=0 gate_blocked=0 [{\"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_821a14b9926641bd9a12407423104443\", \"request_id\": \"worker:job_7e13057d3119436799949665af011c90:0:w_135eada4727a428999ef41d3e25e3ecf\", \"status\": \"committed\", \"request_hash\": \"7ee21d218725efaeea4c3ac2dfd037d8bd8d1db8058951b0a5a042b9a9dfe5d4\"}}]",
+    "hard": true,
+    "needs_turn": true
+   },
+   {
+    "check": "evidence_returned_by_tools",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "no_causal_assertion",
+    "ok": true,
+    "detail": "",
+    "hard": true
+   },
+   {
+    "check": "question_id",
+    "ok": true,
+    "detail": "rec_c84e034dd00f41e080038ee13d47ab00",
+    "hard": true
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-luna",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 17.0,
+  "tool_calls": [
+   "context_bootstrap",
+   "context_read"
+  ],
+  "error": null,
+  "turns": 3,
+  "tokens": {
+   "prompt": 13547,
+   "completion": 643
+  },
+  "effort": "medium",
+  "decisions": [
+   "surface"
+  ],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_54f723f46d4242f9b69b625e21541c5d",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_c84e034dd00f41e080038ee13d47ab00:1ae3592f8248c3f8"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_c84e034dd00f41e080038ee13d47ab00:1ae3592f8248c3f8",
+     "outcome": "surface",
+     "gate": {
+      "queued": true,
+      "insight_id": "ins_821a14b9926641bd9a12407423104443",
+      "request_id": "worker:job_7e13057d3119436799949665af011c90:0:w_135eada4727a428999ef41d3e25e3ecf",
+      "status": "committed",
+      "request_hash": "7ee21d218725efaeea4c3ac2dfd037d8bd8d1db8058951b0a5a042b9a9dfe5d4"
+     },
+     "tool_calls": 5
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_54f723f46d4242f9b69b625e21541c5d\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_c84e034dd00f41e080038ee13d47ab00:1ae3592f8248c3f8\"]}, \"jobs\": [{\"job\": \"revisit:rec_c84e034dd00f41e080038ee13d47ab00:1ae3592f8248c3f8\", \"outcome\": \"surface\", \"gate\": {\"queued\": true, \"insight_id\": \"ins_821a14b9926641bd9a12407423104443\", \"request_id\": \"worker:job_7e13057d3119436799949665af011c90:0:w_135eada4727a428999ef41d3e25e3ecf\", \"status\": \"committed\", \"request_hash\": \"7ee21d218725efaeea4c3ac2dfd037d8bd8d1db8058951b0a5a042b9a9dfe5d4\"}, \"tool_calls\": 5}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_c84e034dd00f41e080038ee13d47ab00:1ae3592f8248c3f8",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by a change matching one open question. The change is either new data about the question or a dated event the user recorded (then the trigger carries `dated_event`). Decide whether the user should hear something about this question now: a new answer, a correction, or, when a dated event on this question is near and the data on record cannot answer it, which measurement would. Otherwise stay silent.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_c84e034dd00f41e080038ee13d47ab00\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"state\":\"open\",\"watch_terms\":[\"swim\"]},\"text\":\"SYNTHETIC: Is my 400 m swim time improving?\"}\n\n## Prior analyses of this question (newest first)\n{\"days_ago\":52,\"evidence_status\":\"not verifiable (written without read receipts); not known to be stale\",\"id\":\"rec_d3d363ef45194bcb904f6572cfbd207d\",\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"revisit_when\":null,\"text\":\"SYNTHETIC analysis: baseline only; repeat in the same pool.\"}\n\n## Since the newest analysis (2026-08-02): records written\n{\"id\":\"rec_1cf18c2b9c2f4ff9bdd369bce62a1a5c\",\"kind\":\"event\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC 400 m swim, same 25 m pool: 8:05.\"}\n## Since the newest analysis: passive samples added\nNone.\nThe newest analysis set no revisit condition field; read its text for one before assuming there is none.\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\nNone: no record names a date in the next 21 days.\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n\n## Passive data available (observation catalog)\nNo observations stored.\n\n## What changed since the last look (the trigger of this job)\n{\"already_cited_by\":[],\"change\":\"record\",\"record\":{\"id\":\"rec_1cf18c2b9c2f4ff9bdd369bce62a1a5c\",\"kind\":\"event\",\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"text\":\"SYNTHETIC 400 m swim, same 25 m pool: 8:05.\"}}\n\nIf you surface, set question_id to rec_c84e034dd00f41e080038ee13d47ab00.",
+    "candidate": {
+     "decision": "surface",
+     "question_id": "rec_c84e034dd00f41e080038ee13d47ab00",
+     "topic": "400米游泳成绩",
+     "why_now": "你之前的记录建议在同一个泳池复测；现在有了同池复测数据，可以更新目前的判断。",
+     "what_changed": "同一25米泳池的400米成绩，从7月12日的8分40秒变为9月22日的8分05秒，快了35秒。",
+     "unknowns": "这次复测显示成绩更快，但单次复测还不能确认持续改善；其他游泳条件是否相同也未记录。",
+     "next_step": "之后在相同泳池和尽量相同条件下再记录一次400米用时；若成绩继续更快，才更支持持续改善。这个记录有助判断成绩是否在改善，但不能单独说明原因。",
+     "evidence_ids": [
+      "rec_77b53a2194704d299a0e4752ddd79bc3",
+      "rec_1cf18c2b9c2f4ff9bdd369bce62a1a5c",
+      "rec_d3d363ef45194bcb904f6572cfbd207d"
+     ],
+     "evidence_versions": {
+      "rec_77b53a2194704d299a0e4752ddd79bc3": "active",
+      "rec_1cf18c2b9c2f4ff9bdd369bce62a1a5c": "active",
+      "rec_d3d363ef45194bcb904f6572cfbd207d": "active"
+     },
+     "source_policies": [
+      "durable"
+     ]
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3217,
+      "completion_tokens": 15,
+      "tool_calls": 1,
+      "seconds": 2.2
+     },
+     {
+      "tool": "context_bootstrap",
+      "arguments": {},
+      "is_error": false,
+      "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T16:57:39.768107+00:00\",\"last_worker_run_at\":\"2026-09-29T16:57:39.768107+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":5,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T16:57:39.756192+00:00\",\"id\":\"rec_c84e034dd00f41e080038ee13d47ab00\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"swim\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my 400 m swim time improving?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_6f6ef429a6204a9b88e72130c819967b\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T16:57:39.763368+00:00\",\"id\":\"rec_1cf18c2b9c2f4ff9bdd369bce62a1a5c\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 400 m swim, same 25 m pool: 8:05.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:57:39.760846+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_77b53a2194704d299a0e4752ddd79bc3\",\"rec_c84e034dd00f41e080038ee13d47ab00\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_d3d363ef45194bcb904f6572cfbd207d\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_c84e034dd00f41e080038ee13d47ab00\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: baseline only; repeat in the same pool.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:57:39.758414+00:00\",\"id\":\"rec_77b53a2194704d299a0e4752ddd79bc3\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-07-12T12:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-12T07:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 400 m swim, same 25 m pool: 8:40.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"event\":2,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T16:57:41.949755+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4569,
+      "completion_tokens": 108,
+      "tool_calls": 1,
+      "seconds": 4.1
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_c84e034dd00f41e080038ee13d47ab00",
+        "rec_d3d363ef45194bcb904f6572cfbd207d",
+        "rec_77b53a2194704d299a0e4752ddd79bc3",
+        "rec_1cf18c2b9c2f4ff9bdd369bce62a1a5c"
+       ],
+       "include_history": true
+      },
+      "is_error": false,
+      "result_text": "{\"history\":{\"rec_1cf18c2b9c2f4ff9bdd369bce62a1a5c\":[\"rec_1cf18c2b9c2f4ff9bdd369bce62a1a5c\"],\"rec_77b53a2194704d299a0e4752ddd79bc3\":[\"rec_77b53a2194704d299a0e4752ddd79bc3\"],\"rec_c84e034dd00f41e080038ee13d47ab00\":[\"rec_c84e034dd00f41e080038ee13d47ab00\"],\"rec_d3d363ef45194bcb904f6572cfbd207d\":[\"rec_d3d363ef45194bcb904f6572cfbd207d\"]},\"missing_ids\":[],\"read_receipt\":\"rr_6b4085454a0e4cad9f1ff0d449b7a117\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T16:57:39.763368+00:00\",\"id\":\"rec_1cf18c2b9c2f4ff9bdd369bce62a1a5c\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 400 m swim, same 25 m pool: 8:05.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:57:39.758414+00:00\",\"id\":\"rec_77b53a2194704d299a0e4752ddd79bc3\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-07-12T12:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-12T07:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 400 m swim, same 25 m pool: 8:40.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:57:39.756192+00:00\",\"id\":\"rec_c84e034dd00f41e080038ee13d47ab00\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"swim\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my 400 m swim time improving?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:57:39.760846+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_77b53a2194704d299a0e4752ddd79bc3\",\"rec_c84e034dd00f41e080038ee13d47ab00\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_d3d363ef45194bcb904f6572cfbd207d\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_c84e034dd00f41e080038ee13d47ab00\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: baseline only; repeat in the same pool.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_1cf18c2b9c2f4ff9bdd369bce62a1a5c\":\"active\",\"rec_77b53a2194704d299a0e4752ddd79bc3\":\"active\",\"rec_c84e034dd00f41e080038ee13d47ab00\":\"active\",\"rec_d3d363ef45194bcb904f6572cfbd207d\":\"active\"}}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 5761,
+      "completion_tokens": 520,
+      "tool_calls": 0,
+      "seconds": 10.7
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3217,
+    "completion_tokens": 15,
+    "tool_calls": 1,
+    "seconds": 2.2
+   },
+   {
+    "tool": "context_bootstrap",
+    "arguments": {},
+    "is_error": false,
+    "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T16:57:39.768107+00:00\",\"last_worker_run_at\":\"2026-09-29T16:57:39.768107+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":5,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T16:57:39.756192+00:00\",\"id\":\"rec_c84e034dd00f41e080038ee13d47ab00\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"swim\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my 400 m swim time improving?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_6f6ef429a6204a9b88e72130c819967b\",\"recent\":[{\"active\":true,\"created_at\":\"2026-09-29T16:57:39.763368+00:00\",\"id\":\"rec_1cf18c2b9c2f4ff9bdd369bce62a1a5c\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 400 m swim, same 25 m pool: 8:05.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:57:39.760846+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_77b53a2194704d299a0e4752ddd79bc3\",\"rec_c84e034dd00f41e080038ee13d47ab00\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_d3d363ef45194bcb904f6572cfbd207d\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_c84e034dd00f41e080038ee13d47ab00\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: baseline only; repeat in the same pool.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:57:39.758414+00:00\",\"id\":\"rec_77b53a2194704d299a0e4752ddd79bc3\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-07-12T12:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-12T07:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 400 m swim, same 25 m pool: 8:40.\",\"timezone\":\"America/Chicago\"}],\"record_counts\":{\"analysis\":1,\"event\":2,\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T16:57:41.949755+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4569,
+    "completion_tokens": 108,
+    "tool_calls": 1,
+    "seconds": 4.1
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_c84e034dd00f41e080038ee13d47ab00",
+      "rec_d3d363ef45194bcb904f6572cfbd207d",
+      "rec_77b53a2194704d299a0e4752ddd79bc3",
+      "rec_1cf18c2b9c2f4ff9bdd369bce62a1a5c"
+     ],
+     "include_history": true
+    },
+    "is_error": false,
+    "result_text": "{\"history\":{\"rec_1cf18c2b9c2f4ff9bdd369bce62a1a5c\":[\"rec_1cf18c2b9c2f4ff9bdd369bce62a1a5c\"],\"rec_77b53a2194704d299a0e4752ddd79bc3\":[\"rec_77b53a2194704d299a0e4752ddd79bc3\"],\"rec_c84e034dd00f41e080038ee13d47ab00\":[\"rec_c84e034dd00f41e080038ee13d47ab00\"],\"rec_d3d363ef45194bcb904f6572cfbd207d\":[\"rec_d3d363ef45194bcb904f6572cfbd207d\"]},\"missing_ids\":[],\"read_receipt\":\"rr_6b4085454a0e4cad9f1ff0d449b7a117\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T16:57:39.763368+00:00\",\"id\":\"rec_1cf18c2b9c2f4ff9bdd369bce62a1a5c\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-09-22T01:00:00.000000+00:00\",\"occurred_at_local\":\"2026-09-21T20:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 400 m swim, same 25 m pool: 8:05.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:57:39.758414+00:00\",\"id\":\"rec_77b53a2194704d299a0e4752ddd79bc3\",\"kind\":\"event\",\"object_sha\":null,\"occurred_at\":\"2026-07-12T12:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-12T07:00:00-05:00\",\"payload\":{\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC 400 m swim, same 25 m pool: 8:40.\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:57:39.756192+00:00\",\"id\":\"rec_c84e034dd00f41e080038ee13d47ab00\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_terms\":[\"swim\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my 400 m swim time improving?\",\"timezone\":\"America/Chicago\"},{\"active\":true,\"created_at\":\"2026-09-29T16:57:39.760846+00:00\",\"evidence\":{\"bound\":false,\"current\":false,\"ids\":[\"rec_77b53a2194704d299a0e4752ddd79bc3\",\"rec_c84e034dd00f41e080038ee13d47ab00\"],\"note\":\"freshness unverified: no read receipt certified what it depends on, or it cites an unverified derivation\",\"stale_ids\":[]},\"id\":\"rec_d3d363ef45194bcb904f6572cfbd207d\",\"kind\":\"analysis\",\"object_sha\":null,\"occurred_at\":\"2026-08-02T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-08-02T09:00:00-05:00\",\"payload\":{\"question_id\":\"rec_c84e034dd00f41e080038ee13d47ab00\",\"synthetic\":true},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC analysis: baseline only; repeat in the same pool.\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_1cf18c2b9c2f4ff9bdd369bce62a1a5c\":\"active\",\"rec_77b53a2194704d299a0e4752ddd79bc3\":\"active\",\"rec_c84e034dd00f41e080038ee13d47ab00\":\"active\",\"rec_d3d363ef45194bcb904f6572cfbd207d\":\"active\"}}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 5761,
+    "completion_tokens": 520,
+    "tool_calls": 0,
+    "seconds": 10.7
+   }
+  ],
+  "error": null,
+  "seconds": 17.0,
+  "turns": 3,
+  "tokens": {
+   "prompt": 13547,
+   "completion": 643
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [
+   {
+    "id": "ins_821a14b9926641bd9a12407423104443",
+    "state": "pending",
+    "payload": {
+     "decision": "surface",
+     "evidence_ids": [
+      "rec_77b53a2194704d299a0e4752ddd79bc3",
+      "rec_1cf18c2b9c2f4ff9bdd369bce62a1a5c",
+      "rec_d3d363ef45194bcb904f6572cfbd207d"
+     ],
+     "evidence_versions": {
+      "rec_1cf18c2b9c2f4ff9bdd369bce62a1a5c": "active",
+      "rec_77b53a2194704d299a0e4752ddd79bc3": "active",
+      "rec_d3d363ef45194bcb904f6572cfbd207d": "active"
+     },
+     "next_step": "之后在相同泳池和尽量相同条件下再记录一次400米用时；若成绩继续更快，才更支持持续改善。这个记录有助判断成绩是否在改善，但不能单独说明原因。",
+     "question_id": "rec_c84e034dd00f41e080038ee13d47ab00",
+     "source_policies": [
+      "durable"
+     ],
+     "topic": "400米游泳成绩",
+     "unknowns": "这次复测显示成绩更快，但单次复测还不能确认持续改善；其他游泳条件是否相同也未记录。",
+     "what_changed": "同一25米泳池的400米成绩，从7月12日的8分40秒变为9月22日的8分05秒，快了35秒。",
+     "why_now": "你之前的记录建议在同一个泳池复测；现在有了同池复测数据，可以更新目前的判断。"
+    }
+   }
+  ],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "reason": "The assistant surfaced a relevant same-pool 400 m retest, correctly calculated the 35-second difference, and distinguished a faster single result from sustained improvement. It recommended another comparable timed swim to assess that trend and made no causal claim or repeated insight.",
+  "violated_forbidden": []
+ }
+}

@@ -1,0 +1,240 @@
+{
+ "record": {
+  "case_id": "HS37",
+  "run": 1,
+  "category": "silence",
+  "split": "holdout3",
+  "severity": "normal",
+  "status": "PASS",
+  "hard_failure": false,
+  "reason": "deterministic: no surface candidate, so no semantic content to judge",
+  "violated_forbidden": [],
+  "auto_checks": [
+   {
+    "check": "no_non_phctx_tool_items",
+    "ok": true,
+    "detail": "",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "worker_ran",
+    "ok": true,
+    "detail": "ran",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "no_new_surface",
+    "ok": true,
+    "detail": "jobs=1 queued=0 model_silence=1 gate_blocked=0",
+    "hard": true,
+    "needs_turn": false
+   },
+   {
+    "check": "model_silent",
+    "ok": true,
+    "detail": "jobs=1 queued=0 model_silence=1 gate_blocked=0",
+    "hard": true,
+    "needs_turn": false
+   }
+  ],
+  "mode": "background",
+  "model_id": "cx/gpt-6-luna",
+  "judge_model": "cx/gpt-6-sol",
+  "seconds": 7.4,
+  "tool_calls": [
+   "context_bootstrap",
+   "context_read",
+   "context_query"
+  ],
+  "error": null,
+  "turns": 3,
+  "tokens": {
+   "prompt": 14881,
+   "completion": 210
+  },
+  "effort": "medium",
+  "decisions": [
+   "silence"
+  ],
+  "prompt_sha256": "c37028e19d87a8b39b21f2e69b98938181e96e37d2da243bed2dd30477d6f632"
+ },
+ "run": {
+  "mode": "background",
+  "summary": {
+   "run_id": "run_1b139f501afd459b9b95b5ea334e04ea",
+   "extraction": 0,
+   "plan": {
+    "changes": 1,
+    "enqueued": [
+     "revisit:rec_ede2940c37e74f68bc6221e9415fd2db:46b1884167c4edd3"
+    ]
+   },
+   "jobs": [
+    {
+     "job": "revisit:rec_ede2940c37e74f68bc6221e9415fd2db:46b1884167c4edd3",
+     "outcome": "silence",
+     "gate": {
+      "queued": false,
+      "reason": "silence"
+     },
+     "tool_calls": 6
+    }
+   ],
+   "outcome": "ran"
+  },
+  "final": "{\"run_id\": \"run_1b139f501afd459b9b95b5ea334e04ea\", \"extraction\": 0, \"plan\": {\"changes\": 1, \"enqueued\": [\"revisit:rec_ede2940c37e74f68bc6221e9415fd2db:46b1884167c4edd3\"]}, \"jobs\": [{\"job\": \"revisit:rec_ede2940c37e74f68bc6221e9415fd2db:46b1884167c4edd3\", \"outcome\": \"silence\", \"gate\": {\"queued\": false, \"reason\": \"silence\"}, \"tool_calls\": 6}], \"outcome\": \"ran\"}",
+  "calls": [
+   {
+    "job": "revisit:rec_ede2940c37e74f68bc6221e9415fd2db:46b1884167c4edd3",
+    "task": "# Background investigation packet\nNow: 2026-09-23T09:00:00-05:00. Job: revisit. Assembled from the local store just now; each section is complete unless it says it was truncated.\n\nThis job was triggered by a change matching one open question. The change is either new data about the question or a dated event the user recorded (then the trigger carries `dated_event`). Decide whether the user should hear something about this question now: a new answer, a correction, or, when a dated event on this question is near and the data on record cannot answer it, which measurement would. Otherwise stay silent.\n\n## Tables you can query (context_query, SQLite)\ncanonical_observations(id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name): one row per sample, times UTC ISO text; there is no observed_at column.\nactive_records(id, kind, occurred_at, timezone, text, payload_json, source_id, object_sha, supersedes, created_at): current records; kind in event, routine, question, analysis, note, attachment.\nobservation_catalog(source_id, metric, unit, n, first_at, last_at). sources(id, label, state, last_success_at, latest_sample_at). Field names in this packet are not tables.\n\n## Question\n{\"id\":\"rec_ede2940c37e74f68bc6221e9415fd2db\",\"kind\":\"question\",\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"payload\":{\"state\":\"open\",\"watch_metrics\":[\"BodyMass\"]},\"text\":\"SYNTHETIC: Is my weight stable?\"}\n\n## Prior analyses of this question (newest first)\nNone: this question was never analysed.\n\n## Already surfaced on this question\nNothing has been surfaced on this question.\n\n## Most recent insights on other topics\nNone.\n\n## User preferences and attention\n{\"attention_budget\":\"at most one proactive message per 72 h (enforced by the gate)\",\"budget_available_now\":true,\"last_insight_queued_or_shown_at\":null,\"meaning\":\"the user accepts occasional proactive messages\",\"proactivity\":\"normal\"}\n\n## Upcoming dated events in the user's records (next 21 days)\nNone: no record names a date in the next 21 days.\n\n## Source status (sync health, not health data)\n{\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_success_at\":null,\"latest_sample_at\":null,\"state\":\"not_connected\"}\n{\"days_since_latest_sample\":1.1,\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_success_at\":\"2026-09-29T17:01:05.284401+00:00\",\"latest_sample_at\":\"2026-09-22T12:00:30.000000+00:00\",\"state\":\"ready\"}\n\n## Passive data available (observation catalog)\n{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierBodyMass\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"kg\"}\n\n## What changed since the last look (the trigger of this job)\n{\"change\":\"observations\",\"deleted\":0,\"metrics\":[{\"metric\":\"HKQuantityTypeIdentifierBodyMass\",\"new_values_vs_previous_range\":{\"above_previous_max\":0,\"below_previous_min\":0,\"inside_previous_range\":1,\"new_values_in_time_order\":[[\"2026-09-22\",71.9]],\"previous_range\":[70.0,74.0]},\"new_window\":{\"first\":\"2026-09-22T12:00:00.000000+00:00\",\"last\":\"2026-09-22T12:00:00.000000+00:00\",\"max\":71.9,\"mean\":71.9,\"min\":71.9,\"n\":1,\"unit\":\"kg\"},\"previous_28_days_same_source\":{\"first\":\"2026-09-01T12:00:00.000000+00:00\",\"last\":\"2026-09-21T12:00:00.000000+00:00\",\"max\":74.0,\"mean\":71.9,\"min\":70.0,\"n\":21,\"unit\":\"kg\"},\"sources_reporting_metric\":[{\"new\":true,\"source_id\":\"synthetic:watch\"}]}],\"note\":\"Per-sample values, not daily totals; the previous window ends where the new one starts.\",\"source_id\":\"synthetic:watch\",\"upserted\":1,\"window\":[\"2026-09-22T12:00:00.000000+00:00\",\"2026-09-22T12:00:30.000000+00:00\"]}\n\nIf you surface, set question_id to rec_ede2940c37e74f68bc6221e9415fd2db.",
+    "candidate": {
+     "decision": "silence",
+     "question_id": "rec_ede2940c37e74f68bc6221e9415fd2db",
+     "topic": "新增的一次体重记录仍在此前范围内，尚未改变对体重是否稳定的判断"
+    },
+    "trace": [
+     {
+      "turn": 0,
+      "prompt_tokens": 3375,
+      "completion_tokens": 15,
+      "tool_calls": 1,
+      "seconds": 1.3
+     },
+     {
+      "tool": "context_bootstrap",
+      "arguments": {},
+      "is_error": false,
+      "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T17:01:05.288532+00:00\",\"last_worker_run_at\":\"2026-09-29T17:01:05.288532+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":4,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T17:01:05.279585+00:00\",\"id\":\"rec_ede2940c37e74f68bc6221e9415fd2db\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"BodyMass\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my weight stable?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierBodyMass\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"kg\"}],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_1e5d1057e9d5462a9805f095374f9482\",\"recent\":[],\"record_counts\":{\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T17:01:06.626978+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":22,\"coverage\":{},\"cursor\":\"fixture-440\",\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_attempt_at\":\"2026-09-29T17:01:05.284401+00:00\",\"last_success_at\":\"2026-09-29T17:01:05.284401+00:00\",\"latest_sample_at\":\"2026-09-22T12:00:30.000000+00:00\",\"policy\":\"durable\",\"state\":\"ready\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+     },
+     {
+      "turn": 1,
+      "prompt_tokens": 4302,
+      "completion_tokens": 136,
+      "tool_calls": 2,
+      "seconds": 3.5
+     },
+     {
+      "tool": "context_read",
+      "arguments": {
+       "record_ids": [
+        "rec_ede2940c37e74f68bc6221e9415fd2db"
+       ],
+       "include_history": true
+      },
+      "is_error": false,
+      "result_text": "{\"history\":{\"rec_ede2940c37e74f68bc6221e9415fd2db\":[\"rec_ede2940c37e74f68bc6221e9415fd2db\"]},\"missing_ids\":[],\"read_receipt\":\"rr_47f95311eece410591b06284fc105235\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T17:01:05.279585+00:00\",\"id\":\"rec_ede2940c37e74f68bc6221e9415fd2db\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"BodyMass\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my weight stable?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_ede2940c37e74f68bc6221e9415fd2db\":\"active\"}}"
+     },
+     {
+      "tool": "context_query",
+      "arguments": {
+       "sql": "SELECT id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name FROM canonical_observations WHERE source_id = ? AND metric = ? ORDER BY start_at",
+       "parameters": [
+        "synthetic:watch",
+        "HKQuantityTypeIdentifierBodyMass"
+       ],
+       "limit": 100
+      },
+      "is_error": false,
+      "result_text": "{\"columns\":[\"id\",\"source_id\",\"metric\",\"start_at\",\"end_at\",\"timezone\",\"value_num\",\"value_text\",\"unit\",\"source_name\"],\"max_rows\":100,\"query_sha256\":\"34d474f686c12e39881822272a1c3d93138b8939a0575f8966f1979b71d55931\",\"read_receipt\":\"rr_494bcb93c3a941f0b5f42af4ad220e7b\",\"reads_observations\":true,\"rows\":[[\"obs_f378f39edc0fddb2868c4790debf46b6164102989e7279290f993be921a0039c\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-01T12:00:00.000000+00:00\",\"2026-09-01T12:00:30.000000+00:00\",\"America/Chicago\",70.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_e4066a8d57e09cd8ae86fca5faad8d1c2a54296d87c1652f475bad6fafe944cb\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-02T12:00:00.000000+00:00\",\"2026-09-02T12:00:30.000000+00:00\",\"America/Chicago\",73.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_97d210f368e571fffd739899865b2b858333b20a4d870a52e666fb5915675331\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-03T12:00:00.000000+00:00\",\"2026-09-03T12:00:30.000000+00:00\",\"America/Chicago\",71.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_e4eb935a32ca03b2fe0e18354cadc75442d51d10af208733f0ad831c2fdb8043\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-04T12:00:00.000000+00:00\",\"2026-09-04T12:00:30.000000+00:00\",\"America/Chicago\",74.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_5d289a846735c6f24ef4f417dc4409d823a1c5ff7ecc561aff882b9e55601e3c\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-05T12:00:00.000000+00:00\",\"2026-09-05T12:00:30.000000+00:00\",\"America/Chicago\",72.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_07116478793a81b203ae8606f95d1be87f29b1532b86cb18f6370e8eff2d3f91\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-06T12:00:00.000000+00:00\",\"2026-09-06T12:00:30.000000+00:00\",\"America/Chicago\",70.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_4f1b797d5a54b6bd579a7dececdd1185439ebc3fbd22e1ebc9e57a000d7fd814\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-07T12:00:00.000000+00:00\",\"2026-09-07T12:00:30.000000+00:00\",\"America/Chicago\",73.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_75fcd357f0cebf20be87df78ab77b8ce88a5ac3eeac53c5b61274f7984a95b47\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-08T12:00:00.000000+00:00\",\"2026-09-08T12:00:30.000000+00:00\",\"America/Chicago\",71.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_5fe5ea5398c8328578facd44155926fd708c1b99894dd19a2bc83cc58afc657a\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-09T12:00:00.000000+00:00\",\"2026-09-09T12:00:30.000000+00:00\",\"America/Chicago\",74.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_38106fd0d9d341a3e269de3a0c2f23abd2a931c85e1cf5f523d9f81aaee0bcd3\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-10T12:00:00.000000+00:00\",\"2026-09-10T12:00:30.000000+00:00\",\"America/Chicago\",72.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_a1654d7dcf3e89c0465811ecb1b5fae7217d32b5fba8b514f5da6b56d2bbdc14\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-11T12:00:00.000000+00:00\",\"2026-09-11T12:00:30.000000+00:00\",\"America/Chicago\",70.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_fd62c8b1dc4a36aa0f156ca98e77f175325202d56b89b783b9b5ef27339e5606\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-12T12:00:00.000000+00:00\",\"2026-09-12T12:00:30.000000+00:00\",\"America/Chicago\",73.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_e1dc12d007b43aea304f8c509f7a10700d18546dd0d546a39c7213ae5fb6afa1\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-13T12:00:00.000000+00:00\",\"2026-09-13T12:00:30.000000+00:00\",\"America/Chicago\",71.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_5df126ee332ddeaef1c104bc5893785addc102c98a91afdc0781eaa17e398be0\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-14T12:00:00.000000+00:00\",\"2026-09-14T12:00:30.000000+00:00\",\"America/Chicago\",74.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_11428befa422ebb85622028140c906219977f7e1bf306ff1d4651bd7f624ab1f\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-15T12:00:00.000000+00:00\",\"2026-09-15T12:00:30.000000+00:00\",\"America/Chicago\",72.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_a85eb3f50632d7ad8d6e6102ce71ec9dd068837523821e70a6ef00a64ab90ea5\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-16T12:00:00.000000+00:00\",\"2026-09-16T12:00:30.000000+00:00\",\"America/Chicago\",70.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_06c72af99bc67456ba46b93474c507da04871d806e49ae6ab651c96e65a3ffc1\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-17T12:00:00.000000+00:00\",\"2026-09-17T12:00:30.000000+00:00\",\"America/Chicago\",73.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_c0428194c7fd3f7c1fe62b79c676ce0cdd11934e7d84faa821346cd8ecb25b2c\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-18T12:00:00.000000+00:00\",\"2026-09-18T12:00:30.000000+00:00\",\"America/Chicago\",71.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_141dfe4901830752d2b3e0e3bf1f2e78d2935a54b4371da6bd5b76fcbad43b56\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-19T12:00:00.000000+00:00\",\"2026-09-19T12:00:30.000000+00:00\",\"America/Chicago\",74.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_51c648f1cef0904719c741c8be7170f57da91bf625bc1c43ee9e50c2ab0193d5\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-20T12:00:00.000000+00:00\",\"2026-09-20T12:00:30.000000+00:00\",\"America/Chicago\",72.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_ccca2904721d00727446a00154b6b050c81e4c30c9fbcb0accdc13b43c740ab6\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-21T12:00:00.000000+00:00\",\"2026-09-21T12:00:30.000000+00:00\",\"America/Chicago\",70.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_7abb882b600176e701c592ddc1a12346d943896614866103ee01bdbb28729c6d\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-22T12:00:00.000000+00:00\",\"2026-09-22T12:00:30.000000+00:00\",\"America/Chicago\",71.9,null,\"kg\",\"Synthetic Watch\"]],\"tables_read\":[\"canonical_observations\",\"canonical_observations_raw\",\"observations\",\"supersessions\"],\"truncated\":false}"
+     },
+     {
+      "turn": 2,
+      "prompt_tokens": 7204,
+      "completion_tokens": 59,
+      "tool_calls": 0,
+      "seconds": 2.5
+     }
+    ]
+   }
+  ],
+  "trace": [
+   {
+    "turn": 0,
+    "prompt_tokens": 3375,
+    "completion_tokens": 15,
+    "tool_calls": 1,
+    "seconds": 1.3
+   },
+   {
+    "tool": "context_bootstrap",
+    "arguments": {},
+    "is_error": false,
+    "result_text": "{\"background\":{\"first_worker_run_at\":\"2026-09-29T17:01:05.288532+00:00\",\"last_worker_run_at\":\"2026-09-29T17:01:05.288532+00:00\",\"observed_days\":0.0,\"push_to_existing_chat_threads\":\"unsupported: proactive items wait in the local outbox and are offered at the next conversation\"},\"boundaries\":[\"No record without a committed receipt.\",\"No original attachment without its bytes and verified checksum.\",\"Silence, missing data or no sync is not a normal measurement.\",\"Read-only profile: local writes are disabled in this session.\"],\"change_watermark\":4,\"context_index\":[{\"active\":true,\"created_at\":\"2026-09-29T17:01:05.279585+00:00\",\"id\":\"rec_ede2940c37e74f68bc6221e9415fd2db\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"BodyMass\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my weight stable?\",\"timezone\":\"America/Chicago\"}],\"continuation\":\"Use context_search / context_read / context_query / context_read_original for broader evidence; this index is a map, not the boundary of investigation.\",\"index_complete\":false,\"observation_catalog\":[{\"first_at\":\"2026-09-01T12:00:00.000000+00:00\",\"last_at\":\"2026-09-22T12:00:30.000000+00:00\",\"metric\":\"HKQuantityTypeIdentifierBodyMass\",\"n\":22,\"source_id\":\"synthetic:watch\",\"unit\":\"kg\"}],\"pending\":{\"insights\":[],\"suppressed\":false},\"preferences\":{\"proactivity\":\"normal\",\"timezone\":\"America/Chicago\"},\"read_receipt\":\"rr_1e5d1057e9d5462a9805f095374f9482\",\"recent\":[],\"record_counts\":{\"question\":1},\"source_status\":{\"checked_at\":\"2026-09-29T17:01:06.626978+00:00\",\"note\":\"latest_sample_at is not complete coverage; permission-denied can look like empty data. apple_health_export is a one-time backfill, not continuous sync. canonical_observations hides export rows superseded by the live stream and exact repeats of one source record; canonical_observations_raw keeps every source row. Correlation parents (e.g. blood-pressure pairs) are not stored: pair the child records by time if needed. Export dates without a recorded zone use the importing timezone.\",\"sources\":[{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"apple_health_export\",\"label\":\"Apple Health XML export (backfill only)\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"oura\",\"label\":\"Oura API v2\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"not_connected\"},{\"active_observations\":22,\"coverage\":{},\"cursor\":\"fixture-440\",\"id\":\"synthetic:watch\",\"label\":\"Synthetic Watch\",\"last_attempt_at\":\"2026-09-29T17:01:05.284401+00:00\",\"last_success_at\":\"2026-09-29T17:01:05.284401+00:00\",\"latest_sample_at\":\"2026-09-22T12:00:30.000000+00:00\",\"policy\":\"durable\",\"state\":\"ready\"},{\"active_observations\":0,\"coverage\":{},\"cursor\":null,\"id\":\"user\",\"label\":\"User-provided context\",\"last_attempt_at\":null,\"last_success_at\":null,\"latest_sample_at\":null,\"policy\":\"durable\",\"state\":\"ready\"}]},\"tool_profile\":\"readonly\"}"
+   },
+   {
+    "turn": 1,
+    "prompt_tokens": 4302,
+    "completion_tokens": 136,
+    "tool_calls": 2,
+    "seconds": 3.5
+   },
+   {
+    "tool": "context_read",
+    "arguments": {
+     "record_ids": [
+      "rec_ede2940c37e74f68bc6221e9415fd2db"
+     ],
+     "include_history": true
+    },
+    "is_error": false,
+    "result_text": "{\"history\":{\"rec_ede2940c37e74f68bc6221e9415fd2db\":[\"rec_ede2940c37e74f68bc6221e9415fd2db\"]},\"missing_ids\":[],\"read_receipt\":\"rr_47f95311eece410591b06284fc105235\",\"records\":[{\"active\":true,\"created_at\":\"2026-09-29T17:01:05.279585+00:00\",\"id\":\"rec_ede2940c37e74f68bc6221e9415fd2db\",\"kind\":\"question\",\"object_sha\":null,\"occurred_at\":\"2026-07-01T14:00:00.000000+00:00\",\"occurred_at_local\":\"2026-07-01T09:00:00-05:00\",\"payload\":{\"state\":\"open\",\"synthetic\":true,\"watch_metrics\":[\"BodyMass\"]},\"source_id\":\"user\",\"source_key\":null,\"superseded_by\":null,\"supersedes\":null,\"text\":\"SYNTHETIC: Is my weight stable?\",\"timezone\":\"America/Chicago\"}],\"versions\":{\"rec_ede2940c37e74f68bc6221e9415fd2db\":\"active\"}}"
+   },
+   {
+    "tool": "context_query",
+    "arguments": {
+     "sql": "SELECT id, source_id, metric, start_at, end_at, timezone, value_num, value_text, unit, source_name FROM canonical_observations WHERE source_id = ? AND metric = ? ORDER BY start_at",
+     "parameters": [
+      "synthetic:watch",
+      "HKQuantityTypeIdentifierBodyMass"
+     ],
+     "limit": 100
+    },
+    "is_error": false,
+    "result_text": "{\"columns\":[\"id\",\"source_id\",\"metric\",\"start_at\",\"end_at\",\"timezone\",\"value_num\",\"value_text\",\"unit\",\"source_name\"],\"max_rows\":100,\"query_sha256\":\"34d474f686c12e39881822272a1c3d93138b8939a0575f8966f1979b71d55931\",\"read_receipt\":\"rr_494bcb93c3a941f0b5f42af4ad220e7b\",\"reads_observations\":true,\"rows\":[[\"obs_f378f39edc0fddb2868c4790debf46b6164102989e7279290f993be921a0039c\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-01T12:00:00.000000+00:00\",\"2026-09-01T12:00:30.000000+00:00\",\"America/Chicago\",70.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_e4066a8d57e09cd8ae86fca5faad8d1c2a54296d87c1652f475bad6fafe944cb\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-02T12:00:00.000000+00:00\",\"2026-09-02T12:00:30.000000+00:00\",\"America/Chicago\",73.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_97d210f368e571fffd739899865b2b858333b20a4d870a52e666fb5915675331\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-03T12:00:00.000000+00:00\",\"2026-09-03T12:00:30.000000+00:00\",\"America/Chicago\",71.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_e4eb935a32ca03b2fe0e18354cadc75442d51d10af208733f0ad831c2fdb8043\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-04T12:00:00.000000+00:00\",\"2026-09-04T12:00:30.000000+00:00\",\"America/Chicago\",74.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_5d289a846735c6f24ef4f417dc4409d823a1c5ff7ecc561aff882b9e55601e3c\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-05T12:00:00.000000+00:00\",\"2026-09-05T12:00:30.000000+00:00\",\"America/Chicago\",72.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_07116478793a81b203ae8606f95d1be87f29b1532b86cb18f6370e8eff2d3f91\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-06T12:00:00.000000+00:00\",\"2026-09-06T12:00:30.000000+00:00\",\"America/Chicago\",70.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_4f1b797d5a54b6bd579a7dececdd1185439ebc3fbd22e1ebc9e57a000d7fd814\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-07T12:00:00.000000+00:00\",\"2026-09-07T12:00:30.000000+00:00\",\"America/Chicago\",73.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_75fcd357f0cebf20be87df78ab77b8ce88a5ac3eeac53c5b61274f7984a95b47\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-08T12:00:00.000000+00:00\",\"2026-09-08T12:00:30.000000+00:00\",\"America/Chicago\",71.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_5fe5ea5398c8328578facd44155926fd708c1b99894dd19a2bc83cc58afc657a\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-09T12:00:00.000000+00:00\",\"2026-09-09T12:00:30.000000+00:00\",\"America/Chicago\",74.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_38106fd0d9d341a3e269de3a0c2f23abd2a931c85e1cf5f523d9f81aaee0bcd3\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-10T12:00:00.000000+00:00\",\"2026-09-10T12:00:30.000000+00:00\",\"America/Chicago\",72.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_a1654d7dcf3e89c0465811ecb1b5fae7217d32b5fba8b514f5da6b56d2bbdc14\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-11T12:00:00.000000+00:00\",\"2026-09-11T12:00:30.000000+00:00\",\"America/Chicago\",70.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_fd62c8b1dc4a36aa0f156ca98e77f175325202d56b89b783b9b5ef27339e5606\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-12T12:00:00.000000+00:00\",\"2026-09-12T12:00:30.000000+00:00\",\"America/Chicago\",73.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_e1dc12d007b43aea304f8c509f7a10700d18546dd0d546a39c7213ae5fb6afa1\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-13T12:00:00.000000+00:00\",\"2026-09-13T12:00:30.000000+00:00\",\"America/Chicago\",71.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_5df126ee332ddeaef1c104bc5893785addc102c98a91afdc0781eaa17e398be0\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-14T12:00:00.000000+00:00\",\"2026-09-14T12:00:30.000000+00:00\",\"America/Chicago\",74.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_11428befa422ebb85622028140c906219977f7e1bf306ff1d4651bd7f624ab1f\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-15T12:00:00.000000+00:00\",\"2026-09-15T12:00:30.000000+00:00\",\"America/Chicago\",72.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_a85eb3f50632d7ad8d6e6102ce71ec9dd068837523821e70a6ef00a64ab90ea5\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-16T12:00:00.000000+00:00\",\"2026-09-16T12:00:30.000000+00:00\",\"America/Chicago\",70.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_06c72af99bc67456ba46b93474c507da04871d806e49ae6ab651c96e65a3ffc1\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-17T12:00:00.000000+00:00\",\"2026-09-17T12:00:30.000000+00:00\",\"America/Chicago\",73.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_c0428194c7fd3f7c1fe62b79c676ce0cdd11934e7d84faa821346cd8ecb25b2c\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-18T12:00:00.000000+00:00\",\"2026-09-18T12:00:30.000000+00:00\",\"America/Chicago\",71.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_141dfe4901830752d2b3e0e3bf1f2e78d2935a54b4371da6bd5b76fcbad43b56\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-19T12:00:00.000000+00:00\",\"2026-09-19T12:00:30.000000+00:00\",\"America/Chicago\",74.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_51c648f1cef0904719c741c8be7170f57da91bf625bc1c43ee9e50c2ab0193d5\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-20T12:00:00.000000+00:00\",\"2026-09-20T12:00:30.000000+00:00\",\"America/Chicago\",72.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_ccca2904721d00727446a00154b6b050c81e4c30c9fbcb0accdc13b43c740ab6\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-21T12:00:00.000000+00:00\",\"2026-09-21T12:00:30.000000+00:00\",\"America/Chicago\",70.0,null,\"kg\",\"Synthetic Watch\"],[\"obs_7abb882b600176e701c592ddc1a12346d943896614866103ee01bdbb28729c6d\",\"synthetic:watch\",\"HKQuantityTypeIdentifierBodyMass\",\"2026-09-22T12:00:00.000000+00:00\",\"2026-09-22T12:00:30.000000+00:00\",\"America/Chicago\",71.9,null,\"kg\",\"Synthetic Watch\"]],\"tables_read\":[\"canonical_observations\",\"canonical_observations_raw\",\"observations\",\"supersessions\"],\"truncated\":false}"
+   },
+   {
+    "turn": 2,
+    "prompt_tokens": 7204,
+    "completion_tokens": 59,
+    "tool_calls": 0,
+    "seconds": 2.5
+   }
+  ],
+  "error": null,
+  "seconds": 7.4,
+  "turns": 3,
+  "tokens": {
+   "prompt": 14881,
+   "completion": 210
+  }
+ },
+ "diff": {
+  "new_records": [],
+  "new_objects": [],
+  "insights_before": [],
+  "insights_after": [],
+  "preferences_before": {},
+  "preferences_after": {},
+  "jobs_after": [
+   {
+    "type": "revisit",
+    "state": "done",
+    "last_error_code": null
+   }
+  ],
+  "model_calls_after": [
+   {
+    "status": "done",
+    "error_code": null
+   }
+  ]
+ },
+ "judge": {
+  "verdict": "PASS",
+  "hard_failure": false,
+  "violated_forbidden": [],
+  "reason": "deterministic: no surface candidate, so no semantic content to judge"
+ }
+}
