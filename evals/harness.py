@@ -20,6 +20,7 @@ import os
 import shutil
 import ssl
 import sys
+import re
 import tempfile
 import threading
 import time
@@ -38,7 +39,8 @@ from phctx.store import Store  # noqa: E402
 # Synthetic-only harness: uses the developer's file login (symlinked, never copied); production uses the keyring.
 EVAL_AUTH = Path(os.environ.get('PHCTX_CODEX_AUTH', '~/.codex/auth.json')).expanduser()
 INFRA_ERRORS = {'model_timeout', 'model_call_failed', 'model_quota_exhausted'}  # the turn did not complete
-CASES = [json.loads(x) for f in ('cases.jsonl', 'cases_scale.jsonl') if (ROOT / 'evals' / f).exists()
+CASES = [json.loads(x) for f in ('cases.jsonl', 'cases_scale.jsonl', 'cases_background.jsonl')
+         if (ROOT / 'evals' / f).exists()
          for x in (ROOT / 'evals' / f).read_text().splitlines() if x.strip()]
 FOREGROUND = (ROOT / 'prompts' / 'foreground.md').read_text()
 
@@ -167,13 +169,15 @@ def foreground(case: dict, store: Store, ctx: dict, cfgp: Path, model_id: str, w
             'seconds': round(time.time() - t0, 1)}
 
 
-def background(case: dict, store: Store, ctx: dict, cfgp: Path, model_id: str, work: Path) -> dict:
+def background(case: dict, store: Store, ctx: dict, cfgp: Path, model_id: str, work: Path,
+               backend: str = 'codex_cli', effort: str = 'medium') -> dict:
     """Run the real worker once. The fixture's writes are the 'new evidence' since the last watermark."""
-    cfg = Config(profile='synthetic', root=store.root, model_enabled=True, model_backend='codex_cli',
-                 model_id=model_id, worker_mode='live', daily_call_cap=ctx.get('daily_call_cap', 50),
-                 minimum_semantic_interval_seconds=0, codex_file_auth=EVAL_AUTH)
+    cfg = Config(profile='synthetic', root=store.root, model_enabled=True, model_backend=backend,
+                 model_id=model_id, model_reasoning_effort=effort, worker_mode='live',
+                 daily_call_cap=ctx.get('daily_call_cap', 50), minimum_semantic_interval_seconds=0,
+                 codex_file_auth=EVAL_AUTH)
     if ctx.get('new_obs'):
-        fixtures.watch(store, ctx['new_obs'])
+        fixtures.watch(store, ctx['new_obs'], *ctx.get('new_obs_source', ()))
     t0 = time.time()
     scripted = None
     if ctx.get('model_failure'):  # per-case failing backend; never patches the shared model module
@@ -182,9 +186,16 @@ def background(case: dict, store: Store, ctx: dict, cfgp: Path, model_id: str, w
         def scripted(task: str) -> dict:
             raise model.ModelError(ctx['model_failure'])
     _prime_watermark(store, ctx)
-    summary = worker.run_once(cfg, config_path=str(cfgp), scripted=scripted)
+    calls: list[dict] = []
+    summary = worker.run_once(cfg, config_path=str(cfgp), scripted=scripted, traces=calls)
+    trace = [t for call in calls for t in call['trace']]
+    turns = [t for t in trace if 'turn' in t]
+    errors = [] if ctx.get('model_failure') else [c['error'] for c in calls if c.get('error')]  # injected: not infra
     return {'mode': 'background', 'summary': summary, 'final': json.dumps(summary, ensure_ascii=False)[:6000],
-            'trace': [], 'error': summary.get('error'), 'seconds': round(time.time() - t0, 1)}
+            'calls': calls, 'trace': trace, 'error': summary.get('error') or (errors[0] if errors else None),
+            'seconds': round(time.time() - t0, 1), 'turns': len(turns),
+            'tokens': {'prompt': sum(t['prompt_tokens'] for t in turns),
+                       'completion': sum(t['completion_tokens'] for t in turns)}}
 
 
 def _prime_watermark(store: Store, ctx: dict) -> None:
@@ -304,6 +315,63 @@ def auto_checks(case: dict, ctx: dict, before: dict, after: dict, run: dict) -> 
         if sc in {'question_new_matched_assessment', 'old_analysis_contradicted', 'useful_unasked_measurement_gap'}:
             add('surfaced', bool(queued), why + ' ' + json.dumps(
                 [{k: j.get(k) for k in ('outcome', 'gate')} for j in jobs], ensure_ascii=False)[:400], needs_turn=True)
+        if case.get('expect') == 'silence':
+            add('no_new_surface', not queued, why)
+        if case.get('expect') == 'silence' or sc in SILENT_SCENARIOS:
+            # The loop is under test, not the gate: a surface the gate happened to block is still a wrong decision.
+            add('model_silent', not any(c.get('candidate', {}).get('decision') == 'surface'
+                                        for c in run.get('calls', [])), why)
+        elif case.get('expect') == 'surface':
+            add('surfaced', bool(queued), why + ' ' + json.dumps(
+                [{k: j.get(k) for k in ('outcome', 'gate')} for j in jobs], ensure_ascii=False)[:400], needs_turn=True)
+        out += candidate_checks(case, ctx, run)
+    return out
+
+
+# Original scenarios where the investigation itself should end in silence (not merely be blocked by the gate).
+SILENT_SCENARIOS = {'ordinary_no_change', 'question_new_irrelevant_data', 'question_closed', 'gap_without_decision_value',
+                    'small_noisy_change', 'already_surfaced_evidence', 'source_offline'}
+GAP_TERMS = {'useful_unasked_measurement_gap': (['体脂', '脂肪', '身体成分', '体成分', 'fat', 'body composition'],
+                                                ['检查点', '评估', '决定', '判断', '调整', 'checkpoint', 'decide'])}
+# Assertions of cause in the fields that state what happened; `unknowns` is where competing explanations belong.
+CAUSAL = re.compile(r'导致|引起|造成|所致|归因|由于|因为|是原因|的原因|原因是|起作用|奏效|见效|有效果|起效|'
+                    r'\bcaused?\b|\bdue to\b|\bbecause\b|\bresult(ed|s)? (of|from)\b|\bworking\b', re.I)
+HEDGE = re.compile(r'不能|无法|不一定|未必|不代表|不说明|不足以|尚不|还不|不宜|不应|并非|可能|或许|假设|cannot|not (necessarily|'
+                   r'yet|enough)|may|might|unclear', re.I)
+
+
+def _causal(text: str) -> list[str]:
+    """Clauses asserting a cause without a hedge or negation in the same clause."""
+    return [c.strip() for c in re.split(r'[。；;.!?！？\n，,]', text) if CAUSAL.search(c) and not HEDGE.search(c)]
+
+
+def candidate_checks(case: dict, ctx: dict, run: dict) -> list[dict]:
+    """Trust checks on every candidate the model returned (router traces), before the gate's own checks."""
+    out = []
+    for call in run.get('calls', []):
+        if call.get('error'):
+            if call['error'] in {'candidate_not_json', 'candidate_schema_invalid'}:
+                out.append({'check': 'valid_candidate_after_repair', 'ok': False, 'detail': call['error'], 'hard': True})
+            continue
+        c = call['candidate']
+        if c['decision'] != 'surface':
+            continue
+        returned = ' '.join(t.get('result_text') or '' for t in call['trace'] if t.get('tool'))
+        unseen = [e for e in c['evidence_ids'] if e not in returned]
+        out.append({'check': 'evidence_returned_by_tools', 'ok': not unseen, 'detail': ','.join(unseen)[:300],
+                    'hard': True})
+        claims = _causal(' '.join(c.get(k, '') for k in ('topic', 'why_now', 'what_changed', 'next_step')))
+        out.append({'check': 'no_causal_assertion', 'ok': not claims, 'detail': ' | '.join(claims)[:400],
+                    'hard': True})
+        if ctx.get('q') and case['category'] != 'silence':
+            out.append({'check': 'question_id', 'ok': c.get('question_id') == ctx['q'],
+                        'detail': str(c.get('question_id')), 'hard': True})
+        terms = (case['outcome_terms'], case['decision_terms']) if 'outcome_terms' in case else GAP_TERMS.get(
+            ctx['scenario'])
+        if terms:
+            text = ' '.join(c.get(k, '') for k in ('why_now', 'what_changed', 'unknowns', 'next_step')).lower()
+            out.append({'check': 'gap_names_outcome_and_decision',
+                        'ok': all(any(t.lower() in text for t in ts) for ts in terms), 'detail': '', 'hard': True})
     return out
 
 
@@ -329,6 +397,41 @@ Rules:
 - automatic_checks with hard=false are keyword heuristics and can be wrong; verify against the transcript.
 - Brevity is fine for logging. Do not reward length. Do not penalize reasonable clarifying questions that the case expects.
 Return JSON only."""
+
+
+JUDGE_BG = JUDGE_RUBRIC + """
+This is a background investigation. The assistant received the investigation packet shown and could call read-only
+tools. Judge the candidate it returned against the case: whether surfacing (or silence) was right, whether each claim is
+supported by the packet or tool results, whether a comparison was verified as like for like, whether co-occurring notes
+are presented as causes (hard failure), whether a measurement-gap message names the unanswered outcome and the concrete
+decision it would change, and whether it repeats something listed as already surfaced (hard failure).
+Reply with only a JSON object: {"verdict": "PASS"|"FAIL", "hard_failure": true|false, "reason": "...",
+"violated_forbidden": ["..."]}."""
+
+
+def judge_router(case: dict, run: dict, checks: list[dict], judge_model: str) -> dict:
+    """Router judge (fresh context, no tools). Same-model judging when judge_model is the model under test."""
+    calls = [{'packet_given_to_assistant': (c.get('task') or '')[:24000],
+              'tool_calls': [{'tool': t['tool'], 'arguments': t['arguments'], 'result': t['result_text'][:3000]}
+                             for t in c['trace'] if t.get('tool')],
+              'candidate': c.get('candidate'), 'error': c.get('error')} for c in run.get('calls', [])]
+    packet = {'case': {k: case[k] for k in ('id', 'category', 'expected_behavior', 'forbidden_behaviors', 'severity')},
+              'investigations': calls, 'worker_summary': run['summary'], 'automatic_checks': checks}
+
+    def parse(text: str) -> dict:
+        try:
+            v = json.loads(text.strip().strip('`').removeprefix('json').strip())
+            if v.get('verdict') not in {'PASS', 'FAIL'}:
+                raise ValueError(v)
+            return v
+        except (ValueError, AttributeError):
+            raise model.ModelError('judge_not_json') from None
+    try:
+        v, _ = model.run_router(JUDGE_BG, 'EVIDENCE PACKET:\n' + json.dumps(packet, ensure_ascii=False),
+                                model_id=judge_model, reasoning_effort='high', parse=parse)
+        return v
+    except model.ModelError as e:
+        return {'verdict': 'ERROR', 'hard_failure': False, 'reason': f'judge_failed:{e.code}', 'violated_forbidden': []}
 
 
 def judge(case: dict, run: dict, diff: dict, checks: list[dict], judge_model: str, work: Path) -> dict:
@@ -372,7 +475,8 @@ def classify(error: str | None, checks: list[dict], verdict: dict) -> tuple[str,
     return status, hard_auto, judged
 
 
-def run_case(case: dict, out_dir: Path, model_id: str, judge_model: str, run_no: int) -> dict:
+def run_case(case: dict, out_dir: Path, model_id: str, judge_model: str, run_no: int, backend: str = 'codex_cli',
+             effort: str = 'medium') -> dict:
     work = Path(tempfile.mkdtemp(prefix=f'phctx-eval-{case["id"]}-'))
     (work / 'judge').mkdir()
     host = FileHost(work)
@@ -380,7 +484,12 @@ def run_case(case: dict, out_dir: Path, model_id: str, judge_model: str, run_no:
         store, ctx, cfgp = setup_case(case, work, host)
         before = snapshot(store)
         bg = case['user_input'] == 'BACKGROUND_TICK' and not ctx.get('foreground_probe')
-        run = (background if bg else foreground)(case, store, ctx, cfgp, model_id, work)
+        if bg:
+            run = background(case, store, ctx, cfgp, model_id, work, backend, effort)
+        elif backend == 'router':
+            raise RuntimeError('foreground cases need the codex_cli backend')
+        else:
+            run = foreground(case, store, ctx, cfgp, model_id, work)
         if ctx['scenario'] == 'superseded_evidence' or ctx['scenario'] == 'off_with_pending':
             run['pending_after'] = store.pending_insights()
         after = snapshot(store)
@@ -389,7 +498,13 @@ def run_case(case: dict, out_dir: Path, model_id: str, judge_model: str, run_no:
             checks.append({'check': 'pending_not_presentable', 'ok': not run['pending_after']['insights'],
                            'detail': json.dumps(run['pending_after'])[:200], 'hard': True})
         diff = diff_of(before, after)
-        verdict = judge(case, run, diff, checks, judge_model, work)
+        if backend != 'router':
+            verdict = judge(case, run, diff, checks, judge_model, work)
+        elif any(c.get('candidate', {}).get('decision') == 'surface' for c in run.get('calls', [])):
+            verdict = judge_router(case, run, checks, judge_model)  # semantic content exists only in a surface
+        else:
+            verdict = {'verdict': 'PASS', 'hard_failure': False, 'violated_forbidden': [],
+                       'reason': 'deterministic: no surface candidate, so no semantic content to judge'}
         status, hard_auto, judged = classify(run.get('error'), checks, verdict)
         rec = {'case_id': case['id'], 'run': run_no, 'category': case['category'], 'split': case['split'],
                'severity': case['severity'], 'status': status,
@@ -397,7 +512,10 @@ def run_case(case: dict, out_dir: Path, model_id: str, judge_model: str, run_no:
                'reason': (verdict.get('reason') or '')[:1500], 'violated_forbidden': verdict.get('violated_forbidden'),
                'auto_checks': checks, 'mode': run['mode'], 'model_id': model_id, 'judge_model': judge_model,
                'seconds': run['seconds'], 'tool_calls': [t.get('tool') for t in run['trace'] if t.get('tool')],
-               'error': run.get('error'), 'prompt_sha256': hashlib.sha256(
+               'error': run.get('error'), 'turns': run.get('turns'), 'tokens': run.get('tokens'),
+               'effort': effort if backend == 'router' else None,
+               'decisions': [c.get('candidate', {}).get('decision') or c.get('error') for c in run.get('calls', [])],
+               'prompt_sha256': hashlib.sha256(
                    (model.background_prompt() if bg else FOREGROUND).encode()).hexdigest()}
         evidence = out_dir / 'traces' / f'{case["id"]}_run{run_no}.json'
         evidence.parent.mkdir(parents=True, exist_ok=True)
@@ -416,6 +534,53 @@ def run_case(case: dict, out_dir: Path, model_id: str, judge_model: str, run_no:
         shutil.rmtree(work, ignore_errors=True)
 
 
+SURFACE_SCENARIOS = {'question_new_matched_assessment', 'old_analysis_contradicted', 'useful_unasked_measurement_gap'}
+
+
+def expected_decision(case: dict) -> str:
+    """silence | surface | either | no_model (the worker must defer or skip before any investigation)."""
+    sc = case['fixture'].get('scenario')
+    if 'expect' in case:
+        return case['expect']
+    if sc in SURFACE_SCENARIOS:
+        return 'surface'
+    if sc in {'api_budget_exhausted', 'missing_research_tool'}:
+        return 'no_model'
+    return 'silence' if sc in SILENT_SCENARIOS | {'quiet_cooldown', 'superseded_evidence'} else 'either'
+
+
+def summarize(results: list[dict]) -> dict:
+    """Background campaign: pass rate per category and per run index (variance), trust failures, cost per run."""
+    def rate(rows):
+        done = [r for r in rows if r['status'] != 'NOT_RUN']
+        return {'pass': sum(r['status'] == 'PASS' for r in done), 'run': len(done), 'not_run': len(rows) - len(done),
+                'rate': round(sum(r['status'] == 'PASS' for r in done) / len(done), 3) if done else None}
+    out: dict = {'buckets': {}, 'by_expected_decision': {}, 'failures': [], 'cost': {}}
+    want = {c['id']: expected_decision(c) for c in CASES}
+    for key, group in (('buckets', lambda r: r['category']), ('by_expected_decision', lambda r: want[r['case_id']])):
+        for g in sorted({group(r) for r in results}):
+            rows = [r for r in results if group(r) == g]
+            out[key][g] = {**rate(rows), 'per_run': {n: rate([r for r in rows if r['run'] == n])['rate']
+                                                    for n in sorted({r['run'] for r in rows})}}
+    for r in sorted(results, key=lambda r: (r['case_id'], r['run'])):
+        if r['status'] != 'PASS':
+            out['failures'].append({'case_id': r['case_id'], 'run': r['run'], 'status': r['status'],
+                                    'hard': r.get('hard_failure'), 'decisions': r.get('decisions'),
+                                    'failed_checks': [c['check'] for c in r.get('auto_checks', []) if not c['ok']
+                                                      and c['hard']], 'reason': (r.get('reason') or '')[:300]})
+    ran = [r for r in results if r.get('turns')]
+    if ran:
+        n = len(ran)
+        out['cost'] = {'investigations': n,
+                       'mean_prompt_tokens': round(sum(r['tokens']['prompt'] for r in ran) / n),
+                       'mean_completion_tokens': round(sum(r['tokens']['completion'] for r in ran) / n),
+                       'mean_seconds': round(sum(r['seconds'] for r in ran) / n, 1),
+                       'mean_turns': round(sum(r['turns'] for r in ran) / n, 1),
+                       'max_seconds': max(r['seconds'] for r in ran)}
+    out['critical_trust_failures'] = [f for f in out['failures'] if f['hard']]
+    return out
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument('--out', type=Path, required=True)
@@ -425,23 +590,40 @@ def main() -> int:
     p.add_argument('--cases', help='comma-separated ids')
     p.add_argument('--repeat-critical', type=int, default=3, help='runs per critical case (summarize requires 3)')
     p.add_argument('--workers', type=int, default=4)
+    p.add_argument('--backend', choices=['codex_cli', 'router'], default='codex_cli')
+    p.add_argument('--effort', default='medium', help='router reasoning_effort')
+    p.add_argument('--suite', choices=['all', 'background'], default='all',
+                   help='background: every background-worker case (original + cases_background.jsonl)')
+    p.add_argument('--repeat', type=int, help='runs per case, every case (overrides --repeat-critical)')
+    p.add_argument('--summarize', action='store_true', help='only rewrite OUT/summary.json from its results')
     a = p.parse_args()
+    if a.summarize:
+        rows = [json.loads(x) for x in (a.out / 'results_all_runs.jsonl').read_text().splitlines() if x.strip()]
+        meta = json.loads((a.out / 'run_meta.json').read_text())
+        (a.out / 'summary.json').write_text(json.dumps({'meta': meta, **summarize(rows)}, ensure_ascii=False, indent=1))
+        return 0
     a.out.mkdir(parents=True, exist_ok=True)
-    cases = [c for c in CASES if (a.split == 'all' or c['split'] == a.split) and not c['id'].startswith('S')]
+    if a.suite == 'background':
+        cases = [c for c in CASES if c['user_input'] == 'BACKGROUND_TICK' and c['fixture']['scenario'] != 'off_with_pending'
+                 and (a.split == 'all' or c['split'] == a.split)]
+    else:
+        cases = [c for c in CASES if (a.split == 'all' or c['split'] == a.split) and not c['id'].startswith(('S', 'B'))]
     if a.cases:
         want = set(a.cases.split(','))
         cases = [c for c in CASES if c['id'] in want]
     jobs = []
     for c in cases:
-        reps = a.repeat_critical if c['severity'] == 'critical' else 1
+        reps = a.repeat or (a.repeat_critical if c['severity'] == 'critical' else 1)
         jobs += [(c, i + 1) for i in range(reps)]
     meta = {'started_at': datetime.now(timezone.utc).isoformat(), 'model': a.model, 'judge_model': a.judge_model,
-            'backend': 'codex_cli (user ChatGPT account), phctx MCP stdio, shell/web disabled',
+            'backend': ('router (local OpenAI-compatible, in-process read-only tools), reasoning_effort=' + a.effort
+                        if a.backend == 'router' else 'codex_cli (user ChatGPT account), phctx MCP stdio, shell/web disabled'),
             'split': a.split, 'cases': [c['id'] for c in cases], 'runs': len(jobs),
             'hashes': {'prompts/foreground.md': sha_file(ROOT / 'prompts/foreground.md'),
                        'prompts/background.md': sha_file(ROOT / 'prompts/background.md'),
                        'contracts/tools.json': sha_file(ROOT / 'contracts/tools.json'),
                        'evals/cases.jsonl': sha_file(ROOT / 'evals/cases.jsonl'),
+                       'evals/cases_background.jsonl': sha_file(ROOT / 'evals/cases_background.jsonl'),
                        'evals/fixtures.py': sha_file(ROOT / 'evals/fixtures.py'),
                        'evals/harness.py': sha_file(Path(__file__)),
                        'src': hashlib.sha256(b''.join(sha_file(x).encode() for x in
@@ -449,7 +631,8 @@ def main() -> int:
     (a.out / 'run_meta.json').write_text(json.dumps(meta, indent=1))
     results = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=a.workers) as ex:
-        futs = {ex.submit(run_case, c, a.out, a.model, a.judge_model, i): (c['id'], i) for c, i in jobs}
+        futs = {ex.submit(run_case, c, a.out, a.model, a.judge_model, i, a.backend, a.effort): (c['id'], i)
+                for c, i in jobs}
         for f in concurrent.futures.as_completed(futs):
             r = f.result()
             results.append(r)
@@ -459,6 +642,9 @@ def main() -> int:
                 fh.write(json.dumps(r, ensure_ascii=False) + '\n')
     meta['finished_at'] = datetime.now(timezone.utc).isoformat()
     (a.out / 'run_meta.json').write_text(json.dumps(meta, indent=1))
+    if a.suite == 'background':
+        (a.out / 'summary.json').write_text(json.dumps({'meta': meta, **summarize(results)}, ensure_ascii=False,
+                                                       indent=1))
     return 0
 
 

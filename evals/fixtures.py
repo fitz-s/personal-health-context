@@ -460,3 +460,275 @@ BUILDERS = {
     'commit_failure': b_commit_failure, 'no_push_capability': b_no_push, 'shadow_just_started': b_shadow_started,
     'normal_preference': b_quiet_pref, 'large_history': b_large_history,
 }
+
+
+# ---- synthetic background cases (evals/cases_background.jsonl) -------------------------------------
+def _five_k(s, ctx):
+    ctx['q'] = rec(s, 'question', 'SYNTHETIC: Is my 5 km time improving with the new running plan?',
+                   '2026-07-01T09:00:00-05:00', {'state': 'open', 'watch_terms': ['5 km', 'time trial']})
+    t1 = rec(s, 'event', 'SYNTHETIC 5 km time trial, riverside course, cool morning: 27:40.', '2026-07-05T07:30:00-05:00')
+    rec(s, 'analysis', 'SYNTHETIC analysis (July): one baseline trial (27:40) only; a second trial on the same course '
+        'in similar conditions is needed to judge change.', '2026-07-06T09:00:00-05:00',
+        {'question_id': ctx['q'], 'revisit_when': 'second trial on the same course'}, evidence=[ctx['q'], t1])
+
+
+def _glucose(s, ctx):
+    ctx['q'] = rec(s, 'question', 'SYNTHETIC: Is my fasting glucose lower after the diet change?',
+                   '2026-06-20T09:00:00-05:00', {'state': 'open', 'watch_terms': ['glucose']})
+    lab = rec(s, 'note', 'SYNTHETIC lab result (Clinic A): fasting glucose 104 mg/dL after a 10 h fast.',
+              '2026-06-18T08:00:00-05:00')
+    rec(s, 'analysis', 'SYNTHETIC analysis (June): one baseline value (104 mg/dL). Retest at the same lab after about '
+        'three months of the diet.', '2026-06-21T09:00:00-05:00',
+        {'question_id': ctx['q'], 'revisit_when': 'retest at the same lab'}, evidence=[ctx['q'], lab])
+
+
+def _muscle(s, ctx, metrics=('HeartRateVariabilitySDNN',)):
+    rec(s, 'routine', 'SYNTHETIC 12-week hypertrophy program, 2026-07-01 to 2026-09-23, 4 sessions/week.',
+        '2026-07-01T09:00:00-05:00', {'effective_from': '2026-07-01'})
+    ctx['q'] = rec(s, 'question', 'SYNTHETIC: Am I gaining muscle from the 12-week hypertrophy program?',
+                   '2026-07-01T09:00:00-05:00', {'state': 'open', 'outcome': 'hypertrophy',
+                                                 'watch_terms': ['program', 'block', 'muscle'],
+                                                 'watch_metrics': list(metrics)})
+    rec(s, 'analysis', 'SYNTHETIC analysis (July): wearable data (sleep, HRV, steps) cannot show muscle gain; no '
+        'body-composition, circumference or strength measurements are recorded. Revisit near the end of the program.',
+        '2026-07-02T09:00:00-05:00', {'question_id': ctx['q'], 'revisit_when': 'program end'}, evidence=[ctx['q']])
+    watch(s, days('HKQuantityTypeIdentifierHeartRateVariabilitySDNN', 'ms', 1, 22, lambda i: 48 + i % 5) +
+          days('HKCategoryTypeIdentifierSleepAnalysis', 'min', 1, 22, lambda i: 410 + (i % 4) * 10, hour='23:00'))
+
+
+def _surfaced(s, ctx, evidence: str, topic: str, what: str, step: str):
+    r = s.queue_insight(request_id=rid(), candidate={
+        'decision': 'surface', 'question_id': ctx['q'], 'topic': topic, 'why_now': 'SYNTHETIC earlier finding.',
+        'what_changed': what, 'unknowns': 'SYNTHETIC single comparison.', 'next_step': step,
+        'evidence_ids': [evidence], 'source_policies': ['durable']})
+    s.ack_insight(request_id=rid(), insight_id=r['insight_id'])
+    with s.transaction() as c:  # shown to the user a few days before the case's now, outside the attention budget
+        c.execute("UPDATE insights SET created_at='2026-09-21T15:00:00+00:00', delivered_at='2026-09-21T16:00:00+00:00'"
+                  ' WHERE id=?', (r['insight_id'],))
+
+
+def b_ordinary_sleep(s, ctx, fs):
+    watch(s, days('HKCategoryTypeIdentifierSleepAnalysis', 'min', 1, 22, lambda i: 405 + (i * 7) % 35, hour='23:00'))
+    ctx['q'] = rec(s, 'question', 'SYNTHETIC: Is my sleep duration stable since the new work schedule?',
+                   '2026-08-15T09:00:00-05:00', {'state': 'open', 'watch_metrics': ['SleepAnalysis']})
+    ctx['new_obs'] = days('HKCategoryTypeIdentifierSleepAnalysis', 'min', 23, 1, 421, hour='23:00')
+
+
+def b_ordinary_steps(s, ctx, fs):
+    watch(s, days('HKQuantityTypeIdentifierStepCount', 'count', 1, 22, lambda i: 7600 + (i * 530) % 1900, hour='21:00'))
+    ctx['q'] = rec(s, 'question', 'SYNTHETIC: Am I keeping my daily steps above 7000 on workdays?',
+                   '2026-08-20T09:00:00-05:00', {'state': 'open', 'watch_metrics': ['StepCount']})
+    ctx['new_obs'] = days('HKQuantityTypeIdentifierStepCount', 'count', 23, 1, 8240, hour='21:00')
+
+
+def b_unrelated_shoes(s, ctx, fs):
+    ctx['q'] = rec(s, 'question', 'SYNTHETIC: Is my knee pain improving with physiotherapy?',
+                   '2026-08-10T09:00:00-05:00', {'state': 'open', 'watch_terms': ['knee', 'running']})
+    rec(s, 'note', 'SYNTHETIC: knee pain 4/10 after stairs; physio exercises 3x/week.', '2026-08-12T20:00:00-05:00')
+    ctx['new'] = rec(s, 'note', 'SYNTHETIC: bought new running shoes on sale; have not worn them yet.',
+                     '2026-09-22T18:00:00-05:00')
+
+
+def b_unrelated_cuff(s, ctx, fs):
+    ctx['q'] = rec(s, 'question', 'SYNTHETIC: Is my blood pressure lower since I cut salt?', '2026-07-10T09:00:00-05:00',
+                   {'state': 'open', 'watch_terms': ['blood pressure']})
+    rec(s, 'note', 'SYNTHETIC: clinic blood pressure 138/88 (July visit).', '2026-07-08T10:00:00-05:00')
+    ctx['new'] = rec(s, 'note', 'SYNTHETIC: ordered a blood pressure cuff online; it arrives next week.',
+                     '2026-09-22T18:00:00-05:00')
+
+
+def b_answerable_5k(s, ctx, fs):
+    _five_k(s, ctx)
+    ctx['new'] = rec(s, 'event', 'SYNTHETIC 5 km time trial, same riverside course, cool morning: 26:10.',
+                     '2026-09-20T07:30:00-05:00')
+
+
+def b_answerable_glucose(s, ctx, fs):
+    _glucose(s, ctx)
+    ctx['new'] = rec(s, 'note', 'SYNTHETIC lab result (Clinic A, same lab): fasting glucose 96 mg/dL after a 10 h fast.',
+                     '2026-09-20T08:00:00-05:00')
+
+
+def b_surfaced_5k(s, ctx, fs):
+    b_answerable_5k(s, ctx, fs)
+    _surfaced(s, ctx, ctx['new'], '5 km time trial', 'SYNTHETIC same-course trial 27:40 → 26:10.',
+              'Repeat the same course in 4–6 weeks.')
+    ctx['new'] = rec(s, 'note', 'SYNTHETIC: still happy about my 26:10 5 km from last week.', '2026-09-22T19:00:00-05:00')
+
+
+def b_surfaced_glucose(s, ctx, fs):
+    b_answerable_glucose(s, ctx, fs)
+    _surfaced(s, ctx, ctx['new'], 'fasting glucose retest', 'SYNTHETIC same-lab fasting glucose 104 → 96 mg/dL.',
+              'Keep the diet; retest at the same lab in 3–6 months.')
+    ctx['new'] = rec(s, 'note', 'SYNTHETIC: told a friend my September fasting glucose was 96.',
+                     '2026-09-22T19:00:00-05:00')
+
+
+def b_device_switch(s, ctx, fs):
+    watch(s, days('HKCategoryTypeIdentifierSleepAnalysis', 'min', 1, 15, lambda i: 415 + (i * 7) % 25, hour='23:00'))
+    ctx['q'] = rec(s, 'question', 'SYNTHETIC: Is my sleep duration stable?', '2026-08-01T09:00:00-05:00',
+                   {'state': 'open', 'watch_metrics': ['SleepAnalysis']})
+    rec(s, 'note', 'SYNTHETIC: started wearing the new ring at night instead of the watch.', '2026-09-16T08:00:00-05:00')
+    ctx['new_obs'] = days('HKCategoryTypeIdentifierSleepAnalysis', 'min', 16, 7, lambda i: 368 + (i * 5) % 20,
+                          hour='23:00')
+    ctx['new_obs_source'] = ('synthetic:ring', 'Synthetic Ring', 'Synthetic Ring')
+
+
+def b_sync_paused(s, ctx, fs):
+    watch(s, days('HKQuantityTypeIdentifierStepCount', 'count', 1, 13, lambda i: 7800 + (i * 410) % 1500, hour='21:00'))
+    ctx['q'] = rec(s, 'question', 'SYNTHETIC: Is my daily activity dropping since I started working from home?',
+                   '2026-08-20T09:00:00-05:00', {'state': 'open', 'watch_terms': ['steps', 'activity']})
+    with s.connect() as c:
+        c.execute("UPDATE sources SET state='error', last_success_at='2026-09-13T08:00:00+00:00' "
+                  "WHERE id='synthetic:watch'")
+    ctx['new'] = rec(s, 'note', 'SYNTHETIC system: no steps or activity data since 2026-09-14; the watch app lost its '
+                     'Health permission.', '2026-09-22T09:00:00-05:00', {'system_note': True})
+
+
+def b_gap_decision(s, ctx, fs):
+    _muscle(s, ctx)
+    ctx['new'] = rec(s, 'note', 'SYNTHETIC: week 12 of 12 of the program; next week I choose the next block (another '
+                     'hypertrophy block or switch to strength).', '2026-09-21T20:00:00-05:00')
+
+
+def b_gap_bp_appointment(s, ctx, fs):
+    watch(s, days('HKQuantityTypeIdentifierHeartRate', 'count/min', 1, 22, lambda i: 72 + i % 6) +
+          days('HKQuantityTypeIdentifierStepCount', 'count', 1, 22, lambda i: 8000 + (i * 370) % 1600, hour='21:00'))
+    ctx['q'] = rec(s, 'question', 'SYNTHETIC: Is my blood pressure lower since I cut salt?', '2026-07-10T09:00:00-05:00',
+                   {'state': 'open', 'outcome': 'blood_pressure',
+                    'watch_terms': ['blood pressure', 'doctor', 'appointment']})
+    clinic = rec(s, 'note', 'SYNTHETIC: clinic blood pressure 138/88 (July visit).', '2026-07-08T10:00:00-05:00')
+    rec(s, 'analysis', 'SYNTHETIC analysis (July): one clinic reading only; no home readings. Wearable heart rate does '
+        'not measure blood pressure.', '2026-07-11T09:00:00-05:00', {'question_id': ctx['q']},
+        evidence=[ctx['q'], clinic])
+    ctx['new'] = rec(s, 'note', 'SYNTHETIC: doctor follow-up appointment on 2026-10-02 to decide whether the lifestyle '
+                     'changes are enough.', '2026-09-21T20:00:00-05:00')
+
+
+def b_gap_already_said(s, ctx, fs):
+    _muscle(s, ctx)
+    old = rec(s, 'note', 'SYNTHETIC: program week 8; sessions going well.', '2026-08-26T20:00:00-05:00')
+    _surfaced(s, ctx, old, 'muscle-gain measurement gap', 'SYNTHETIC: wearable data cannot answer muscle gain.',
+              'Consider a body-composition or circumference measurement at the program end.')
+    ctx['new_obs'] = days('HKQuantityTypeIdentifierHeartRateVariabilitySDNN', 'ms', 23, 1, 50)
+
+
+def b_quiet_5k(s, ctx, fs):
+    b_answerable_5k(s, ctx, fs)
+    s.set_preference(request_id=rid(), key='proactivity', value='quiet')
+
+
+def b_quiet_glucose(s, ctx, fs):
+    b_answerable_glucose(s, ctx, fs)
+    s.set_preference(request_id=rid(), key='proactivity', value='quiet')
+
+
+def b_quiet_gap_decision(s, ctx, fs):
+    b_gap_decision(s, ctx, fs)
+    s.set_preference(request_id=rid(), key='proactivity', value='quiet')
+
+
+def b_rhr_cooccurrence(s, ctx, fs):
+    watch(s, days('HKQuantityTypeIdentifierRestingHeartRate', 'count/min', 1, 17, lambda i: 56 + i % 3))
+    ctx['q'] = rec(s, 'question', 'SYNTHETIC: Is my resting heart rate rising?', '2026-08-01T09:00:00-05:00',
+                   {'state': 'open', 'watch_metrics': ['RestingHeartRate']})
+    rec(s, 'note', 'SYNTHETIC: started a new job this week; long hours.', '2026-09-17T21:00:00-05:00')
+    rec(s, 'note', 'SYNTHETIC: moved my workouts to late evening.', '2026-09-17T21:05:00-05:00')
+    ctx['new_obs'] = days('HKQuantityTypeIdentifierRestingHeartRate', 'count/min', 18, 5,
+                          lambda i: [63, 64, 62, 64, 63][i])
+
+
+def b_one_bad_night(s, ctx, fs):
+    watch(s, days('HKCategoryTypeIdentifierSleepAnalysis', 'min', 1, 21, lambda i: 410 + (i * 7) % 30, hour='23:00'))
+    ctx['q'] = rec(s, 'question', 'SYNTHETIC: Is my sleep getting worse?', '2026-08-15T09:00:00-05:00',
+                   {'state': 'open', 'watch_metrics': ['SleepAnalysis']})
+    rec(s, 'note', 'SYNTHETIC: double espresso at 17:00.', '2026-09-22T17:00:00-05:00')
+    ctx['new_obs'] = days('HKCategoryTypeIdentifierSleepAnalysis', 'min', 22, 1, 330, hour='23:00')
+
+
+def b_gap_posture_checkin(s, ctx, fs):
+    watch(s, days('HKQuantityTypeIdentifierHeartRateVariabilitySDNN', 'ms', 1, 22, lambda i: 47 + i % 4) +
+          days('HKQuantityTypeIdentifierStepCount', 'count', 1, 22, lambda i: 7900 + (i * 290) % 1300, hour='21:00'))
+    ctx['q'] = rec(s, 'question', 'SYNTHETIC: Is my posture correction (anterior pelvic tilt) improving?',
+                   '2026-06-10T09:00:00-05:00', {'state': 'open', 'outcome': 'posture',
+                                                 'watch_terms': ['posture', 'physio', 'pelvic']})
+    base = rec(s, 'note', 'SYNTHETIC physio assessment 2026-06-10, photo protocol P1 (side view, fixed camera height): '
+               'anterior pelvic tilt estimate 14 deg.', '2026-06-10T12:00:00-05:00')
+    rec(s, 'analysis', 'SYNTHETIC analysis (June): baseline only. Wearable metrics do not measure posture; a repeat of '
+        'protocol P1 is needed to judge change.', '2026-06-11T09:00:00-05:00',
+        {'question_id': ctx['q'], 'revisit_when': 'repeat of protocol P1'}, evidence=[ctx['q'], base])
+    ctx['new'] = rec(s, 'note', 'SYNTHETIC: physio check-in on 2026-10-01 to decide whether to continue the corrective '
+                     'program; no posture photos taken since June.', '2026-09-21T20:00:00-05:00')
+
+
+def b_contradicted_bp(s, ctx, fs):
+    ctx['q'] = rec(s, 'question', 'SYNTHETIC: Is my home blood pressure lower since I cut salt?',
+                   '2026-07-10T09:00:00-05:00', {'state': 'open', 'watch_terms': ['blood pressure']})
+    wk = rec(s, 'note', 'SYNTHETIC home blood pressure, same upper-arm cuff, morning seated, 7-day average: 126/80 '
+             '(August; July average 132/84).', '2026-08-20T08:00:00-05:00')
+    rec(s, 'analysis', 'SYNTHETIC analysis (Aug): home blood pressure trending down (132/84 → 126/80, same cuff and '
+        'protocol); the salt change is probably working.', '2026-08-21T09:00:00-05:00', {'question_id': ctx['q']},
+        evidence=[ctx['q'], wk])
+    ctx['new'] = rec(s, 'note', 'SYNTHETIC home blood pressure, same upper-arm cuff, morning seated, 7-day average: '
+                     '135/86 (September).', '2026-09-21T08:00:00-05:00')
+
+
+def b_gap_stopped(s, ctx, fs):
+    """12 weeks of wearable data on an open-ended program; the prior analysis set a checkpoint that has now passed."""
+    rec(s, 'routine', 'SYNTHETIC hypertrophy training, 4 sessions/week, open-ended (started 2026-06-29).',
+        '2026-06-29T09:00:00-05:00', {'effective_from': '2026-06-29'})
+    ctx['q'] = rec(s, 'question', 'SYNTHETIC: Am I gaining muscle from my training?', '2026-06-29T09:00:00-05:00',
+                   {'state': 'open', 'outcome': 'hypertrophy', 'watch_terms': ['training', 'muscle'],
+                    'watch_metrics': ['HeartRateVariabilitySDNN']})
+    rec(s, 'analysis', 'SYNTHETIC analysis (June): only wearable data (HRV, sleep, steps), which does not measure muscle. '
+        'Check after 12 weeks whether the accumulating data is adding anything for this question.',
+        '2026-06-30T09:00:00-05:00', {'question_id': ctx['q'], 'revisit_when': 'after 12 weeks of data'},
+        evidence=[ctx['q']])
+    watch(s, days('HKQuantityTypeIdentifierHeartRateVariabilitySDNN', 'ms', 1, 22, lambda i: 48 + i % 5) +
+          days('HKQuantityTypeIdentifierHeartRateVariabilitySDNN', 'ms', 1, 31, lambda i: 47 + i % 5, month='2026-07') +
+          days('HKQuantityTypeIdentifierHeartRateVariabilitySDNN', 'ms', 1, 31, lambda i: 49 + i % 4, month='2026-08'))
+    ctx['new'] = rec(s, 'note', 'SYNTHETIC: training week 12 done, same program continues.', '2026-09-21T20:00:00-05:00')
+
+
+def b_quiet_gap_stopped(s, ctx, fs):
+    b_gap_stopped(s, ctx, fs)
+    s.set_preference(request_id=rid(), key='proactivity', value='quiet')
+
+
+def b_gap_stopped_posture(s, ctx, fs):
+    watch(s, days('HKQuantityTypeIdentifierHeartRateVariabilitySDNN', 'ms', 1, 22, lambda i: 47 + i % 4) +
+          days('HKQuantityTypeIdentifierStepCount', 'count', 1, 30, lambda i: 7900 + (i * 290) % 1300, hour='21:00',
+               month='2026-06') +
+          days('HKQuantityTypeIdentifierStepCount', 'count', 1, 31, lambda i: 8100 + (i * 310) % 1200, hour='21:00',
+               month='2026-07'))
+    ctx['q'] = rec(s, 'question', 'SYNTHETIC: Is my posture correction (anterior pelvic tilt) improving?',
+                   '2026-06-10T09:00:00-05:00', {'state': 'open', 'outcome': 'posture',
+                                                 'watch_terms': ['posture', 'corrective', 'pelvic']})
+    base = rec(s, 'note', 'SYNTHETIC physio assessment 2026-06-10, photo protocol P1 (side view, fixed camera height): '
+               'anterior pelvic tilt estimate 14 deg.', '2026-06-10T12:00:00-05:00')
+    rec(s, 'analysis', 'SYNTHETIC analysis (June): baseline only; wearable metrics do not measure posture. Check after '
+        '12 weeks whether anything recorded since can answer the question.', '2026-06-11T09:00:00-05:00',
+        {'question_id': ctx['q'], 'revisit_when': 'after 12 weeks'}, evidence=[ctx['q'], base])
+    ctx['new'] = rec(s, 'note', 'SYNTHETIC: corrective exercises week 14, same routine, no new assessment planned.',
+                     '2026-09-21T20:00:00-05:00')
+
+
+def b_quiet_gap_stopped_posture(s, ctx, fs):
+    b_gap_stopped_posture(s, ctx, fs)
+    s.set_preference(request_id=rid(), key='proactivity', value='quiet')
+
+
+BUILDERS.update({
+    'bg_gap_stopped': b_gap_stopped, 'bg_quiet_gap_stopped': b_quiet_gap_stopped,
+    'bg_gap_stopped_posture': b_gap_stopped_posture, 'bg_quiet_gap_stopped_posture': b_quiet_gap_stopped_posture,
+    'bg_gap_posture_checkin': b_gap_posture_checkin, 'bg_contradicted_bp': b_contradicted_bp,
+    'bg_ordinary_sleep': b_ordinary_sleep, 'bg_ordinary_steps': b_ordinary_steps,
+    'bg_unrelated_shoes': b_unrelated_shoes, 'bg_unrelated_cuff': b_unrelated_cuff,
+    'bg_answerable_5k': b_answerable_5k, 'bg_answerable_glucose': b_answerable_glucose,
+    'bg_surfaced_5k': b_surfaced_5k, 'bg_surfaced_glucose': b_surfaced_glucose,
+    'bg_device_switch': b_device_switch, 'bg_sync_paused': b_sync_paused,
+    'bg_gap_decision': b_gap_decision, 'bg_gap_bp_appointment': b_gap_bp_appointment,
+    'bg_gap_already_said': b_gap_already_said, 'bg_quiet_5k': b_quiet_5k, 'bg_quiet_glucose': b_quiet_glucose,
+    'bg_quiet_gap_decision': b_quiet_gap_decision, 'bg_rhr_cooccurrence': b_rhr_cooccurrence,
+    'bg_one_bad_night': b_one_bad_night,
+})

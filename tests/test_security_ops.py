@@ -592,7 +592,7 @@ class HarnessTests(Tmp):
         store = Store(self.base / 'data', 'synthetic')
         real, seen = model.investigate, {}
 
-        def fake_run_once(cfg, config_path=None, scripted=None):
+        def fake_run_once(cfg, config_path=None, scripted=None, traces=None):
             seen.update(global_intact=model.investigate is real, backend=cfg.model_backend)
             with self.assertRaises(model.ModelError) as e:
                 scripted('task')
