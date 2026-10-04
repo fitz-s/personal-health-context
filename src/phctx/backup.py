@@ -23,7 +23,7 @@ from .store import Store, StoreError
 
 MAGIC = b'PHCTXBK1'
 CHUNK = 4 * 1024 * 1024
-KEEP_DAILY, KEEP_WEEKLY = 7, 4
+KEEP_DAILY, KEEP_WEEKLY = 2, 2  # each snapshot is a full ~8 GB copy: the two newest plus last week's
 
 
 def _fsync(path: Path | str) -> None:

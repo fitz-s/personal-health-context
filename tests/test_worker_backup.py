@@ -413,7 +413,7 @@ class WorkerBackupTests(unittest.TestCase):
             created.append(path.name)
         removed = backup.rotate(snapshots)
         remaining = {path.name for path in snapshots.iterdir()}
-        newest = set(sorted(created, reverse=True)[:7])
+        newest = set(sorted(created, reverse=True)[:backup.KEEP_DAILY])
         weekly = {}
         for name in sorted(created, reverse=True):
             date = datetime.strptime(name.split('-', 1)[1][:15], '%Y%m%dT%H%M%S')

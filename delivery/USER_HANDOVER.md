@@ -14,7 +14,7 @@
 - Apple Health 历史回填：`phctx import-apple export.zip`（不再过滤 Oura 条目——Oura 现在是自己的持久来源，见下）。
 - Oura：通过 API v2 每小时自动同步（`phctx sync-oura`，launchd 常驻），生产库中约 25 万条观测；WHOOP 同理。
 - 后台 worker：每 15 分钟检查变化；无相关新证据不调用模型；默认 shadow 模式、模型关闭。
-- 每日一致快照备份（本地，7 天 + 4 周轮转）；加密 iCloud 备份已实测可用，需你开启。
+- 每日一致快照备份（本地，保留最新 2 份 + 最近 2 周各 1 份）；加密 iCloud 备份已实测可用，需你开启。
 - 在 Mac 上用 Codex CLI 也能直接对话使用同一套工具（评测就是这样跑的）。
 
 ## 正常对话示例（连上 ChatGPT 后）
