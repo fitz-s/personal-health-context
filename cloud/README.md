@@ -28,6 +28,10 @@ is what it cannot know: this store's tools, receipts, time conventions, and the 
 
 ## Set up (once, in ChatGPT on the web)
 
+The task text reaches the cloud through the connector: `context_bootstrap` returns `daily_task` with the current
+contents of `daily_task.md`, so an edit here applies from the next run. The scheduled task only needs to say: run the
+daily task the connector returns.
+
 1. Open a new chat with the Personal Health Context connector enabled. Use no other health connector in that chat:
    a session mixing a restricted vendor source cannot write.
 2. Paste the text of `daily_task.md`, then say: `每天早上 8 点执行这个任务`.

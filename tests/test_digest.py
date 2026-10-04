@@ -46,6 +46,11 @@ class DigestTests(unittest.TestCase):
         self.assertNotIn('text', long)  # the ledger names analyses; the body is one context_read away
         self.assertNotIn(new, [r['id'] for r in b['recent']])
 
+    def test_bootstrap_hands_the_scheduled_task_its_instructions(self):
+        task = self.t.call('context_bootstrap', {}).data['daily_task']
+        self.assertEqual(task['file'], 'cloud/daily_task.md')
+        self.assertIn('context_capture', task['text'])
+
     def test_since_last_digest_counts_what_arrived_after_it(self):
         self.analysis('SYNTHETIC digest', {'type': 'digest', 'summary': 'SYNTHETIC day 1'})
         self.s.put_record(request_id=self.rid(), kind='event', text='SYNTHETIC breakfast', occurred_at=AT)

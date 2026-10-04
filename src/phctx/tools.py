@@ -24,6 +24,7 @@ from .store import Store, StoreError, dump
 log = logging.getLogger('phctx.tools')
 EVIDENCE_ID = re.compile(r'\b((rec|obs)_[0-9a-f]{32,64}|obj:[0-9a-f]{64}(#p[1-9][0-9]{0,4})?)\b')
 CONTRACT = Path(__file__).resolve().parents[2] / 'contracts' / 'tools.json'
+DAILY_TASK = Path(__file__).resolve().parents[2] / 'cloud' / 'daily_task.md'
 FILE_RETURN_CAP = 4 * 1024 * 1024
 
 
@@ -130,6 +131,9 @@ class Tools:
     def context_bootstrap(self) -> dict:
         b = self.s.bootstrap()
         b['tool_profile'] = self.ctx.profile
+        # The scheduled task cannot read Mac files; the connector hands it the current task text instead.
+        b['daily_task'] = {'file': 'cloud/daily_task.md',
+                           'text': DAILY_TASK.read_text() if DAILY_TASK.exists() else None}
         if self.ctx.profile == 'readonly':
             b['boundaries'].append('Read-only profile: local writes are disabled in this session.')
         return b
